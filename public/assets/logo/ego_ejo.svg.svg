@@ -1,0 +1,13 @@
+import React from "react";
+
+export default function Logo() {
+  return (
+    <div className="logo-container fade-in">
+      <img
+        src="/assets/logo/ego_ejo.png"
+        alt="EGOEJO Logo"
+        className="logo breathing-logo"
+      />
+    </div>
+  );
+}
