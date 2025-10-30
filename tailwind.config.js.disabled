@@ -1,0 +1,17 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        'ego-gold': '#ffc300',
+        'ego-green': '#67ff9b',
+        'ego-black': '#000000',
+      }
+    },
+  },
+  plugins: [],
+}
