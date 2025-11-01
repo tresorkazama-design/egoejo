@@ -1,22 +1,18 @@
-import { put } from "@vercel/blob";
-import { NextResponse } from "next/server";
-
-export const config = {
-  runtime: "edge",
-};
-
-export default async function (request) {
-  const { searchParams } = new URL(request.url);
+const { put } = require("@vercel/blob");
+module.exports = async function (request, response) {
+  const { searchParams } = new URL(request.url, `https:${request.headers.host}`);
   const filename = searchParams.get("filename");
-
-  if (!filename || !request.body) {
-    return new NextResponse(JSON.stringify({ message: "Nom de fichier ou corps manquant." }), { status: 400 });
+  if (!filename) {
+    return response.status(400).json({ message: "Nom de fichier manquant." });
   }
-
-  // Organisation des fichiers
-  const blob = await put(`intentions_uploads/${Date.now()}-${filename}`, request.body, {
-    access: "public",
-  });
-
-  return NextResponse.json(blob);
-}
+  try {
+    const blob = await put(`intentions_uploads/${Date.now()}-${filename}`, request.body, {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+    return response.status(200).json(blob);
+  } catch (error) {
+    console.error("Erreur upload blob:", error.message);
+    return response.status(500).json({ message: "Erreur lors de l'upload." });
+  }
+};
