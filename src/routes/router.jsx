@@ -5,7 +5,7 @@ import Layout from "../components/Layout.jsx";
 import Home from "../pages/Home.jsx";
 import Univers from "../pages/Univers.jsx";
 import Admin from "../pages/Admin.jsx";
-import Admin from "../pages/Admin.jsx";
+
 import Vision from "../pages/Vision.jsx";
 import Alliances from "../pages/Alliances.jsx";
 import Rejoindre from "../pages/Rejoindre.jsx";
@@ -33,7 +33,7 @@ function NotFound(){
             marginBottom:".5rem"
           }}
         >
-          404 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Page non trouvÃƒÆ’Ã‚Â©e
+          404 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Page non trouvÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e
         </div>
         <div style={{opacity:.7,fontSize:".9rem",lineHeight:1.4}}>
           Cette route n'existe pas (encore).
