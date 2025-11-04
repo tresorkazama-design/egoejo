@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { api } from "../config/api.js";
 
 // (Copie des styles ici pour garder le fichier autonome)
 const styles = {
@@ -41,7 +42,7 @@ export default function AdminPage() {
   const fetchData = async (adminToken) => {
     setIsLoading(true); setError(null);
     try {
-      const response = await fetch("/api/admin-data", {
+      const response = await fetch(api.adminData(), {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
       if (response.status === 401) throw new Error("Token invalide ou expiré.");
@@ -115,9 +116,9 @@ function IntentsTable({ intents }) {
               <th style={styles.th}>Nom</th>
               <th style={styles.th}>Email</th>
               <th style={styles.th}>Profil</th>
-              <th style_={styles.th}>Message</th>
-              <th style_={styles.th}>Document URL</th>
-              <th style_={styles.th}>IP</th>
+              <th style={styles.th}>Message</th>
+              <th style={styles.th}>Document URL</th>
+              <th style={styles.th}>IP</th>
             </tr>
           </thead>
           <tbody>
@@ -128,13 +129,13 @@ function IntentsTable({ intents }) {
                   <td style={styles.td}>{intent.nom}</td>
                   <td style={styles.td}>{intent.email}</td>
                   <td style={styles.td}>{intent.profil}</td>
-                  <td style_={styles.td}><pre style_={styles.pre}>{intent.message}</pre></td>
-                  <td style_={styles.td}>
+                  <td style={styles.td}><pre style={styles.pre}>{intent.message || "(vide)"}</pre></td>
+                  <td style={styles.td}>
                     {intent.document_url ? (
                       <a href={intent.document_url} target="_blank" rel="noopener noreferrer" style={styles.link}>Voir Fichier</a>
                     ) : ( "N/A" )}
                   </td>
-                  <td style_={styles.td}>{intent.ip}</td>
+                  <td style={styles.td}>{intent.ip || "N/A"}</td>
                 </tr>
               ))
             ) : (

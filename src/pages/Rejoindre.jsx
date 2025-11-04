@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { api } from "../config/api.js";
 
 export default function Rejoindre() {
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [profil, setProfil] = useState("je-protege");
-  const [message, website, setMessage] = useState("");
+  const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState("");
   const [sending, setSending] = useState(false);
 
   async function handleSubmit(e) {
@@ -12,14 +14,15 @@ export default function Rejoindre() {
     setSending(true);
 
     try {
-      const resp = await fetch("/api/rejoindre", {
+      const resp = await fetch(api.rejoindre(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nom,
           email,
           profil,
-          message, website,
+          message,
+          website,
         }),
       });
 
