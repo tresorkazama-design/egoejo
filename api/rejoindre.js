@@ -1,17 +1,23 @@
-const { Pool } = require("pg");
 const { Resend } = require("resend");
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
+const { getPool } = require("./db.js");
+const { prepareCors } = require("./cors.js");
+
 module.exports = async function handler(req, res) {
-  const allowed = new Set(["http://localhost:5173", process.env.FRONTEND_URL || ""]);
-  const origin = req.headers.origin || "";
-  if (origin && !allowed.has(origin)) {
+  // 1) CORS
+  const cors = prepareCors(req, res, { methods: ["POST", "OPTIONS"] });
+  if (!cors.allowed) {
     return res.status(403).json({ ok: false, error: "Forbidden origin" });
   }
-  if (req.method === "OPTIONS") { return res.status(200).end(); }
-  if (req.method !== "POST") { return res.status(405).json({ ok: false, error: "Use POST" }); }
+
+  // 2) Préflight (navigateur)
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  // 3) Vérification méthode
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "Use POST" });
+  }
   try {
     const { nom, email, profil, message, website, document_url } = req.body || {};
     if (website) { return res.status(200).json({ ok: true, id: null }); }
@@ -24,7 +30,7 @@ module.exports = async function handler(req, res) {
       RETURNING id, created_at
     `;
     const values = [nom, email, profil, message || null, ip ? ip : null, ua || null, document_url || null];
-    const result = await pool.query(query, values);
+    const result = await getPool().query(query, values);
     try {
       if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);

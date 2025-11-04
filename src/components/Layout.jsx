@@ -92,7 +92,7 @@ export default function Layout(){
         background:"radial-gradient(circle at 50% 0%,rgba(0,255,170,.07) 0%,rgba(0,0,0,0) 70%)"
       }}>
         <div style={{opacity:.8}}>
-          EGOEJO â€” Soutenir le vivant, et apprendre Ã  habiter la Terre autrement.
+          EGOEJO — Soutenir le vivant, et apprendre à habiter la Terre autrement.
         </div>
       </footer>
     </div>

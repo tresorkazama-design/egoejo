@@ -10,34 +10,36 @@ import Vision from "../pages/Vision.jsx";
 import Alliances from "../pages/Alliances.jsx";
 import Rejoindre from "../pages/Rejoindre.jsx";
 
-function NotFound(){
+function NotFound() {
   return (
     <div
       style={{
-        minHeight:"60dvh",
-        display:"grid",
-        placeItems:"center",
-        background:"#060b0a",
-        color:"#dffdf5",
-        fontFamily:"system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif",
-        padding:"2rem",
-        textAlign:"center"
+        minHeight: "60dvh",
+        display: "grid",
+        placeItems: "center",
+        background: "#060b0a",
+        color: "#dffdf5",
+        fontFamily:
+          "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif",
+        padding: "2rem",
+        textAlign: "center",
       }}
     >
       <div>
         <div
           style={{
-            color:"#74ffd7",
-            fontWeight:600,
-            fontSize:"1.2rem",
-            marginBottom:".5rem"
+            color: "#74ffd7",
+            fontWeight: 600,
+            fontSize: "1.2rem",
+            marginBottom: ".5rem",
           }}
         >
-          404 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Page non trouvÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e
+          404 – Page introuvable
         </div>
-        <div style={{opacity:.7,fontSize:".9rem",lineHeight:1.4}}>
-          Cette route n'existe pas (encore).
-        </div>
+        <p style={{ maxWidth: "480px", margin: "0 auto", lineHeight: 1.5 }}>
+          Nous n'avons pas trouvé la page demandée. Retournez vers l'accueil pour
+          explorer le vivant.
+        </p>
       </div>
     </div>
   );
@@ -47,15 +49,13 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
-    errorElement: <NotFound />,
     children: [
       { index: true, element: <Home /> },
       { path: "univers", element: <Univers /> },
-      { path: "admin", element: <Admin /> },
-      { path: "admin", element: <Admin /> },
       { path: "vision", element: <Vision /> },
       { path: "alliances", element: <Alliances /> },
       { path: "rejoindre", element: <Rejoindre /> },
+      { path: "admin", element: <Admin /> },
       { path: "*", element: <NotFound /> },
     ],
   },

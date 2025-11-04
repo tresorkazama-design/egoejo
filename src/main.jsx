@@ -6,13 +6,13 @@ import { router } from "./routes/router.jsx";
 import "./styles.css";
 import "./cursor.css";
 
-import { Analytics } from "@vercel/analytics/react"; // <-- ajoutÃ©
+import { Analytics } from "@vercel/analytics/react";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RouterProvider router={router} />
-    <Analytics /> {/* <-- ajoutÃ© */}
-      <SpeedInsights />
+    <Analytics />
+    <SpeedInsights />
 </React.StrictMode>
 );
 

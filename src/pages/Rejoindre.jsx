@@ -30,11 +30,11 @@ export default function Rejoindre() {
 
       if (!resp.ok || !data.ok) {
         alert(
-          "Oups. Le message n'a pas pu Ãªtre envoyÃ©.\nTu peux rÃ©essayer plus tard."
+          "Oups. Le message n'a pas pu être envoyé.\nTu peux réessayer plus tard."
         );
       } else {
         alert(
-          "Merci. Ton intention est reÃ§ue.\nNous te recontacterons quand le cercle d'alliances sera ouvert publiquement."
+          "Merci. Ton intention est reçue.\nNous te recontacterons quand le cercle d'alliances sera ouvert publiquement."
         );
 
         // reset simple
@@ -46,10 +46,10 @@ export default function Rejoindre() {
     } catch (err) {
       console.error("Erreur envoi /rejoindre:", err);
       alert(
-        "Erreur rÃ©seau. Si Ã§a continue, Ã©cris-nous directement quand on publiera l'adresse de contact."
+        "Erreur réseau. Si ça continue, écris-nous directement quand on publiera l'adresse de contact."
       );
     } finally {
-        setSending(false);
+      setSending(false);
     }
   }
 
@@ -94,21 +94,21 @@ export default function Rejoindre() {
         >
           <li style={{ marginBottom: ".75rem" }}>
             <strong style={{ color: "#dffdf5" }}>
-              celles et ceux qui protÃ¨gent dÃ©jÃ  le vivant
+              celles et ceux qui protègent déjà le vivant
             </strong>{" "}
-            (gardiennes dâ€™eau, paysanÂ·neÂ·s qui sauvent les semences, sages-femmes,
-            communautÃ©s qui tiennent encore un lien sacrÃ© avec la Terreâ€¦)
+            (gardiennes d'eau, paysan·ne·s qui sauvent les semences, sages-femmes,
+            communautés qui tiennent encore un lien sacré avec la Terre…)
           </li>
           <li>
             <strong style={{ color: "#dffdf5" }}>
               celles et ceux qui veulent soutenir sans domination
             </strong>{" "}
-            (alliÃ©s, finance Ã©thique, gens prÃªts Ã  sâ€™engager vraiment).
+            (alliés, finance éthique, gens prêts à s'engager vraiment).
           </li>
         </ul>
 
         <p style={{ fontSize: "1rem", opacity: 0.9 }}>
-          Dis-nous qui tu es. On ne promet pas de â€œfinancement rapideâ€.
+          Dis-nous qui tu es. On ne promet pas de « financement rapide ».
           On construit une relation vivante, pas une transaction.
         </p>
       </header>
@@ -171,7 +171,7 @@ export default function Rejoindre() {
                 fontSize: ".9rem",
                 outline: "none",
               }}
-              placeholder="ex: Collectif des MÃ¨res de la Source"
+              placeholder="ex: Collectif des Mères de la Source"
             />
           </div>
 
@@ -202,7 +202,7 @@ export default function Rejoindre() {
                 fontSize: ".9rem",
                 outline: "none",
               }}
-              placeholder="tu seras recontactÃ© ici"
+              placeholder="tu seras recontacté·e ici"
             />
           </div>
 
@@ -216,7 +216,7 @@ export default function Rejoindre() {
                 marginBottom: ".4rem",
               }}
             >
-              Je suis plutÃ´tâ€¦
+              Je suis plutôt…
             </label>
 
             <select
@@ -234,13 +234,13 @@ export default function Rejoindre() {
               }}
             >
               <option value="je-protege">
-                Je protÃ¨ge dÃ©jÃ  un morceau de vivant / d'hÃ©ritage
+                Je protège déjà un morceau de vivant / d'héritage
               </option>
               <option value="je-soutiens">
                 Je veux soutenir sans dominer ni imposer
               </option>
               <option value="je-decouvre">
-                Je dÃ©couvre, je veux apprendre sans abÃ®mer
+                Je découvre, je veux apprendre sans abîmer
               </option>
             </select>
           </div>
@@ -272,7 +272,7 @@ export default function Rejoindre() {
                 outline: "none",
                 resize: "vertical",
               }}
-              placeholder="Dis-nous avec tes mots. (Exemple : â€œJe suis gardienne dâ€™une source et on nous coupe lâ€™accÃ¨s Ã  lâ€™eau.â€ OU â€œJe peux financer des semences paysannes et je veux le faire proprement.â€)"
+              placeholder="Dis-nous avec tes mots. (Exemples : «Je suis gardienne d'une source et on nous coupe l'accès à l'eau.» ou «Je peux financer des semences paysannes et je veux le faire proprement.»)"
             />
           </div>
 
@@ -300,12 +300,12 @@ export default function Rejoindre() {
               {sending ? "Envoi..." : "Envoyer"}
             </button>
           </div>
-                  <input
+          <input
             type="text"
             name="website"
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
-            style={{display:"none"}}
+            style={{ display: "none" }}
             autoComplete="off"
             tabIndex="-1"
           />

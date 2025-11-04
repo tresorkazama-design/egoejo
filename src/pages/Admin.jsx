@@ -43,7 +43,10 @@ export default function AdminPage() {
     setIsLoading(true); setError(null);
     try {
       const response = await fetch(api.adminData(), {
-        headers: { Authorization: `Bearer ${adminToken}` },
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          Accept: "application/json",
+        },
       });
       if (response.status === 401) throw new Error("Token invalide ou expiré.");
       if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
@@ -75,9 +78,11 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <LoginView
-        token={token} setToken={setToken}
+        token={token}
+        setToken={setToken}
         onSubmit={() => fetchData(token)}
-        isLoading={isLoading} error={error}
+        isLoading={isLoading}
+        error={error}
       />
     );
   }
@@ -91,8 +96,14 @@ function LoginView({ token, setToken, onSubmit, isLoading, error }) {
     <div style={styles.adminContainer}>
       <h1 style={styles.adminTitle}>Accès Administrateur</h1>
       <p style={styles.adminSubtitle}>Entrez le Token Admin pour voir les intentions.</p>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
-        <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="ADMIN_TOKEN" style={styles.adminInput} />
+        <form onSubmit={handleSubmit} style={{ display: "flex", gap: "10px" }}>
+          <input
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="ADMIN_TOKEN"
+            style={styles.adminInput}
+          />
         <button type="submit" disabled={isLoading} style={styles.adminButton}>
           {isLoading ? "Vérification..." : "Entrer"}
         </button>
@@ -118,7 +129,7 @@ function IntentsTable({ intents }) {
               <th style={styles.th}>Profil</th>
               <th style={styles.th}>Message</th>
               <th style={styles.th}>Document URL</th>
-              <th style={styles.th}>IP</th>
+              <th style={styles.th}>IP (approx.)</th>
             </tr>
           </thead>
           <tbody>
@@ -132,8 +143,17 @@ function IntentsTable({ intents }) {
                   <td style={styles.td}><pre style={styles.pre}>{intent.message || "(vide)"}</pre></td>
                   <td style={styles.td}>
                     {intent.document_url ? (
-                      <a href={intent.document_url} target="_blank" rel="noopener noreferrer" style={styles.link}>Voir Fichier</a>
-                    ) : ( "N/A" )}
+                      <a
+                        href={intent.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={styles.link}
+                      >
+                        Voir Fichier
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
                   </td>
                   <td style={styles.td}>{intent.ip || "N/A"}</td>
                 </tr>

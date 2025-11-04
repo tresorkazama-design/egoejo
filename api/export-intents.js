@@ -1,17 +1,40 @@
 // api/export-intents.js
-const { Pool } = require("pg");
+const { getPool } = require("./db.js");
+const { prepareCors } = require("./cors.js");
+
+function maskIp(ip) {
+  if (!ip) {
+    return null;
+  }
+  const value = ip.split(",")[0].trim();
+  if (!value) {
+    return null;
+  }
+  if (value.includes(":")) {
+    const segments = value.split(":");
+    if (segments.length > 1) {
+      segments[segments.length - 1] = "****";
+    }
+    return segments.join(":");
+  }
+  const parts = value.split(".");
+  if (parts.length === 4) {
+    parts[3] = "***";
+    return parts.join(".");
+  }
+  return value;
+}
 
 module.exports = async function handler(req, res) {
   // 1) CORS
-  const origin = req.headers.origin || "*";
-  res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  const cors = prepareCors(req, res, { methods: ["GET", "OPTIONS"] });
+  if (!cors.allowed) {
+    return res.status(403).json({ ok: false, error: "Forbidden origin" });
+  }
 
   // 2) Préflight (requête OPTIONS envoyée par le navigateur)
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    return res.status(204).end();
   }
 
   // 3) Auth admin
@@ -25,20 +48,25 @@ module.exports = async function handler(req, res) {
   }
 
   // 4) Connexion DB
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-
   try {
-    const r = await pool.query(
+    const r = await getPool().query(
       "SELECT id, nom, email, profil, message, created_at, ip, user_agent, document_url FROM intents ORDER BY created_at DESC"
     );
+    const wantsJson =
+      (req.headers.accept && req.headers.accept.includes("application/json")) ||
+      req.query.format === "json";
+
+    if (wantsJson) {
+      const intents = r.rows.map(({ user_agent, ...rest }) => ({
+        ...rest,
+        ip: maskIp(rest.ip),
+      }));
+      return res.status(200).json({ ok: true, intents });
+    }
 
     const header = "id,nom,email,profil,message,created_at,ip,user_agent,document_url\n";
     const rows = r.rows
       .map((x) => {
-        // sécuriser les guillemets
         const msg = (x.message || "").replace(/"/g, '""');
         return [
           x.id,
