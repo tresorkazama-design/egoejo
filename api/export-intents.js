@@ -1,62 +1,58 @@
 export const runtime = 'nodejs';
-const { getPool } = require("./db.js");
-const { prepareCors } = require("./cors.js");
+const { Pool } = require('pg');
 
-function maskIp(ip) {
-  if (!ip) return null;
-  const value = ip.split(",")[0].trim();
-  if (!value) return null;
-  if (value.includes(":")) {
-    const segments = value.split(":");
-    if (segments.length > 1) segments[segments.length - 1] = "****";
-    return segments.join(":");
-  }
-  const parts = value.split(".");
-  if (parts.length === 4) { parts[3] = "***"; return parts.join("."); }
-  return value;
+const ssl = process.env.DATABASE_URL?.includes('localhost')
+  ? false
+  : { rejectUnauthorized: false };
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl });
+
+function toCSV(rows) {
+  if (!rows?.length) return 'id,nom,email,profil,message,created_at\n';
+  const headers = Object.keys(rows[0]);
+  const esc = (v) => {
+    if (v == null) return '';
+    const s = String(v).replace(/"/g, '""');
+    return /[",\n]/.test(s) ? `"${s}"` : s;
+  };
+  return [headers.join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n');
 }
 
-module.exports = async function handler(req, res) {
-  const cors = prepareCors(req, res, { methods: ["GET","OPTIONS"] });
-  if (!cors.allowed) return res.status(403).json({ ok:false, error:"Forbidden origin" });
-  if (req.method === "OPTIONS") return res.status(200).end();
-
-  const token = process.env.ADMIN_TOKEN;
-  if (!token) return res.status(500).json({ ok:false, error:"ADMIN_TOKEN manquant sur le serveur." });
-  if (req.headers.authorization !== `Bearer ${token}`) return res.status(401).json({ ok:false, error:"Unauthorized" });
-
+export default async function handler(req, res) {
   try {
-    const r = await getPool().query(
-      "SELECT id, nom, email, profil, message, created_at, ip, user_agent, document_url FROM intents ORDER BY created_at DESC"
-    );
-
-    const wantsJson =
-      (req.headers.accept && req.headers.accept.includes("application/json")) ||
-      (req.query && req.query.format === "json");
-
-    if (wantsJson) {
-      const intents = r.rows.map(({ user_agent, ...rest }) => ({
-        ...rest,
-        ip: maskIp(rest.ip),
-      }));
-      return res.status(200).json({ ok:true, intents });
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (!token || token !== process.env.ADMIN_TOKEN) {
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    const header = "id,nom,email,profil,message,created_at,ip,user_agent,document_url\n";
-    const rows = r.rows.map((x) => {
-      const msg = (x.message || "").replace(/"/g, '""');
-      return [
-        x.id, x.nom, x.email, x.profil, msg,
-        x.created_at.toISOString(), x.ip || "", x.user_agent || "", x.document_url || ""
-      ].map((v) => `"${String(v)}"`).join(",");
-    }).join("\n");
+    const { from, to, profil } = req.query || {};
+    const params = [];
+    const where = [];
 
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", "attachment; filename=intents.csv");
-    return res.status(200).send(header + rows + "\n");
-  } catch (err) {
-    console.error("Erreur API /export-intents:", err);
-    return res.status(500).json({ ok:false, error:"Erreur serveur BDD." });
+    if (from) { params.push(from); where.push(`created_day >= $${params.length}`); }
+    if (to)   { params.push(to);   where.push(`created_day <= $${params.length}`); }
+    if (profil) { params.push(profil); where.push(`profil = $${params.length}`); }
+
+    const sql = `
+      SELECT id, nom, email, profil, message, created_at
+      FROM intents
+      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+      ORDER BY created_at DESC
+      LIMIT 10000
+    `;
+
+    const client = await pool.connect();
+    try {
+      const r = await client.query(sql, params);
+      const csv = toCSV(r.rows);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="intents.csv"');
+      return res.status(200).send(csv);
+    } finally {
+      client.release();
+    }
+  } catch (e) {
+    console.error('Erreur export-intents:', e);
+    return res.status(500).json({ ok: false, error: 'Erreur serveur BDD.' });
   }
-};
-
+}
