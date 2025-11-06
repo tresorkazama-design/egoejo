@@ -37,3 +37,7 @@ archive/
 .env
 .env.*
 !.env.example
+
+vercel.json.bak*
+vercel.json.bad-pattern
+
