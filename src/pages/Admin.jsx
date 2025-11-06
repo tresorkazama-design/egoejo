@@ -1,153 +1,110 @@
-import React, { useState, useEffect } from "react";
-import { api } from "../config/api.js";
+﻿import { useEffect, useMemo, useState } from "react";
 
-// (Copie des styles ici pour garder le fichier autonome)
-const styles = {
-  adminContainer: {
-    color: "#dffdf5", backgroundColor: "#060b0a", padding: "clamp(2rem, 5vw, 4rem) 6vw",
-    maxWidth: "1400px", margin: "0 auto", fontFamily: "system-ui, sans-serif", minHeight: "80vh"
-  },
-  adminTitle: { color: "#74ffd7", textShadow: "0 0 20px rgba(0,255,170,.4)", marginBottom: "0.5rem" },
-  adminSubtitle: { fontSize: "1rem", opacity: 0.9, marginBottom: "2rem" },
-  adminInput: {
-    backgroundColor: "#000", border: "1px solid rgba(116,255,215,.4)", borderRadius: "8px",
-    padding: ".6rem .75rem", color: "#dffdf5", fontSize: ".9rem", outline: "none", minWidth: "300px"
-  },
-  adminButton: {
-    background: "linear-gradient(90deg,#00ffa3 0%,#008061 100%)", border: "0", borderRadius: "10px",
-    padding: ".7rem 1rem", fontSize: ".9rem", fontWeight: 600, color: "#001710", cursor: "pointer"
-  },
-  adminError: { color: "#FF8A8A", marginTop: "1rem" },
-  table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", fontSize: "0.9rem" },
-  th: {
-    backgroundColor: "rgba(6,11,10,.6)", border: "1px solid rgba(255,255,255,.07)",
-    padding: "10px 12px", textAlign: "left", color: "#74ffd7"
-  },
-  td: {
-    border: "1px solid rgba(255,255,255,.07)", padding: "10px 12px",
-    verticalAlign: "top", opacity: 0.9, maxWidth: "300px"
-  },
-  pre: { whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0, fontFamily: "inherit" },
-  link: { color: "#74ffd7", textDecoration: "underline" }
-};
+const PROFILS = ["je-decouvre", "je-protege", "je-soutiens"];
 
-// --- Composant 1 : Page Admin ---
-export default function AdminPage() {
-  const [token, setToken] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [intents, setIntents] = useState([]);
+export default function Admin() {
+  const [baseUrl] = useState(window.location.origin);
+  const [token, setToken] = useState(localStorage.getItem("ADMIN_TOKEN") || "");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [profil, setProfil] = useState("");
+  const [q, setQ] = useState("");
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [limit, setLimit] = useState(200);
+  const [offset, setOffset] = useState(0);
 
-  const fetchData = async (adminToken) => {
-    setIsLoading(true); setError(null);
+  useEffect(() => { if (token) localStorage.setItem("ADMIN_TOKEN", token); }, [token]);
+
+  const qs = useMemo(() => {
+    const u = new URLSearchParams();
+    if (from) u.set("from", from);
+    if (to) u.set("to", to);
+    if (profil) u.set("profil", profil);
+    if (q) u.set("q", q);
+    u.set("limit", String(limit));
+    u.set("offset", String(offset));
+    return u.toString();
+  }, [from, to, profil, q, limit, offset]);
+
+  async function load() {
+    if (!token) { alert("Renseigne ADMIN_TOKEN."); return; }
+    setLoading(true);
     try {
-      const response = await fetch(api.adminData(), {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      if (response.status === 401) throw new Error("Token invalide ou expiré.");
-      if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
-      const data = await response.json();
-      if (data.ok) {
-        setIntents(data.intents || []);
-        setIsAuthenticated(true);
-        sessionStorage.setItem("admin_token", adminToken); 
-      } else {
-        throw new Error(data.error || "Réponse invalide de l'API.");
-      }
-    } catch (err) {
-      setError(err.message);
-      setIsAuthenticated(false);
-      sessionStorage.removeItem("admin_token");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const savedToken = sessionStorage.getItem("admin_token");
-    if (savedToken) {
-      setToken(savedToken);
-      fetchData(savedToken);
-    }
-  }, []);
-
-  if (!isAuthenticated) {
-    return (
-      <LoginView
-        token={token} setToken={setToken}
-        onSubmit={() => fetchData(token)}
-        isLoading={isLoading} error={error}
-      />
-    );
+      const r = await fetch(`${baseUrl}/api/admin-intents?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const json = await r.json();
+      setRows(json.rows || []);
+    } catch (e) {
+      console.error(e); alert("Erreur chargement admin-intents.");
+    } finally { setLoading(false); }
   }
-  return <IntentsTable intents={intents} />;
-}
 
-// --- Composant 2 : Connexion ---
-function LoginView({ token, setToken, onSubmit, isLoading, error }) {
-  const handleSubmit = (e) => { e.preventDefault(); onSubmit(); };
-  return (
-    <div style={styles.adminContainer}>
-      <h1 style={styles.adminTitle}>Accès Administrateur</h1>
-      <p style={styles.adminSubtitle}>Entrez le Token Admin pour voir les intentions.</p>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
-        <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="ADMIN_TOKEN" style={styles.adminInput} />
-        <button type="submit" disabled={isLoading} style={styles.adminButton}>
-          {isLoading ? "Vérification..." : "Entrer"}
-        </button>
-      </form>
-      {error && <p style={styles.adminError}>{error}</p>}
-    </div>
-  );
-}
+  async function doExport() {
+    try {
+      const r = await fetch(`${baseUrl}/api/export-intents?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "intents.csv";
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { console.error(e); alert("Export échoué."); }
+  }
 
-// --- Composant 3 : Tableau ---
-function IntentsTable({ intents }) {
+  useEffect(() => { load(); }, []); // auto on mount
+
   return (
-    <div style={styles.adminContainer}>
-      <h1 style={styles.adminTitle}>Table des Intentions ({intents.length})</h1>
-      <p style={styles.adminSubtitle}>Voici les soumissions reçues via le formulaire "Rejoindre".</p>
-      <div style={{ overflowX: 'auto', width: '100%' }}>
-        <table style={styles.table}>
-          <thead>
+    <div style={{ padding: 16, maxWidth: 1200, margin: "0 auto", fontFamily: "system-ui, sans-serif" }}>
+      <h1 style={{ marginBottom: 8 }}>Admin — Intents</h1>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <input placeholder="ADMIN_TOKEN" value={token} onChange={e => setToken(e.target.value)} />
+        <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+        <input type="date" value={to} onChange={e => setTo(e.target.value)} />
+        <select value={profil} onChange={e => setProfil(e.target.value)}>
+          <option value="">Tous profils</option>
+          {PROFILS.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: 8, alignItems: "center", marginBottom: 12 }}>
+        <input placeholder="Recherche (nom/email/message)" value={q} onChange={e => setQ(e.target.value)} />
+        <input type="number" min={10} max={1000} value={limit} onChange={e => setLimit(Number(e.target.value))} />
+        <input type="number" min={0} step={limit} value={offset} onChange={e => setOffset(Number(e.target.value))} />
+        <button onClick={load} disabled={loading}>{loading ? "Chargement..." : "Actualiser"}</button>
+        <button onClick={doExport}>Export CSV</button>
+      </div>
+
+      <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <thead style={{ background: "#fafafa" }}>
             <tr>
-              <th style={styles.th}>Date</th>
-              <th style={styles.th}>Nom</th>
-              <th style={styles.th}>Email</th>
-              <th style={styles.th}>Profil</th>
-              <th style={styles.th}>Message</th>
-              <th style={styles.th}>Document URL</th>
-              <th style={styles.th}>IP</th>
+              <th style={th}>ID</th>
+              <th style={th}>Nom</th>
+              <th style={th}>Email</th>
+              <th style={th}>Profil</th>
+              <th style={th}>Message</th>
+              <th style={th}>Créé</th>
             </tr>
           </thead>
           <tbody>
-            {intents.length > 0 ? (
-              intents.map((intent) => (
-                <tr key={intent.id}>
-                  <td style={styles.td}>{new Date(intent.created_at).toLocaleString('fr-FR')}</td>
-                  <td style={styles.td}>{intent.nom}</td>
-                  <td style={styles.td}>{intent.email}</td>
-                  <td style={styles.td}>{intent.profil}</td>
-                  <td style={styles.td}><pre style={styles.pre}>{intent.message || "(vide)"}</pre></td>
-                  <td style={styles.td}>
-                    {intent.document_url ? (
-                      <a href={intent.document_url} target="_blank" rel="noopener noreferrer" style={styles.link}>Voir Fichier</a>
-                    ) : ( "N/A" )}
-                  </td>
-                  <td style={styles.td}>{intent.ip || "N/A"}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" style={{ ...styles.td, textAlign: 'center', padding: '20px' }}>
-                  Aucune intention reçue pour le moment.
-                </td>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td style={td}><code>{String(r.id).slice(0,8)}…</code></td>
+                <td style={td}>{r.nom}</td>
+                <td style={td}>{r.email}</td>
+                <td style={td}>{r.profil}</td>
+                <td style={td}>{r.message}</td>
+                <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
               </tr>
-            )}
+            ))}
+            {!rows.length && <tr><td style={td} colSpan={6}>(Aucune donnée)</td></tr>}
           </tbody>
         </table>
       </div>
     </div>
   );
 }
+const th = { textAlign: "left", padding: "8px 10px", borderBottom: "1px solid #eee" };
+const td = { padding: "8px 10px", borderBottom: "1px solid #f2f2f2", verticalAlign: "top" };
