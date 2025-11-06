@@ -1,0 +1,25 @@
+﻿# Texte = LF par défaut
+* text=auto eol=lf
+
+# JS/TS/React
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.json text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+
+# PowerShell (gardé en CRLF)
+*.ps1  text eol=crlf
+
+# Binaires
+*.png  -text
+*.jpg  -text
+*.jpeg -text
+*.svg  -text
+*.mp3  -text
+*.webp -text
+dist/** -text
+node_modules/** -text
