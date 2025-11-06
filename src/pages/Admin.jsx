@@ -3,6 +3,16 @@
 const PROFILS = ["je-decouvre", "je-protege", "je-soutiens"];
 
 export default function Admin() {
+  // Forcer fond blanc de la page le temps d'être sur /admin
+  useEffect(() => {
+    const prevBg = document.body.style.background;
+    const prevColor = document.body.style.color;
+    document.body.style.background = "#fff";
+    document.body.style.color = "#111";
+    console.log("[ADMIN] mounted");
+    return () => { document.body.style.background = prevBg; document.body.style.color = prevColor; };
+  }, []);
+
   const [baseUrl] = useState(window.location.origin);
   const [token, setToken] = useState(localStorage.getItem("ADMIN_TOKEN") || "");
   const [from, setFrom] = useState("");
@@ -55,7 +65,7 @@ export default function Admin() {
   useEffect(() => { load(); }, []); // auto on mount
 
   return (
-    <div style={{ padding: 16, maxWidth: 1200, margin: "0 auto", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ minHeight:"100vh", padding: 16, maxWidth: 1200, margin: "0 auto", fontFamily: "system-ui, sans-serif", background:"#fff", color:"#111" }}>
       <h1 style={{ marginBottom: 8 }}>Admin — Intents</h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
@@ -99,7 +109,7 @@ export default function Admin() {
                 <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
               </tr>
             ))}
-            {!rows.length && <tr><td style={td} colSpan={6}>(Aucune donnée)</td></tr>}
+            {!rows.length && <tr><td style={td} colSpan={6}>Saisir le token et cliquer "Actualiser".</td></tr>}
           </tbody>
         </table>
       </div>
