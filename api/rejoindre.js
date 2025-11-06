@@ -1,5 +1,6 @@
 ﻿export const runtime = 'nodejs';
 const { Pool } = require('pg');
+const { checkRate } = require('./_rate-limit');
 
 const ssl = process.env.DATABASE_URL?.includes('localhost')
   ? false
@@ -19,6 +20,14 @@ export default async function handler(req, res) {
 
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim();
     const ua = (req.headers['user-agent'] || '').toString();
+
+    // Rate limit: 10 req / 60s par IP
+    const rlKey = ejoindre:{ip || 'unknown'};
+    const rl = await checkRate({ key: rlKey, limit: 10, window: 60 });
+    if (!rl.allowed) {
+      res.setHeader('Retry-After', Math.ceil(rl.reset/1000).toString());
+      return res.status(429).json({ ok:false, error:'Trop de requêtes, réessayez plus tard', retry_after: rl.reset });
+    }
 
     const client = await pool.connect();
     try {
@@ -43,3 +52,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Erreur serveur' });
   }
 }
+
