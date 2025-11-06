@@ -10,6 +10,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
+    "knip": "^5.67.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.15",
     "vite": "^7.1.11",
@@ -28,7 +29,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.4",
-    "resend": "^6.4.0",
+    "resend": "^6.4.1",
     "three": "^0.180.0"
   }
 }

@@ -1,4 +1,4 @@
-﻿/* Conteneur de la page Univers */
+/* Conteneur de la page Univers */
 #univers-root{
   min-height: 100dvh;       /* plein écran utile avec mobile toolbars */
   display: grid;

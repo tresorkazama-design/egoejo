@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 const LOGO_URL = "/assets/logo/ego_ejo.svg";
 
 /** Watermark du logo (overlay, non cliquable) */

@@ -1,10 +1,11 @@
+export const runtime = 'nodejs';
 const { Pool } = require("pg");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 export default async function handler(req, res) {
-  // Sécurité : Vérification du Token
+  // SÃ©curitÃ© : VÃ©rification du Token
   const authHeader = req.headers.authorization || "";
   const token = authHeader.split(" ")[1];
   if (!token || token !== process.env.ADMIN_TOKEN) {
@@ -25,5 +26,5 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: "Erreur serveur BDD." });
     }
   }
-  return res.status(405).json({ ok: false, error: "Méthode non autorisée (GET seulement)." });
+  return res.status(405).json({ ok: false, error: "MÃ©thode non autorisÃ©e (GET seulement)." });
 }

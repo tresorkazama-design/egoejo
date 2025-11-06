@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 export default function MotionToggle(){
   const [on,setOn] = React.useState(()=>localStorage.getItem("ego-rm")==="1");

@@ -1,3 +1,3 @@
-﻿export default function Projects(){
+export default function Projects(){
   return <section style={{padding:"8dvh 6vw"}}><h1>Projets</h1><p>Liste…</p></section>;
 }

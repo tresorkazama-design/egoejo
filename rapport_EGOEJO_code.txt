@@ -1,0 +1,47 @@
+﻿=== Duplicates (content) ===
+
+
+=== Same basename ===
+
+
+=== Duplicate default exports ===
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\CustomCursor.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\GuardianCard.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\Layout.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\Loader.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\Logo.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\Logo.jsx.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\MotionToggle.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\SoundToggle.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\components\WatermarkLogo.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\About.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Admin.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Contact.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Home.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\NotFound.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Projects.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.audio.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.now.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.parallax.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.reveal.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.broken.backup.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\three\HeroWater.jsx
+function	C:\Users\treso\Downloads\egoejo\frontend\src\cursor.jsx
+
+=== Backups ===
+2025-10-27T23:39:34	1323	C:\Users\treso\Downloads\egoejo\frontend\src\routes\router.jsx.backup-20251028-032011
+2025-10-27T23:39:34	1323	C:\Users\treso\Downloads\egoejo\frontend\src\routes\router.jsx.backup-20251028-025248
+2025-10-24T08:27:02	7457	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.broken.backup.jsx
+2025-10-23T15:40:26	359	C:\Users\treso\Downloads\egoejo\frontend\src\main.jsx.bak
+2025-10-23T14:52:01	359	C:\Users\treso\Downloads\egoejo\frontend\src\main.backup.jsx
+2025-10-23T09:09:58	7762	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.now.jsx
+2025-10-23T06:44:31	7427	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.audio.jsx
+2025-10-23T06:44:31	6502	C:\Users\treso\Downloads\egoejo\frontend\src\styles.backup.css
+2025-10-23T06:44:14	7333	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.reveal.jsx
+2025-10-23T06:32:36	6999	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.parallax.jsx
+2025-10-23T05:31:45	8835	C:\Users\treso\Downloads\egoejo\frontend\src\pages\Univers.backup.jsx
+
+=== Large files (>200KB) ===
+20746,1 KB	C:\Users\treso\Downloads\egoejo\frontend\public\assets\musique_ego.mp3
+1507,4 KB	C:\Users\treso\Downloads\egoejo\frontend\public\assets\logo\ego_ejo.png.png

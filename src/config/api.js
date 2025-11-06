@@ -1,14 +1,10 @@
-// Configuration de l'API (DEV -> localhost, PROD -> VITE_API_URL ou domaine fourni)
+const API_PREFIX = "/api";
 export const api = {
-  base: () => (
-    import.meta.env.DEV
-      ? "http://localhost:8000/api"
-      : (import.meta.env.VITE_API_URL || "https://TON-DOMAIN-API/api")
-  ),
-  rejoindre: () => `${api.base()}/intents/rejoindre/`,
-  adminData: () => `${api.base()}/intents/admin/`,
-  exportIntents: () => `${api.base()}/intents/export/`,
-  projets: () => `${api.base()}/projets/`,
-  cagnottes: () => `${api.base()}/cagnottes/`,
+  base: () => {
+    const configured = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.replace(/\/$/,'');
+    return configured || ""; // en dev: même origine (http://localhost:3000)
+  },
+  rejoindre: () => `${api.base()}${API_PREFIX}/rejoindre`,
+  adminData: () => `${api.base()}${API_PREFIX}/export-intents?format=json`,
+  exportIntents: () => `${api.base()}${API_PREFIX}/export-intents`,
 };
-

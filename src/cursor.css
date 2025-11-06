@@ -1,4 +1,4 @@
-﻿/* src/cursor.css */
+/* src/cursor.css */
 
 /* Cache le pointeur natif (ajoute .hide-default-cursor sur le wrapper desktop) */
 .hide-default-cursor { cursor: none !important; }

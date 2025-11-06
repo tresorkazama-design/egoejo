@@ -1,4 +1,4 @@
-﻿export default function Home(){
+export default function Home(){
   return (
     <section style={{padding:"10dvh 6vw"}}>
       <h1>Accueil</h1>

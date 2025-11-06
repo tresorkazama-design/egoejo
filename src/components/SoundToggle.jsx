@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 export default function SoundToggle(){
   const ref = React.useRef(null);
   const [on, setOn] = React.useState(false);

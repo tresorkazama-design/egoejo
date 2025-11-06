@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 const { put } = require("@vercel/blob");
 module.exports = async function (request, response) {
   const { searchParams } = new URL(request.url, `https:${request.headers.host}`);
