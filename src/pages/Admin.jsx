@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const PROFILS = ["je-decouvre", "je-protege", "je-soutiens"];
 

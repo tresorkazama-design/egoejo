@@ -1,4 +1,4 @@
-﻿require("./_sentry");
+require("./_sentry");
 export const runtime = 'nodejs';
 const { Pool } = require('pg');
 const { checkRate } = require('./_rate-limit'); // RATE_LIMIT

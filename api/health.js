@@ -1,4 +1,4 @@
-﻿require("./_sentry");
+require("./_sentry");
 export const runtime = 'nodejs';
 export default async function handler(req, res) {
   res.status(200).json({

@@ -1,4 +1,4 @@
-﻿import * as Sentry from "@sentry/browser";
+import * as Sentry from "@sentry/browser";
 import { BrowserTracing } from "@sentry/tracing";
 
 Sentry.init({

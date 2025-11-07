@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
+import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { RouterProvider } from "react-router-dom";
 
 const Admin = lazy(() => import("./pages/Admin.jsx"));

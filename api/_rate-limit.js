@@ -1,4 +1,4 @@
-﻿export const runtime = 'nodejs';
+export const runtime = 'nodejs';
 const { Client } = require("pg");
 
 const ssl = process.env.DATABASE_URL?.includes("localhost") ? false : { rejectUnauthorized:false };
