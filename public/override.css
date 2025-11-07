@@ -1,0 +1,5 @@
+﻿/* Override global pour éviter la page noire si l'app ne monte pas */
+html, body, #root {
+  background: #fff !important;
+  color: #111 !important;
+}
