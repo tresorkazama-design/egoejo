@@ -7,16 +7,18 @@ module.exports = async function handler(req, res) {
   }
 
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    return res.status(500).json({ ok:false, error:"Stripe non configuré" });
-  }
+  if (!key) return res.status(500).json({ ok:false, error:"Stripe non configuré" });
 
   try {
     const Stripe = require("stripe");
     const stripe = Stripe(key, { apiVersion: "2022-11-15" });
 
-    const FRONT = (process.env.FRONTEND_URL || "https://egoejo.vercel.app").replace(/\/+$/,"");
-    const priceId = process.env.STRIPE_PRICE_ID; // optionnel
+    // Sanitize FRONTEND_URL (trim \r\n, espaces) + supprimer slash final
+    const FRONT = ((process.env.FRONTEND_URL || "https://egoejo.vercel.app") + "")
+      .trim()
+      .replace(/\/+$/,"");
+
+    const priceId = (process.env.STRIPE_PRICE_ID || "").trim(); // optionnel
 
     let session;
     if (priceId) {
@@ -33,7 +35,7 @@ module.exports = async function handler(req, res) {
           price_data: {
             currency: "eur",
             product_data: { name: "Soutien EGOEJO" },
-            unit_amount: 1000
+            unit_amount: 1000    // 10 EUR en mode test
           },
           quantity: 1
         }],
@@ -45,6 +47,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok:true, url: session.url });
   } catch (e) {
     console.error("Stripe error:", e);
-    return res.status(500).json({ ok:false, error:"Stripe error" });
+    // retourne message pour debug (temporaire)
+    return res.status(500).json({ ok:false, error:"Stripe error", message: e?.message, code: e?.code, type: e?.type });
   }
 }
