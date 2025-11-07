@@ -49,15 +49,14 @@ export const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     errorElement: <NotFound />,
-    children: [ { path: "admin", element: <Admin /> }, { path: "/admin", element: <Admin /> },
-      { index: true, element: <Home /> }, { path: "admin", element: <Admin /> },
-      { path: "univers", element: <Univers /> },{ path: "vision", element: <Suspense fallback={<div/>}><Vision/></Suspense> },
+    children: [{ index: true, element: <Home /> }, { path: "admin", element: <Admin /> },{ path: "univers", element: <Univers /> },{ path: "vision", element: <Suspense fallback={<div/>}><Vision/></Suspense> },
       { path: "alliances", element: <Suspense fallback={<div/>}><Alliances/></Suspense> },
       { path: "rejoindre", element: <Suspense fallback={<div/>}><Rejoindre/></Suspense> },
       { path: "*", element: <NotFound /> },
     ],
   },
 ]);
+
 
 
 
