@@ -1,13 +1,1 @@
-﻿import React, { Suspense } from "react";
-import { createRoot } from "react-dom/client";
-import ErrorBoundary from "./ErrorBoundary.jsx";
-import App from "./main.backup.jsx";
-
-const root = createRoot(document.getElementById("root"));
-root.render(
-  <ErrorBoundary>
-    <Suspense fallback={<div/>}>
-      <App />
-    </Suspense>
-  </ErrorBoundary>
-);
+﻿import "./main.backup.jsx"; // réutilise l'ancien point d’entrée (router complet)
