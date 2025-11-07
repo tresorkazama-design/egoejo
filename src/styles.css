@@ -2,7 +2,7 @@
 html, body, #root{
   height: 100%;
   margin: 0;
-  /* /* background: #000; */ */      /* keep the page black behind the canvas */
+        /* keep the page black behind the canvas */
 }
 canvas { display: block; } /* remove inline gap */
 :root { color-scheme: dark; }
@@ -33,5 +33,6 @@ body {
   transition-duration:.001ms !important;
   scroll-behavior:auto !important;
 }
+
 
 
