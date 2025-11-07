@@ -3,29 +3,37 @@
 const PROFILS = ["je-decouvre", "je-protege", "je-soutiens"];
 
 export default function Admin() {
-  // Forcer fond blanc de la page le temps d'être sur /admin
-  useEffect(() => {
-    const prevBg = document.body.style.background;
-    const prevColor = document.body.style.color;
-    document.body.style.background = "#fff";
-    document.body.style.color = "#111";
-    console.log("[ADMIN] mounted");
-    return () => { document.body.style.background = prevBg; document.body.style.color = prevColor; };
-  }, []);
-
   const [baseUrl] = useState(window.location.origin);
   const [token, setToken] = useState(localStorage.getItem("ADMIN_TOKEN") || "");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [profil, setProfil] = useState("");
+  const [profil, setProfil] = useState("");            // pas de filtre par défaut
   const [q, setQ] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [limit, setLimit] = useState(200);
   const [offset, setOffset] = useState(0);
 
-  useEffect(() => { if (token) localStorage.setItem("ADMIN_TOKEN", token); }, [token]);
+  // Lire le token depuis l'URL (#token= ou ?token=), mémoriser & autoload
+  useEffect(() => {
+    try {
+      const hp = new URLSearchParams(location.hash.slice(1));
+      const sp = new URLSearchParams(location.search);
+      const t = hp.get("token") || sp.get("token");
+      if (t && t !== token) {
+        setToken(t);
+        localStorage.setItem("ADMIN_TOKEN", t);
+      }
+    } catch (e) { console.warn("token-from-url failed", e); }
+    // si déjà en localStorage, on gardera le state initial
+  }, []);
 
+  // Sauvegarder le token dans le storage
+  useEffect(() => {
+    if (token) localStorage.setItem("ADMIN_TOKEN", token);
+  }, [token]);
+
+  // Construire la query-string à partir des filtres
   const qs = useMemo(() => {
     const u = new URLSearchParams();
     if (from) u.set("from", from);
@@ -38,31 +46,27 @@ export default function Admin() {
   }, [from, to, profil, q, limit, offset]);
 
   async function load() {
-    if (!token) { alert("Renseigne ADMIN_TOKEN."); return; }
+    if (!token) return;                 // pas d'alerte : simplement ne rien faire
     setLoading(true);
     try {
-      const r = await fetch(`${baseUrl}/api/admin-intents?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+      const r = await fetch(`${baseUrl}/api/admin-intents?${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const json = await r.json();
       setRows(json.rows || []);
     } catch (e) {
-      console.error(e); alert("Erreur chargement admin-intents.");
-    } finally { setLoading(false); }
+      console.error(e);
+      // Optionnel: message non bloquant
+      // alert("Erreur chargement admin-intents.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  async function doExport() {
-    try {
-      const r = await fetch(`${baseUrl}/api/export-intents?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const blob = await r.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "intents.csv";
-      document.body.appendChild(a); a.click(); a.remove();
-    } catch (e) { console.error(e); alert("Export échoué."); }
-  }
-
-  useEffect(() => { load(); }, []); // auto on mount
+  // Auto-load : au montage (si token déjà présent) ET à chaque fois que le token change
+  useEffect(() => { if (token) load(); }, [token]);   // charge dès que le token est connu
+  useEffect(() => { if (token) load(); }, [qs]);      // recharge quand les filtres changent
 
   return (
     <div style={{ minHeight:"100vh", padding: 16, maxWidth: 1200, margin: "0 auto", fontFamily: "system-ui, sans-serif", background:"#fff", color:"#111" }}>
@@ -83,7 +87,17 @@ export default function Admin() {
         <input type="number" min={10} max={1000} value={limit} onChange={e => setLimit(Number(e.target.value))} />
         <input type="number" min={0} step={limit} value={offset} onChange={e => setOffset(Number(e.target.value))} />
         <button onClick={load} disabled={loading}>{loading ? "Chargement..." : "Actualiser"}</button>
-        <button onClick={doExport}>Export CSV</button>
+        <button onClick={async () => {
+          try {
+            const r = await fetch(`${baseUrl}/api/export-intents?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const blob = await r.blob();
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "intents.csv";
+            document.body.appendChild(a); a.click(); a.remove();
+          } catch (e) { console.error(e); }
+        }}>Export CSV</button>
       </div>
 
       <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
@@ -109,7 +123,7 @@ export default function Admin() {
                 <td style={td}>{new Date(r.created_at).toLocaleString()}</td>
               </tr>
             ))}
-            {!rows.length && <tr><td style={td} colSpan={6}>Saisir le token et cliquer "Actualiser".</td></tr>}
+            {!rows.length && <tr><td style={td} colSpan={6}>Saisir le token (ou passer `?token=` dans l'URL) puis cliquer "Actualiser".</td></tr>}
           </tbody>
         </table>
       </div>
