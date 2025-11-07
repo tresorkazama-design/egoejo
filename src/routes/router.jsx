@@ -1,3 +1,4 @@
+﻿import { lazy, Suspense } from "react";
 import React from "react";
 import { createBrowserRouter } from "react-router-dom";
 
@@ -6,9 +7,9 @@ import Home from "../pages/Home.jsx";
 import Univers from "../pages/Univers.jsx";
 import Admin from "../pages/Admin.jsx";
 
-import Vision from "../pages/Vision.jsx";
-import Alliances from "../pages/Alliances.jsx";
-import Rejoindre from "../pages/Rejoindre.jsx";
+const Vision = lazy(() => import("../pages/Vision.jsx"));
+const Alliances = lazy(() => import("../pages/Alliances.jsx"));
+const Rejoindre = lazy(() => import("../pages/Rejoindre.jsx"));
 
 function NotFound(){
   return (
@@ -33,7 +34,7 @@ function NotFound(){
             marginBottom:".5rem"
           }}
         >
-          404 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Page non trouvÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e
+          404 ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Page non trouvÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©e
         </div>
         <div style={{opacity:.7,fontSize:".9rem",lineHeight:1.4}}>
           Cette route n'existe pas (encore).
@@ -53,10 +54,15 @@ export const router = createBrowserRouter([
       { path: "univers", element: <Univers /> },
       { path: "admin", element: <Admin /> },
       { path: "admin", element: <Admin /> },
-      { path: "vision", element: <Vision /> },
-      { path: "alliances", element: <Alliances /> },
-      { path: "rejoindre", element: <Rejoindre /> },
+      { path: "vision", element: <Suspense fallback={<div/>}><Vision/></Suspense> },
+      { path: "alliances", element: <Suspense fallback={<div/>}><Alliances/></Suspense> },
+      { path: "rejoindre", element: <Suspense fallback={<div/>}><Rejoindre/></Suspense> },
       { path: "*", element: <NotFound /> },
     ],
   },
 ]);
+
+
+
+
+
