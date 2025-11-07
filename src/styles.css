@@ -1,8 +1,8 @@
-/* Global layout reset for full-viewport canvas pages */
+﻿/* Global layout reset for full-viewport canvas pages */
 html, body, #root{
   height: 100%;
   margin: 0;
-  background: #000;      /* keep the page black behind the canvas */
+  /* background: #000; */      /* keep the page black behind the canvas */
 }
 canvas { display: block; } /* remove inline gap */
 :root { color-scheme: dark; }
@@ -17,7 +17,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Respect du "réduire les animations" */
+/* Respect du "rÃ©duire les animations" */
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after {
     animation-duration: .001ms !important;
@@ -33,3 +33,4 @@ body {
   transition-duration:.001ms !important;
   scroll-behavior:auto !important;
 }
+
