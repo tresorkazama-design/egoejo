@@ -1,4 +1,5 @@
-﻿export const runtime = 'nodejs';
+﻿require("./_sentry");
+export const runtime = 'nodejs';
 const { Pool } = require('pg');
 
 const ssl = process.env.DATABASE_URL?.includes('localhost')
@@ -56,3 +57,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Erreur serveur' });
   }
 }
+

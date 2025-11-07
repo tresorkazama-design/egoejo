@@ -1,4 +1,5 @@
-﻿export const runtime = 'nodejs';
+﻿require("./_sentry");
+export const runtime = 'nodejs';
 
 export default async function handler(req, res) {
   try {
@@ -13,3 +14,4 @@ export default async function handler(req, res) {
     res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
 }
+

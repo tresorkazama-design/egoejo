@@ -1,3 +1,4 @@
+﻿require("./_sentry");
 export const runtime = 'nodejs';
 const { Pool } = require('pg');
 
@@ -56,3 +57,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Erreur serveur BDD.' });
   }
 }
+
