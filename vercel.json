@@ -1,4 +1,4 @@
-{
+﻿{
   "version": 2,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
@@ -27,4 +27,11 @@
       ]
     }
   ]
+,
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs22.x",
+      "regions": ["fra1","cdg1","iad1"]
+    }
+  }
 }
