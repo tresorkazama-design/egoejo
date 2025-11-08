@@ -6,11 +6,11 @@ function FallbackHero() {
     <div className="section section--dark" style={{minHeight:"70svh", display:"grid", placeItems:"center", textAlign:"center"}}>
       <div>
         <h1 style={{fontSize:"clamp(40px,8vw,112px)", lineHeight:.9, margin:0}}>
-          RELIONS LÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢HISTOIRE AU <span className="accent">FUTUR</span>
+          RELIONS LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢HISTOIRE AU <span className="accent">FUTUR</span>
         </h1>
-        <p style={{opacity:.8, marginTop:12}}>Une communautÃƒÆ’Ã‚Â© qui transforme la lecture et lÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢analyse en impact social.</p>
+        <p style={{opacity:.8, marginTop:12}}>Une communautÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© qui transforme la lecture et lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢analyse en impact social.</p>
         <div style={{marginTop:24, display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap"}}>
-          <a className="btn" href="#projets">DÃƒÆ’Ã‚Â©couvrir nos projets</a>
+          <a className="btn" href="#projets">DÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©couvrir nos projets</a>
           <a className="btn btn--ghost" href="#soutenir">Soutenir</a>
         </div>
       </div>
@@ -18,7 +18,7 @@ function FallbackHero() {
   );
 }
 
-/* ---------- Texture ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œgrain de sorghoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ---------- */
+/* ---------- Texture ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œgrain de sorghoÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ---------- */
 function makeSorghumTexture(THREE) {
   const size = 64;
   const c = document.createElement("canvas");
@@ -102,7 +102,7 @@ function SorghoWebGL() {
       const map = makeSorghumTexture(THREE);
       const mat = new THREE.PointsMaterial({
         map, transparent:true, alphaTest: 0.3, depthWrite:false,
-        size: 0.03, sizeAttenuation:false, vertexColors:true
+        size: 2.4, sizeAttenuation:false, vertexColors:true
       });
       points = new THREE.Points(geo, mat); scene.add(points);
 
@@ -153,11 +153,11 @@ function SorghoWebGL() {
       <div style={{position:"relative", zIndex:2, display:"grid", placeItems:"center", minHeight:"80svh", textAlign:"center"}}>
         <div>
           <h1 style={{fontSize:"clamp(40px,8vw,112px)", lineHeight:.9, margin:0}}>
-            RELIONS LÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢HISTOIRE AU <span className="accent">FUTUR</span>
+            RELIONS LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢HISTOIRE AU <span className="accent">FUTUR</span>
           </h1>
-          <p style={{opacity:.8, marginTop:12}}>Grains de <strong>sorgho</strong>, idÃƒÆ’Ã‚Â©es en mouvement.</p>
+          <p style={{opacity:.8, marginTop:12}}>Grains de <strong>sorgho</strong>, idÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©es en mouvement.</p>
           <div style={{marginTop:24, display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap"}}>
-            <a className="btn" href="#projets">DÃƒÆ’Ã‚Â©couvrir nos projets</a>
+            <a className="btn" href="#projets">DÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©couvrir nos projets</a>
             <a className="btn btn--ghost" href="#soutenir">Soutenir</a>
           </div>
         </div>

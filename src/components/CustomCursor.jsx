@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 /**
  * Curseur vivant : un point + halo avec inertie.
- * Change d'état quand on survole des éléments ayant data-cursor="hover" ou "accent".
+ * Change d'Ã©tat quand on survole des Ã©lÃ©ments ayant data-cursor="hover" ou "accent".
  */
 export default function CustomCursor(){
   const dotRef = useRef(null);
@@ -35,7 +35,7 @@ export default function CustomCursor(){
     };
     loop();
 
-    // États hover via attributs
+    // Ã‰tats hover via attributs
     const enter = (e) => {
       const t = e.target.closest("[data-cursor]");
       if(!t) return;

@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 
-// Assurez-vous que l'élément canvas avec l'ID 'bg' est dans votre index.html
+// Assurez-vous que l'Ã©lÃ©ment canvas avec l'ID 'bg' est dans votre index.html
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// --- Lumières ---
+// --- LumiÃ¨res ---
 const light1 = new THREE.PointLight(0xb4ffb4, 1.5);
 light1.position.set(2, 2, 5);
 scene.add(light1);
@@ -18,8 +18,8 @@ light2.position.set(-3, -2, -5);
 scene.add(light2);
 
 // --- Fond dynamique ---
-// Taille augmentée pour devenir une source de lumière ambiante floue
-const geometry = new THREE.SphereGeometry(25, 64, 64); // Sphère très grande
+// Taille augmentÃ©e pour devenir une source de lumiÃ¨re ambiante floue
+const geometry = new THREE.SphereGeometry(25, 64, 64); // SphÃ¨re trÃ¨s grande
 const material = new THREE.MeshStandardMaterial({
   color: 0x143d28,
   emissive: 0x224d38,
@@ -29,10 +29,10 @@ const material = new THREE.MeshStandardMaterial({
 const sphere = new THREE.Mesh(geometry, material);
 scene.add(sphere);
 
-// NOUVEL AJUSTEMENT : Recule la sphère extrêmement loin pour qu'elle devienne un simple halo
+// NOUVEL AJUSTEMENT : Recule la sphÃ¨re extrÃªmement loin pour qu'elle devienne un simple halo
 sphere.position.z = -200; 
 
-// Positionne la caméra plus en arrière pour un plan plus large
+// Positionne la camÃ©ra plus en arriÃ¨re pour un plan plus large
 camera.position.z = 100; 
 // ...
 // --- Animation continue ---

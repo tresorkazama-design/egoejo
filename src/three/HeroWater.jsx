@@ -10,7 +10,7 @@ export default function HeroWater() {
     const container = mountRef.current;
     const scene = new THREE.Scene();
 
-    // Caméra
+    // CamÃ©ra
     const camera = new THREE.PerspectiveCamera(
       45,
       window.innerWidth / window.innerHeight,
@@ -22,7 +22,7 @@ export default function HeroWater() {
     // Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true, // fond transparent pour se fondre dans le dégradé CSS
+      alpha: true, // fond transparent pour se fondre dans le dÃ©gradÃ© CSS
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -30,20 +30,20 @@ export default function HeroWater() {
     container.appendChild(renderer.domElement);
     renderer.domElement.className = "three-bg"; // style via CSS
 
-    // Lumière douce
+    // LumiÃ¨re douce
     const light = new THREE.DirectionalLight(0x66ffcc, 1.1);
     light.position.set(2, 3, 2);
     scene.add(light);
     scene.add(new THREE.AmbientLight(0x224433, 0.6));
 
-    // Plan “eau” — Shader simple (ondulations + specular doux)
+    // Plan â€œeauâ€ â€” Shader simple (ondulations + specular doux)
     const geometry = new THREE.PlaneGeometry(8, 8, 256, 256);
     geometry.rotateX(-Math.PI / 2);
 
     const uniforms = {
       uTime: { value: 0 },
       uColorA: { value: new THREE.Color("#07251D") }, // sombre
-      uColorB: { value: new THREE.Color("#0a2f26") }, // léger dégradé
+      uColorB: { value: new THREE.Color("#0a2f26") }, // lÃ©ger dÃ©gradÃ©
       uSpecular: { value: 0.4 },
     };
 
@@ -70,7 +70,7 @@ export default function HeroWater() {
         varying vec3 vNormal;
         varying vec3 vPos;
         void main(){
-          // dégradé en fonction de la distance
+          // dÃ©gradÃ© en fonction de la distance
           float d = clamp(length(vPos.xz)/4.0, 0.0, 1.0);
           vec3 base = mix(uColorB, uColorA, d);
 
@@ -79,7 +79,7 @@ export default function HeroWater() {
           vec3 l = normalize(vec3(0.4, 1.0, 0.2));
           float spec = pow(max(dot(reflect(-l, n), vec3(0,1,0)), 0.0), 32.0) * uSpecular;
 
-          // liseré menthe subtil
+          // liserÃ© menthe subtil
           float rim = pow(1.0 - max(dot(n, vec3(0,1,0)), 0.0), 2.0);
           vec3 mint = vec3(0.0, 1.0, 0.64);
           vec3 col = base + mint * (spec + rim*0.08);

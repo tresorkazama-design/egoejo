@@ -35,14 +35,14 @@ export default function App() {
     return (
       <div style={{padding:16,fontFamily:"system-ui",background:"#fff",color:"#111"}}>
         <h2>Application en maintenance</h2>
-        <p>Le routeur n'a pas pu être chargé. Vérifie <code>src/routes/router.jsx</code>.</p>
+        <p>Le routeur n'a pas pu Ãªtre chargÃ©. VÃ©rifie <code>src/routes/router.jsx</code>.</p>
         <pre style={{whiteSpace:"pre-wrap"}}>{String(err)}</pre>
       </div>
     );
   }
   if (!mod) return <div/>;
 
-  // Cas 1: exporte un composant React par défaut
+  // Cas 1: exporte un composant React par dÃ©faut
   const MaybeComp = mod.default;
   const looksLikeComponent =
     typeof MaybeComp === "function" &&
@@ -62,7 +62,7 @@ export default function App() {
   return (
     <div style={{padding:16,fontFamily:"system-ui",background:"#fff",color:"#111"}}>
       <h2>Application en maintenance</h2>
-      <p>Le routeur n'a pas pu être détecté. Exporte soit un composant React par défaut, soit un objet <code>router</code>.</p>
+      <p>Le routeur n'a pas pu Ãªtre dÃ©tectÃ©. Exporte soit un composant React par dÃ©faut, soit un objet <code>router</code>.</p>
     </div>
   );
 }

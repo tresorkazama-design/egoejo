@@ -84,12 +84,12 @@ export default function Admin() {
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       await load();
-    } catch(e){ console.error(e); alert("Suppression échouée."); }
+    } catch(e){ console.error(e); alert("Suppression Ã©chouÃ©e."); }
   }
 
   return (
     <div style={{ minHeight:"100vh", padding: 16, maxWidth: 1200, margin: "0 auto", fontFamily: "system-ui, sans-serif", background:"#fff", color:"#111" }}>
-      <h1 style={{ marginBottom: 8 }}>Admin — Intents</h1>
+      <h1 style={{ marginBottom: 8 }}>Admin â€” Intents</h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
         <input placeholder="ADMIN_TOKEN" value={token} onChange={e => setToken(e.target.value)} />
@@ -134,14 +134,14 @@ export default function Admin() {
               <th style={th}>Email</th>
               <th style={th}>Profil</th>
               <th style={th}>Message</th>
-              <th style={th}>Créé</th>
+              <th style={th}>CrÃ©Ã©</th>
               <th style={th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td style={td}><code>{String(r.id).slice(0,8)}…</code></td>
+                <td style={td}><code>{String(r.id).slice(0,8)}â€¦</code></td>
                 <td style={td}>{r.nom}</td>
                 <td style={td}>{r.email}</td>
                 <td style={td}>{r.profil}</td>
@@ -153,7 +153,7 @@ export default function Admin() {
                 </td>
               </tr>
             ))}
-            {!rows.length && <tr><td style={td} colSpan={7}>Saisir le token (ou passer ?token=) puis utiliser les filtres ou “Actualiser”.</td></tr>}
+            {!rows.length && <tr><td style={td} colSpan={7}>Saisir le token (ou passer ?token=) puis utiliser les filtres ou â€œActualiserâ€.</td></tr>}
           </tbody>
         </table>
       </div>
