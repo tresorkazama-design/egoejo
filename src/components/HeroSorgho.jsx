@@ -6,11 +6,11 @@ function FallbackHero() {
     <div className="section section--dark" style={{minHeight:"70svh", display:"grid", placeItems:"center", textAlign:"center"}}>
       <div>
         <h1 style={{fontSize:"clamp(40px,8vw,112px)", lineHeight:.9, margin:0}}>
-          RELIONS L’HISTOIRE AU <span className="accent">FUTUR</span>
+          RELIONS Lâ€™HISTOIRE AU <span className="accent">FUTUR</span>
         </h1>
-        <p style={{opacity:.8, marginTop:12}}>Une communauté qui transforme la lecture et l’analyse en impact social.</p>
+        <p style={{opacity:.8, marginTop:12}}>Une communautÃ© qui transforme la lecture et lâ€™analyse en impact social.</p>
         <div style={{marginTop:24, display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap"}}>
-          <a className="btn" href="#projets">Découvrir nos projets</a>
+          <a className="btn" href="#projets">DÃ©couvrir nos projets</a>
           <a className="btn btn--ghost" href="#soutenir">Soutenir</a>
         </div>
       </div>
@@ -18,7 +18,7 @@ function FallbackHero() {
   );
 }
 
-/* ---------- Texture “grain de sorgho” ---------- */
+/* ---------- Texture â€œgrain de sorghoâ€ ---------- */
 function makeSorghumTexture(THREE) {
   const size = 64;
   const c = document.createElement("canvas");
@@ -66,15 +66,15 @@ function SorghoWebGL() {
 
       scene = new THREE.Scene(); scene.background = null;
       camera = new THREE.PerspectiveCamera(60, w/h, 0.1, 100);
-      camera.position.set(0, 0.8, 5);
+      camera.position.set(0, 0.6, 7);
 
-      const COUNT = 1400;
+      const COUNT = 4500;
       const geo = new THREE.BufferGeometry();
       const positions = new Float32Array(COUNT*3);
       const colors    = new Float32Array(COUNT*3);
       const sizes     = new Float32Array(COUNT);
 
-      bounds = { x:8, y:3.8, z:5.5 };
+      bounds = { x: 12, y: 5, z: 10 };
       velocities = new Float32Array(COUNT*3);
 
       const base = new THREE.Color("#c98b4e");
@@ -101,8 +101,8 @@ function SorghoWebGL() {
 
       const map = makeSorghumTexture(THREE);
       const mat = new THREE.PointsMaterial({
-        map, transparent:true, alphaTest:0.2, depthWrite:false,
-        size:16, sizeAttenuation:true, vertexColors:true
+        map, transparent:true, alphaTest: 0.3, depthWrite:false,
+        size: 2.2, sizeAttenuation:true, vertexColors:true
       });
       points = new THREE.Points(geo, mat); scene.add(points);
 
@@ -153,11 +153,11 @@ function SorghoWebGL() {
       <div style={{position:"relative", zIndex:2, display:"grid", placeItems:"center", minHeight:"80svh", textAlign:"center"}}>
         <div>
           <h1 style={{fontSize:"clamp(40px,8vw,112px)", lineHeight:.9, margin:0}}>
-            RELIONS L’HISTOIRE AU <span className="accent">FUTUR</span>
+            RELIONS Lâ€™HISTOIRE AU <span className="accent">FUTUR</span>
           </h1>
-          <p style={{opacity:.8, marginTop:12}}>Grains de <strong>sorgho</strong>, idées en mouvement.</p>
+          <p style={{opacity:.8, marginTop:12}}>Grains de <strong>sorgho</strong>, idÃ©es en mouvement.</p>
           <div style={{marginTop:24, display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap"}}>
-            <a className="btn" href="#projets">Découvrir nos projets</a>
+            <a className="btn" href="#projets">DÃ©couvrir nos projets</a>
             <a className="btn btn--ghost" href="#soutenir">Soutenir</a>
           </div>
         </div>
