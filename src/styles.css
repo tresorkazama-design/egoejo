@@ -36,3 +36,6 @@ body {
 
 
 
+
+/* masque tout H1 du hero */
+.section--dark h1{display:none !important;}
