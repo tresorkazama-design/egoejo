@@ -1,45 +1,35 @@
-﻿import React from "react";
+import HeroSorgho from "../components/HeroSorgho.jsx";
 
-export default function Home(){
+export default function Home() {
+  const btn = {
+    background: "#111",
+    color: "#fff",
+    padding: "10px 16px",
+    borderRadius: 8,
+    textDecoration: "none",
+    display: "inline-block",
+    border: "none",
+    cursor: "pointer"
+  };
+
+  const btnGhost = {
+    ...btn,
+    background: "transparent",
+    color: "#111",
+    outline: "1px solid #111"
+  };
+
   return (
-  <>
-    <HeroSorgho />
-    <main style={{fontFamily:"system-ui", color:"#111", background:"#fff"}}>
-      <section style={{padding:"56px 16px", maxWidth:1200, margin:"0 auto"}}>
-        <h1 style={{fontSize:48, margin:0}}>EGOEJO</h1>
-        <p style={{fontSize:18, marginTop:12, maxWidth:720}}>
-          Lier Histoire et Futur pour soutenir des projets Ã  impact social et culturel.
-        </p>
-        <div style={{display:"flex", gap:12, marginTop:24}}>
-          <a href="#soutenir" style={btn}>Soutenir</a>
-          <a href="/admin" style={{...btn, background:"#eee", color:"#111"}}>Admin</a>
+    <>
+      <HeroSorgho />
+      <section id="soutenir" style={{ padding: "40px 16px", maxWidth: 1200, margin: "0 auto" }}>
+        <h2 style={{ margin: "0 0 12px" }}>Soutenir le projet</h2>
+        <p>Deux options rapides : Adhésion/Don via Stripe, ou HelloAsso si vous êtes en France (asso).</p>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <a href="/api/checkout-create" style={btn}>Adhérer / Donner (Stripe)</a>
+          <a href="https://www.helloasso.com/associations" target="_blank" rel="noreferrer" style={btnGhost}>HelloAsso (externe)</a>
         </div>
       </section>
-
-      <section style={{padding:"32px 16px", maxWidth:1200, margin:"0 auto"}}>
-        <h2 id="soutenir">Soutenir le projet</h2>
-        <p>Deux options rapides : AdhÃ©sion/Don via Stripe, ou HelloAsso si vous Ãªtes en France (asso).</p>
-        <div style={{display:"flex", gap:12, flexWrap:"wrap"}}>
-          <button onClick={pay} style={btn}>AdhÃ©rer / Donner (Stripe)</button>
-          <a href="https://www.helloasso.com/associations" target="_blank" rel="noreferrer" style={{...btn, background:"#0a66c2"}}>
-            HelloAsso (externe)
-          </a>
-        </div>
-      </section>
-
-      <section style={{padding:"16px", maxWidth:1200, margin:"0 auto"}}>
-        <h2>Vision</h2>
-        <p>Une communautÃ© de lecture et dâ€™analyse dâ€™Å“uvres pour aborder les sujets de sociÃ©tÃ©, et
-           une plateforme pour structurer, financer et mesurer lâ€™impact.</p>
-      </section>
-    </main>
+    </>
   );
 }
-
-const btn = {
-  background:"#111", color:"#fff", padding:"10px 16px", borderRadius:8, textDecoration:"none",
-  display:"inline-block", border:"none", cursor:"pointer"
-};
-
-/* Stripe désactivé pour l’instant */
-
