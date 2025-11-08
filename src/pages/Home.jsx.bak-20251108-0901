@@ -2,8 +2,6 @@
 
 export default function Home(){
   return (
-  <>
-    <HeroSorgho />
     <main style={{fontFamily:"system-ui", color:"#111", background:"#fff"}}>
       <section style={{padding:"56px 16px", maxWidth:1200, margin:"0 auto"}}>
         <h1 style={{fontSize:48, margin:0}}>EGOEJO</h1>
@@ -42,4 +40,3 @@ const btn = {
 };
 
 /* Stripe désactivé pour l’instant */
-
