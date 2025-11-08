@@ -1,3 +1,3 @@
 export default function Vision() {
-  return <div style={{padding:16, color:"#111", background:"#fff"}}>Vision â€” placeholder</div>;
+  return <div style={{padding:16, color:"#111", background:"#fff"}}>Vision Ã¢â‚¬â€ placeholder</div>;
 }

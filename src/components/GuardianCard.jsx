@@ -38,7 +38,7 @@ export default function GuardianCard({
           lineHeight:1.4,
           color:"#9bf6e5"
         }}>
-          ProtÃ¨ge : {protects}
+          ProtÃƒÂ¨ge : {protects}
         </p>
       </header>
 

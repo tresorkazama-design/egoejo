@@ -1,17 +1,17 @@
 // src/magnetism.js
 export function initMagnetism(opts = {}) {
   const {
-    // SÃ©lectionne tes cibles "aimantÃ©es"
+    // SÃƒÂ©lectionne tes cibles "aimantÃƒÂ©es"
     selector = 'button, .cta, a[data-magnetic], [data-magnetic="true"], [data-magnetic]',
-    // IntensitÃ© et zone dâ€™attraction
-    strength = 0.28,   // 0.15â€“0.40 : doux -> fort
+    // IntensitÃƒÂ© et zone dÃ¢â‚¬â„¢attraction
+    strength = 0.28,   // 0.15Ã¢â‚¬â€œ0.40 : doux -> fort
     radius = 100,      // px
     // Lissage
-    easing = 0.18,     // 0.1â€“0.25
+    easing = 0.18,     // 0.1Ã¢â‚¬â€œ0.25
     decay = 0.82       // retour quand on est hors rayon
   } = opts;
 
-  // Respecte lâ€™accessibilitÃ© et Ã©vite lâ€™init sur tactile
+  // Respecte lÃ¢â‚¬â„¢accessibilitÃƒÂ© et ÃƒÂ©vite lÃ¢â‚¬â„¢init sur tactile
   const prefersReduce =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -29,7 +29,7 @@ export function initMagnetism(opts = {}) {
   const states = new Map();
   const listeners = [];
 
-  // PrÃ©pare chaque Ã©lÃ©ment + listeners dâ€™entrÃ©e/sortie
+  // PrÃƒÂ©pare chaque ÃƒÂ©lÃƒÂ©ment + listeners dÃ¢â‚¬â„¢entrÃƒÂ©e/sortie
   els.forEach((el) => {
     el.style.willChange = "transform";
     el.style.transform = "translate3d(0,0,0)";

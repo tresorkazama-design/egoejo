@@ -2,7 +2,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>EGOEJO â€¢ Test Stripe Checkout</title>
+  <title>EGOEJO Ã¢â‚¬Â¢ Test Stripe Checkout</title>
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#fff;color:#111;padding:24px}
     button{padding:10px 16px;border:none;border-radius:8px;background:#111;color:#fff;cursor:pointer}
@@ -12,22 +12,22 @@
 </head>
 <body>
   <h1>Test Stripe Checkout</h1>
-  <p>Clique pour crÃ©er une session de paiement (POST <code>/api/checkout-create</code>).</p>
+  <p>Clique pour crÃƒÂ©er une session de paiement (POST <code>/api/checkout-create</code>).</p>
   <div class="row">
-    <button id="go">CrÃ©er le paiement (test)</button>
-    <a href="/" style="text-decoration:underline">â† Retour accueil</a>
+    <button id="go">CrÃƒÂ©er le paiement (test)</button>
+    <a href="/" style="text-decoration:underline">Ã¢â€ Â Retour accueil</a>
     <a href="/admin" style="text-decoration:underline">Admin</a>
   </div>
-  <h3>RÃ©ponse</h3>
+  <h3>RÃƒÂ©ponse</h3>
   <pre id="out">(en attente)</pre>
 
   <script>
   async function call() {
     const out = document.getElementById('out');
-    out.textContent = 'Envoiâ€¦';
+    out.textContent = 'EnvoiÃ¢â‚¬Â¦';
     try{
       const r = await fetch('/api/checkout-create',{ method:'POST' });
-      const j = await r.json().catch(()=>({ ok:false, error:'RÃ©ponse non JSON' }));
+      const j = await r.json().catch(()=>({ ok:false, error:'RÃƒÂ©ponse non JSON' }));
       out.textContent = JSON.stringify(j,null,2);
       if (j && j.url) {
         // redirection vers Stripe

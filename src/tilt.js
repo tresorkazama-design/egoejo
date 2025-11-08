@@ -22,6 +22,6 @@ export function useParallax({ factor = 0.02 } = {}) {
 }
 
 export function ParallaxGroup({ refObj, par = 0.02 }) {
-  // dÃ©cor optionnel (halo trÃ¨s lÃ©ger)
+  // dÃƒÂ©cor optionnel (halo trÃƒÂ¨s lÃƒÂ©ger)
   return null;
 }

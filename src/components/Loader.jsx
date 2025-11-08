@@ -14,7 +14,7 @@ export default function Loader(){
           borderTopColor:"rgba(0,255,170,.9)",
           animation:"ego-spin 0.9s linear infinite"
         }}/>
-        <span>Chargement de la scÃ¨neâ€¦</span>
+        <span>Chargement de la scÃƒÂ¨neÃ¢â‚¬Â¦</span>
       </div>
       <style>
         {`@keyframes ego-spin{to{transform:rotate(360deg)}}`}

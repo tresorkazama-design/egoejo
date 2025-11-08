@@ -17,7 +17,7 @@ export default function MotionToggle(){
         padding:"8px 12px", boxShadow:"0 0 20px rgba(0,255,170,.15)",
         backdropFilter:"blur(6px)", cursor:"pointer"
       }}>
-      {on ? "Animations rÃ©duites" : "Animations normales"}
+      {on ? "Animations rÃƒÂ©duites" : "Animations normales"}
     </button>
   );
 }

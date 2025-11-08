@@ -20,7 +20,7 @@ async function bootstrap() {
       return;
     }
 
-    // Sinon: tenter l'ancienne appli si prÃ©sente
+    // Sinon: tenter l'ancienne appli si prÃƒÂ©sente
     try {
       const Legacy = (await import("./main.backup.jsx")).default;
       root.render(<Legacy />);

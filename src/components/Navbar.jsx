@@ -5,7 +5,7 @@ const Navbar = () => {
   return (
     <nav style={{ 
       backgroundColor: 'rgba(0,0,0,0.8)', // Noir semi-transparent pour l'effet "Dark Glass"
-      backdropFilter: 'blur(5px)', // Effet de verre (inspirÃ© Noomo Labs)
+      backdropFilter: 'blur(5px)', // Effet de verre (inspirÃƒÂ© Noomo Labs)
       color: '#F0F0F0',
       padding: '18px 50px',
       position: 'fixed', 
@@ -24,7 +24,7 @@ const Navbar = () => {
           VISION
         </Link>
         <Link to="/about" style={{ textDecoration: 'none', color: '#F0F0F0', fontSize: '1.1em', fontWeight: 500 }}>
-          HÃ‰RITAGE
+          HÃƒâ€°RITAGE
         </Link>
         <Link to="/projets" style={{ textDecoration: 'none', color: '#ffc300', fontSize: '1.1em', fontWeight: 500 }}>
           IMPACT
