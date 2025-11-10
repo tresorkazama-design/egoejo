@@ -39,3 +39,88 @@ body {
 
 /* masque tout H1 du hero */
 .section--dark h1{display:none !important;}
+/* MENU plein �cran : base links hover */
+a:hover{ opacity:.9; text-decoration:underline; text-decoration-thickness:2px; }
+/* Header discret pour laisser vivre le hero */
+header{ background: linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,0)); }
+/* MENU plein �cran : links hover */
+a:hover{ opacity:.9; text-decoration:underline; text-decoration-thickness:2px; }
+/* Header discret */
+header{ background: linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,0)); }
+
+/* MENU overlay tweaks */
+a:hover{opacity:.9;text-decoration:underline;text-decoration-thickness:2px}
+header{background:linear-gradient(to bottom,rgba(0,0,0,.25),rgba(0,0,0,0))}
+/* masque les liens header remplac�s par le bouton MENU */
+header a[href="/univers"],
+header a[href="/vision"],
+header a[href="/alliances"],
+header a[href="/rejoindre"] { display:none !important; }
+/* === EGOEJO: masquer les liens header remplac�s par le bouton MENU === */
+/* On cible les zones de nav usuelles (header/nav/.site-nav/.top-nav) et on �vite d'impacter le contenu principal */
+header a[href*="/univers"],  header a[href*="/vision"],  header a[href*="/alliances"],  header a[href*="/rejoindre"],
+nav    a[href*="/univers"],  nav    a[href*="/vision"],  nav    a[href*="/alliances"],  nav    a[href*="/rejoindre"],
+.site-nav a[href*="/univers"], .site-nav a[href*="/vision"], .site-nav a[href*="/alliances"], .site-nav a[href*="/rejoindre"],
+.top-nav  a[href*="/univers"], .top-nav  a[href*="/vision"], .top-nav  a[href*="/alliances"], .top-nav  a[href*="/rejoindre"] {
+  display:none !important;
+}
+/* On laisse vivre le bouton MENU (c�est un <button>, donc non concern�) */
+/* EGOEJO_NAV_HIDE */
+:where(header,nav,.site-nav,.top-nav) a[href*="/univers"],
+:where(header,nav,.site-nav,.top-nav) a[href*="/vision"],
+:where(header,nav,.site-nav,.top-nav) a[href*="/alliances"],
+:where(header,nav,.site-nav,.top-nav) a[href*="/rejoindre"] {
+  display: none !important;
+}
+
+/* --- Animations inspirées de SPARKK --- */
+.animated-title,
+.bloc__subtitle,
+.bloc__subtitle-container,
+.letter,
+.footer__container {
+  will-change: transform, opacity;
+}
+
+.bloc__subtitle-container {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.bloc__subtitle {
+  position: relative;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.bloc__subtitle-background {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.bloc__subtitle-background div {
+  background: currentColor;
+  transform-origin: bottom;
+}
+
+.page-transition {
+  min-height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-title,
+  .bloc__subtitle,
+  .bloc__subtitle-background div,
+  .page-transition,
+  .section[data-animate] {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

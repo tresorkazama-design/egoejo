@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { api } from "../config/api.js";
 
 const PROFILS = ["je-decouvre", "je-protege", "je-soutiens"];
 
@@ -44,7 +45,7 @@ export default function Admin() {
     if (!token) return;
     setLoading(true);
     try {
-      const r = await fetch(`${baseUrl}/api/admin-intents?${qs}`, {
+      const r = await fetch(api.adminData(qs), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -52,6 +53,7 @@ export default function Admin() {
       setRows(json.rows || []);
     } catch (e) {
       console.error(e);
+      alert("Erreur lors du chargement: " + (e.message || "Erreur inconnue"));
     } finally {
       setLoading(false);
     }
@@ -78,18 +80,21 @@ export default function Admin() {
     if (!id) return;
     if (!confirm("Supprimer cette ligne ?")) return;
     try {
-      const r = await fetch(`${baseUrl}/api/admin-delete-intent?id=${encodeURIComponent(id)}`, {
+      const r = await fetch(api.deleteIntent(id), {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       await load();
-    } catch(e){ console.error(e); alert("Suppression ÃƒÂ©chouÃƒÂ©e."); }
+    } catch(e){ 
+      console.error(e); 
+      alert("Suppression échouée: " + (e.message || "Erreur inconnue")); 
+    }
   }
 
   return (
     <div style={{ minHeight:"100vh", padding: 16, maxWidth: 1200, margin: "0 auto", fontFamily: "system-ui, sans-serif", background:"#fff", color:"#111" }}>
-      <h1 style={{ marginBottom: 8 }}>Admin Ã¢â‚¬â€ Intents</h1>
+      <h1 style={{ marginBottom: 8 }}>Admin — Intents</h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
         <input placeholder="ADMIN_TOKEN" value={token} onChange={e => setToken(e.target.value)} />
@@ -114,14 +119,17 @@ export default function Admin() {
 
         <button onClick={async () => {
           try {
-            const r = await fetch(`${baseUrl}/api/export-intents?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+            const r = await fetch(api.exportIntents(qs), { headers: { Authorization: `Bearer ${token}` } });
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const blob = await r.blob();
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
             a.download = "intents.csv";
             document.body.appendChild(a); a.click(); a.remove();
-          } catch (e) { console.error(e); }
+          } catch (e) { 
+            console.error(e); 
+            alert("Erreur lors de l'export: " + (e.message || "Erreur inconnue"));
+          }
         }}>Export CSV</button>
       </div>
 
@@ -134,14 +142,14 @@ export default function Admin() {
               <th style={th}>Email</th>
               <th style={th}>Profil</th>
               <th style={th}>Message</th>
-              <th style={th}>CrÃƒÂ©ÃƒÂ©</th>
+              <th style={th}>Créé</th>
               <th style={th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td style={td}><code>{String(r.id).slice(0,8)}Ã¢â‚¬Â¦</code></td>
+                <td style={td}><code>{String(r.id).slice(0,8)}…</code></td>
                 <td style={td}>{r.nom}</td>
                 <td style={td}>{r.email}</td>
                 <td style={td}>{r.profil}</td>
@@ -153,7 +161,7 @@ export default function Admin() {
                 </td>
               </tr>
             ))}
-            {!rows.length && <tr><td style={td} colSpan={7}>Saisir le token (ou passer ?token=) puis utiliser les filtres ou Ã¢â‚¬Å“ActualiserÃ¢â‚¬Â.</td></tr>}
+            {!rows.length && <tr><td style={td} colSpan={7}>Saisir le token (ou passer ?token=) puis utiliser les filtres ou "Actualiser".</td></tr>}
           </tbody>
         </table>
       </div>

@@ -1,68 +1,48 @@
-import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 
-const Admin = lazy(() => import("./pages/Admin.jsx"));
-
-function AdminGate() {
-  return (
-    <div style={{minHeight:"100vh",background:"#fff",color:"#111"}}>
-      <Suspense fallback={<div/>}>
-        <Admin />
-      </Suspense>
-    </div>
-  );
-}
-
 export default function App() {
-  const isAdmin = useMemo(() => location.pathname.startsWith("/admin"), []);
-  const [mod, setMod] = useState(null);
-  const [err, setErr] = useState(null);
+  const [routerModule, setRouterModule] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const m = await import("./routes/router.jsx");
-        setMod(m);
-      } catch (e) {
-        console.error("[EGOEJO] router import error:", e);
-        setErr(e);
+        const mod = await import("./routes/router.jsx");
+        setRouterModule(mod);
+      } catch (err) {
+        console.error("[EGOEJO] router import error:", err);
+        setError(err);
       }
     })();
   }, []);
 
-  if (isAdmin) return <AdminGate/>;
-  if (err) {
+  if (error) {
     return (
-      <div style={{padding:16,fontFamily:"system-ui",background:"#fff",color:"#111"}}>
-        <h2>Application en maintenance</h2>
-        <p>Le routeur n'a pas pu ÃƒÂªtre chargÃƒÂ©. VÃƒÂ©rifie <code>src/routes/router.jsx</code>.</p>
-        <pre style={{whiteSpace:"pre-wrap"}}>{String(err)}</pre>
+      <div style={{ padding: 16, fontFamily: "system-ui", background: "#fff", color: "#111" }}>
+        <h2>Application indisponible</h2>
+        <p>Le routeur n'a pas pu être chargé. Vérifie <code>src/routes/router.jsx</code>.</p>
+        <pre style={{ whiteSpace: "pre-wrap" }}>{String(error)}</pre>
       </div>
     );
   }
-  if (!mod) return <div/>;
 
-  // Cas 1: exporte un composant React par dÃƒÂ©faut
-  const MaybeComp = mod.default;
-  const looksLikeComponent =
-    typeof MaybeComp === "function" &&
-    ((MaybeComp.prototype && MaybeComp.prototype.isReactComponent) || /^[A-Z]/.test(MaybeComp.name || ""));
+  if (!routerModule) return <div />;
 
-  if (looksLikeComponent) {
-    return <div style={{minHeight:"100vh",background:"#fff",color:"#111"}}><MaybeComp/></div>;
+  const router = routerModule.router || routerModule.default;
+  if (!router) {
+    return (
+      <div style={{ padding: 16, fontFamily: "system-ui", background: "#fff", color: "#111" }}>
+        <h2>Application indisponible</h2>
+        <p>Impossible de trouver un objet <code>router</code> exporté depuis <code>src/routes/router.jsx</code>.</p>
+      </div>
+    );
   }
 
-  // Cas 2: exporte un objet "router" (createBrowserRouter)
-  const router = mod.router || (typeof MaybeComp === "object" ? MaybeComp : null);
-  if (router) {
-    return <div style={{minHeight:"100vh",background:"#fff",color:"#111"}}><RouterProvider router={router}/></div>;
-  }
-
-  // Fallback
   return (
-    <div style={{padding:16,fontFamily:"system-ui",background:"#fff",color:"#111"}}>
-      <h2>Application en maintenance</h2>
-      <p>Le routeur n'a pas pu ÃƒÂªtre dÃƒÂ©tectÃƒÂ©. Exporte soit un composant React par dÃƒÂ©faut, soit un objet <code>router</code>.</p>
+    <div style={{ minHeight: "100vh", background: "#fff", color: "#111" }}>
+      <RouterProvider router={router} />
     </div>
   );
 }
+

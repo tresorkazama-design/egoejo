@@ -1,0 +1,106 @@
+﻿import { useEffect, useRef, useState, Suspense } from "react";
+const WIND = 0.018;           // intensitÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© du vent (X/Z)
+const SWIRL = 0.004;          // petite turbulence
+const FALL  = 0.00045;        // gravitÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© douce vers le bas
+const Y_OFFSET = -0.65;
+const PARTICLE_SIZE = 0.02;
+const MAX_PARTICLES = 1400000;
+
+function FallbackHero() {
+  return (
+    <div className="section section--dark"
+         style={{minHeight:"70svh", display:"grid", placeItems:"center", textAlign:"center", padding:"0 4vw"}}>
+      {/* aucun texte */}
+    </div>
+  );
+}
+function makeSorghumTexture(THREE) {
+  const size = 64, c = document.createElement("canvas");
+  c.width = c.height = size; const ctx = c.getContext("2d");
+  ctx.clearRect(0,0,size,size);
+  const cx = size/2, cy = size/2, rx = size*0.34, ry = size*0.22;
+  const g = ctx.createRadialGradient(cx-8, cy-6, rx*0.1, cx, cy, rx);
+  g.addColorStop(0,"#f5d28e"); g.addColorStop(0.5,"#f1b362"); g.addColorStop(1,"#c46a22");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,Math.PI/12,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.12)"; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.quadraticCurveTo(cx,cy-2,cx+8,cy+1); ctx.stroke();
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true; tex.flipY = false; return tex;
+}
+function SorghoWebGL(){
+  const mountRef = useRef(null);
+  useEffect(()=>{ let renderer,scene,camera,points,animId,ro,velocities,bounds;
+    (async()=>{
+      const THREE = await import("three");
+      const el = mountRef.current, w = el.clientWidth, h = el.clientHeight;
+      renderer = new THREE.WebGLRenderer({ antialias:false, alpha:true });
+      renderer.setSize(w,h); renderer.setPixelRatio(1.0); el.appendChild(renderer.domElement);
+      scene = new THREE.Scene(); scene.background = null;
+      camera = new THREE.PerspectiveCamera(60,w/h,0.1,100); camera.position.set(0, 0.65, 10);
+      const COUNT = (() => {
+  const mem   = (navigator.deviceMemory || 4);   // 4, 8, 12ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦
+  const small = (window.innerWidth < 768);
+  const base  = MAX_PARTICLES;
+  // facteur selon la machine + lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©cran
+  const mFactor = (mem < 4 ? 0.35 : (mem < 8 ? 0.6 : 1.0));
+  const sFactor = small ? 0.70 : 1.0;
+  const f = Math.max(0.25, Math.min(1.0, mFactor * sFactor));
+  return Math.max(40000, Math.floor(base * f));
+})(); const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(COUNT*3), colors = new Float32Array(COUNT*3), sizes = new Float32Array(COUNT);
+      bounds = { x: 14, y: 3.5, z: 7.5 }; velocities = new Float32Array(COUNT*3);
+      const base = new THREE.Color("#f1b362"), tmp = new THREE.Color();
+      for(let i=0;i<COUNT;i++){ const ix=i*3;
+        positions[ix]   = (Math.random()-0.5)*bounds.x;
+        positions[ix+1] = (Math.random()-0.2)*bounds.y; positions[ix+1] += Y_OFFSET;
+        positions[ix+2] = (Math.random()-0.5)*bounds.z;
+        tmp.copy(base).offsetHSL((Math.random()-0.5)*0.03,(Math.random()-0.5)*0.1,(Math.random()-0.5)*0.05);
+        colors[ix]=tmp.r; colors[ix+1]=tmp.g; colors[ix+2]=tmp.b; const baseSz = 12 + Math.random()*10;
+// normalisation dans le volume
+const dx = positions[ix]   / (bounds.x * 0.5);
+const dy = positions[ix+1] / (bounds.y * 0.5);
+const dz = positions[ix+2] / (bounds.z * 0.5);
+const r  = Math.sqrt(dx*dx + dy*dy + dz*dz);          // 0 centre -> ~1 bords
+// falloff doux: 1 au centre -> ~0 vers les bords (lissage simple)
+const fall = Math.max(0, 1 - (r - 0.6) / 0.5);
+sizes[i] = baseSz * (0.65 + 0.55 * fall);
+        velocities[ix] = 0.004 + Math.random()*0.012; velocities[ix+1] = (Math.random()-0.5)*0.004; velocities[ix+2] = (Math.random()-0.5)*0.006;
+      }
+      geo.setAttribute("position", new THREE.BufferAttribute(positions,3));
+      geo.setAttribute("color",    new THREE.BufferAttribute(colors,3));
+      geo.setAttribute("size",     new THREE.BufferAttribute(sizes,1));
+      const mat = new (await import("three")).PointsMaterial({ depthTest: true, map: makeSorghumTexture((await import("three"))), transparent:true, blending: THREE.NormalBlending, opacity: 0.28, alphaTest:0.2, depthWrite:false,
+        size: PARTICLE_SIZE, sizeAttenuation:true, vertexColors:true
+       });
+      points = new (await import("three")).Points(geo,mat); scene.add(points);
+      const onResize = ()=>{ const W=el.clientWidth,H=el.clientHeight; renderer.setSize(W,H); camera.aspect=W/H; camera.updateProjectionMatrix(); };
+      ro = new ResizeObserver(onResize); ro.observe(el);
+      const pos = geo.getAttribute("position"); let t=0, paused=false; document.addEventListener("visibilitychange",()=>paused=document.hidden);
+      const animate = ()=>{ t+=0.01;
+        for(let i=0;i<COUNT;i++){ const ix=i*3;
+          pos.array[ix]   += velocities[ix]   + Math.cos(t*0.8 + pos.array[ix+2])*WIND; pos.array[ix+1] += velocities[ix+1] + Math.sin(t + i*0.002)*SWIRL - FALL; pos.array[ix+2] += velocities[ix+2] + Math.sin(t*0.6 + pos.array[ix])*WIND;
+          if(pos.array[ix]>bounds.x/2) pos.array[ix]=-bounds.x/2; if(pos.array[ix]<-bounds.x/2) pos.array[ix]=bounds.x/2;
+          if(pos.array[ix+1]>bounds.y/2) pos.array[ix+1]=-bounds.y/2; if(pos.array[ix+1]<-bounds.y/2) pos.array[ix+1]=bounds.y/2;
+          if(pos.array[ix+2]>bounds.z/2) pos.array[ix+2]=-bounds.z/2; if(pos.array[ix+2]<-bounds.z/2) pos.array[ix+2]=bounds.z/2;
+        }
+        pos.needsUpdate = true; if (!paused) renderer.render(scene,camera);
+animId = requestAnimationFrame(animate);
+      }; animate();
+      return ()=>{ cancelAnimationFrame(animId); ro&&ro.disconnect(); renderer.dispose(); el.innerHTML=""; };
+    })(); return ()=>void 0;
+  },[]);
+  return (
+    <div className="section section--dark" style={{position:"relative", minHeight:"80svh", overflow:"hidden"}}>
+      <div ref={mountRef} style={{position:"absolute", inset:0}}/>
+    </div>
+  );
+}
+export default function HeroSorgho(){
+  const [ok,setOk]=useState(false);
+  useEffect(()=>{ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const webgl=(()=>{ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext&&(c.getContext("webgl")||c.getContext("experimental-webgl")));}catch{return false}})();
+    setOk(!reduce&&webgl);
+  },[]);
+  return ok? <Suspense fallback={<FallbackHero/>}><SorghoWebGL/></Suspense>:<FallbackHero/>;
+}
+
+
