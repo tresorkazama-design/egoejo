@@ -9,6 +9,7 @@ const Projets = lazy(() => import("../pages/Projets.jsx"));
 const Vision = lazy(() => import("../pages/Vision.jsx"));
 const Alliances = lazy(() => import("../pages/Alliances.jsx"));
 const Rejoindre = lazy(() => import("../pages/Rejoindre.jsx"));
+const Citations = lazy(() => import("../pages/Citations.jsx"));
 
 const withSuspense = (element) => <Suspense fallback={<div className="page-loading" />}>{element}</Suspense>;
 
@@ -28,6 +29,7 @@ export default createBrowserRouter([
       { index: true, element: withSuspense(<Home />) },
       { path: "univers", element: withSuspense(<Univers />) },
       { path: "vision", element: withSuspense(<Vision />) },
+      { path: "citations", element: withSuspense(<Citations />) },
       { path: "alliances", element: withSuspense(<Alliances />) },
       { path: "projets", element: withSuspense(<Projets />) },
       { path: "rejoindre", element: withSuspense(<Rejoindre />) },
