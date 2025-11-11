@@ -1,41 +1,41 @@
-﻿const PERSPECTIVES = [
+const PERSPECTIVES = [
   {
-    title: "Rendre visibles les hÃ©ritages",
+    title: "Rendre visibles les heritages",
     text:
-      "RÃ©habiliter les savoirs millÃ©naires et les cultures relÃ©guÃ©es au rang dâ€™anecdotes pour en faire des boussoles vivantes.",
+      "Rehabiliter les savoirs millenaires et les cultures releguees au rang d'anecdotes pour en faire des boussoles vivantes.",
   },
   {
-    title: "RÃ©enchanter nos alliances",
+    title: "Reenchanter nos alliances",
     text:
-      "Mettre en relation celles et ceux qui osent sortir des sentiers battus pour raviver des maniÃ¨res dâ€™habiter la Terre plus harmonieuses.",
+      "Mettre en relation celles et ceux qui osent sortir des sentiers battus pour raviver des manieres d'habiter la Terre plus harmonieuses.",
   },
   {
-    title: "Apprendre de lâ€™ailleurs",
+    title: "Apprendre de l'ailleurs",
     text:
-      "Accueillir avec humilitÃ© les connaissances venues dâ€™autres horizons et reconnaÃ®tre que chaque peuple, malgrÃ© ses complexitÃ©s, porte des solutions pour demain.",
+      "Accueillir avec humilite les connaissances venues d'autres horizons et reconnaitre que chaque peuple, malgres ses complexites, porte des solutions pour demain.",
   },
 ];
 
 const PILLARS = [
   {
-    title: "RÃ©habiliter le fÃ©minin sacrÃ©",
+    title: "Rehabiliter le feminin sacre",
     text:
-      "Remettre le divin fÃ©minin au centre de nos sociÃ©tÃ©s, honorer les corps, les cycles, les mÃ¨res et les gardiennes de la vie, pour rÃ©concilier lâ€™humain avec son Ã©cosystÃ¨me.",
+      "Remettre le divin feminin au centre de nos societes, honorer les corps, les cycles, les meres et les gardiennes de la vie, pour reconcilier l'humain avec son ecosysteme.",
   },
   {
     title: "Resacraliser la nature",
     text:
-      "RÃ©apprendre Ã  considÃ©rer la Terre comme un espace vivant, sensible et sacrÃ©. Retisser des liens de respect avec toutes les formes du vivant et les esprits qui les habitent.",
+      "Reapprendre a considerer la Terre comme un espace vivant, sensible et sacre. Retisser des liens de respect avec toutes les formes du vivant et les esprits qui les habitent.",
   },
   {
-    title: "RÃ©inventer nos Ã©changes",
+    title: "Reinventer nos echanges",
     text:
-      "Redonner Ã  la finance sa fonction premiÃ¨re dâ€™Ã©change pour bÃ¢tir des Ã©conomies de soin, capables de soutenir des lendemains sans culpabilitÃ©.",
+      "Redonner a la finance sa fonction premiere d'echange pour batir des economies de soin, capables de soutenir des lendemains sans culpabilite.",
   },
   {
     title: "Encourager les audaces",
     text:
-      "Soutenir celles et ceux qui expÃ©rimentent, transforment et ouvrent des chemins inattendus. Faire de lâ€™imaginaire un terrain dâ€™action partagÃ©e.",
+      "Soutenir celles et ceux qui experimentent, transforment et ouvrent des chemins inattendus. Faire de l'imaginaire un terrain d'action partagee.",
   },
 ];
 
@@ -47,16 +47,16 @@ export default function Vision() {
           <span className="tag">Vision</span>
           <h1 className="heading-l">Ce que nous voulons transformer</h1>
           <p className="lead">
-            Notre but est de relier les Ãªtres habitÃ©s par lâ€™humilitÃ© et la volontÃ© dâ€™agir, celles et ceux qui savent
-            quâ€™il existe des millions dâ€™autres maniÃ¨res dâ€™habiter le monde, souvent plus harmonieuses avec lâ€™Ã©cosystÃ¨me.
-            Nous crÃ©ons des ponts entre les porteuses de mÃ©moires anciennes, les chercheuses de possibles et les
-            pionniÃ¨res qui entreprennent pour les ressusciter et rÃ©enchanter nos territoires.
+            Notre but est de relier les etres habites par l'humilite et la volonte d'agir, celles et ceux qui savent
+            qu'il existe des millions d'autres manieres d'habiter le monde, souvent plus harmonieuses avec l'ecosysteme.
+            Nous creons des ponts entre les porteuses de memoires anciennes, les chercheuses de possibles et les
+            pionnieres qui entreprennent pour les ressusciter et reenchanter nos territoires.
           </p>
           <p className="muted" style={{ lineHeight: 1.65 }}>
-            Pour que cette alliance existe, nous choisissons de raconter lâ€™histoire longue des peuples dont les modes de
-            vie ont Ã©tÃ© invisibilisÃ©s. Nous nous inspirons de celles et ceux qui ont habitÃ© la Terre diffÃ©remment tout en
-            restant lucides : aucun peuple nâ€™est parfait, chacun est traversÃ© par des complexitÃ©s humaines. Notre rÃ´le est
-            de soutenir les audaces qui proposent des chemins inÃ©dits, hors des zones de confort.
+            Pour que cette alliance existe, nous choisissons de raconter l'histoire longue des peuples dont les modes de
+            vie ont ete invisibilises. Nous nous inspirons de celles et ceux qui ont habite la Terre differemment tout en
+            restant lucides : aucun peuple n'est parfait, chacun est traverse par des complexites humaines. Notre role est
+            de soutenir les audaces qui proposent des chemins inedits, hors des zones de confort.
           </p>
         </header>
 
@@ -85,4 +85,3 @@ export default function Vision() {
     </div>
   );
 }
-
