@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { to: "/", label: "Accueil", exact: true },
   { to: "/univers", label: "Univers" },
   { to: "/vision", label: "Vision" },
+  { to: "/citations", label: "Citations" },
   { to: "/alliances", label: "Alliances" },
   { to: "/projets", label: "Projets" },
   { to: "/rejoindre", label: "Rejoindre" },
@@ -66,8 +67,8 @@ export default function Layout() {
           <div>
             <span className="layout-logo">EGOEJO</span>
             <p className="muted">
-              Soutenir le vivant, apprendre à habiter la Terre autrement. Coopérations, alliances et
-              transmissions pour une planète habitable.
+              Soutenir le vivant, apprendre à habiter la Terre autrement. Coopérations, alliances et transmissions pour
+              une planète habitable.
             </p>
           </div>
           <div className="layout-footer__nav">
