@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://egoejo.ovtx.vercel.app/sitemap.xml
+

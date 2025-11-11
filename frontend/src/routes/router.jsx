@@ -1,0 +1,38 @@
+import React, { lazy, Suspense } from "react";
+import { createBrowserRouter } from "react-router-dom";
+
+const Layout = lazy(() => import("../components/Layout.jsx"));
+const Home = lazy(() => import("../pages/Home.jsx"));
+const Univers = lazy(() => import("../pages/Univers.jsx"));
+const Admin = lazy(() => import("../pages/Admin.jsx"));
+const Projets = lazy(() => import("../pages/Projets.jsx"));
+const Vision = lazy(() => import("../pages/Vision.jsx"));
+const Alliances = lazy(() => import("../pages/Alliances.jsx"));
+const Rejoindre = lazy(() => import("../pages/Rejoindre.jsx"));
+
+const withSuspense = (element) => <Suspense fallback={<div className="page-loading" />}>{element}</Suspense>;
+
+const NotFound = () => (
+  <div className="page page--center">
+    <h1>Page introuvable</h1>
+    <p>Cette route n'existe pas encore.</p>
+  </div>
+);
+
+export default createBrowserRouter([
+  {
+    path: "/",
+    element: withSuspense(<Layout />),
+    errorElement: <NotFound />,
+    children: [
+      { index: true, element: withSuspense(<Home />) },
+      { path: "univers", element: withSuspense(<Univers />) },
+      { path: "vision", element: withSuspense(<Vision />) },
+      { path: "alliances", element: withSuspense(<Alliances />) },
+      { path: "projets", element: withSuspense(<Projets />) },
+      { path: "rejoindre", element: withSuspense(<Rejoindre />) },
+      { path: "admin", element: withSuspense(<Admin />) },
+      { path: "*", element: <NotFound /> },
+    ],
+  },
+]);

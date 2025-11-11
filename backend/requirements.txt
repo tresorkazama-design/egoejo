@@ -1,0 +1,15 @@
+Django>=4.2
+djangorestframework
+djangorestframework-simplejwt
+psycopg2-binary
+django-cors-headers
+python-dotenv
+gunicorn
+argon2-cffi
+django-filter
+Pillow
+django-jazzmin
+resend>=0.6.0
+pytest>=7.0.0
+pytest-django>=4.5.0
+pytest-cov>=4.0.0

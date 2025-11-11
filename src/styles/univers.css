@@ -1,7 +1,0 @@
-﻿/* Conteneur de la page Univers */
-#univers-root{
-  min-height: 100dvh;       /* plein écran utile avec mobile toolbars */
-  display: grid;
-  place-items: center;      /* centre le Canvas verticalement/horizontalement */
-  background: transparent;  /* le Canvas gère le fond */
-}

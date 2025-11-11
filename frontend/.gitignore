@@ -1,0 +1,43 @@
+﻿# Fichiers de build
+/dist
+/.vite
+/.vercel
+
+# Dépendances
+/node_modules
+
+# Secrets (NE JAMAIS PARTAGER)
+.env
+.env.*
+!.env.example
+
+# Logs et fichiers locaux
+npm-debug.log*
+yarn-error.log*
+*.local.csv
+*.prod.csv
+.vercel
+# Node
+node_modules/
+dist/
+npm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+
+# Vercel/Build/Cache
+.vercel/
+.eslintcache
+*.log
+
+# Artifacts projet
+archive/
+*.csv
+
+# Env / Secrets
+.env
+.env.*
+!.env.example
+
+vercel.json.bak*
+vercel.json.bad-pattern
+
