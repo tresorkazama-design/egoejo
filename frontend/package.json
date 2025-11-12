@@ -6,11 +6,13 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "vite",
-    "test": "vitest",
+    "test": "vitest --config vitest.config.mjs",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "npx playwright test tests/e2e"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.1.4",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.1",
