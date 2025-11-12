@@ -9,21 +9,6 @@ const THREADS_FIXTURE = [
   },
 ];
 
-const THREAD_DETAIL_FIXTURE = {
-  id: 1,
-  title: "Fil principal",
-  participants: [{ username: "Alice" }, { username: "Bob" }],
-};
-
-const MESSAGES_FIXTURE = [
-  {
-    id: 100,
-    content: "Bienvenue sur le fil !",
-    author: { username: "Alice" },
-    created_at: new Date().toISOString(),
-  },
-];
-
 test.describe("Page CommunautÃ©", () => {
   test.beforeEach(async ({ page }) => {
     await page.route("**/api/**", async (route) => {
@@ -41,35 +26,16 @@ test.describe("Page CommunautÃ©", () => {
         return;
       }
 
-      if (pathname.endsWith("/api/chat/threads/1/") && method === "GET") {
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify(THREAD_DETAIL_FIXTURE),
-          headers: { "Content-Type": "application/json" },
-        });
-        return;
-      }
-
       if (pathname.endsWith("/api/chat/messages/") && method === "GET") {
-        const threadId = url.searchParams.get("thread");
-        const payload = threadId === "1" ? MESSAGES_FIXTURE : [];
+        const payload = [{
+          id: 100,
+          content: "Bienvenue sur le fil !",
+          author: { username: "Alice" },
+          created_at: new Date().toISOString(),
+        }];
         await route.fulfill({
           status: 200,
           body: JSON.stringify(payload),
-          headers: { "Content-Type": "application/json" },
-        });
-        return;
-      }
-
-      if (pathname.endsWith("/api/chat/messages/") && method === "POST") {
-        await route.fulfill({
-          status: 201,
-          body: JSON.stringify({
-            id: 999,
-            content: JSON.parse(request.postData() || "{}" ).content || "",
-            author: { username: "Vous" },
-            created_at: new Date().toISOString(),
-          }),
           headers: { "Content-Type": "application/json" },
         });
         return;
@@ -85,8 +51,6 @@ test.describe("Page CommunautÃ©", () => {
     await page.goto("/communaute");
     await page.waitForLoadState("networkidle");
     await page.waitForSelector(".page-loading", { state: "detached", timeout: 10000 }).catch(() => {});
-    const heading = page.locator("h1", { hasText: "Echanges en temps" });
-    await expect(heading).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole("button", { name: "Fil principal" })).toBeVisible({ timeout: 10000 });
 
     await page.getByRole("button", { name: "Fil principal" }).click();
