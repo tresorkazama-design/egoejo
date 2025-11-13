@@ -10,11 +10,11 @@ const NAV_LINKS = [
   { to: "/vision", label: "Vision" },
   { to: "/citations", label: "Citations" },
   { to: "/alliances", label: "Alliances" },
-  { to: "/communaute", label: "CommunautÃ©" },
+  { to: "/communaute", label: "Communaute" },
   { to: "/votes", label: "Votes" },
   { to: "/projets", label: "Projets" },
   { to: "/rejoindre", label: "Rejoindre" },
-  { to: "/admin/moderation", label: "ModÃ©ration" },
+  { to: "/admin/moderation", label: "Moderation" },
 ];
 
 export default function Layout() {
