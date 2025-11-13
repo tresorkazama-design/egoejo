@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import PageTransition from "./PageTransition.jsx";
@@ -10,8 +10,11 @@ const NAV_LINKS = [
   { to: "/vision", label: "Vision" },
   { to: "/citations", label: "Citations" },
   { to: "/alliances", label: "Alliances" },
+  { to: "/communaute", label: "CommunautÃ©" },
+  { to: "/votes", label: "Votes" },
   { to: "/projets", label: "Projets" },
   { to: "/rejoindre", label: "Rejoindre" },
+  { to: "/admin/moderation", label: "ModÃ©ration" },
 ];
 
 export default function Layout() {
@@ -67,8 +70,8 @@ export default function Layout() {
           <div>
             <span className="layout-logo">EGOEJO</span>
             <p className="muted">
-              Soutenir le vivant, apprendre à habiter la Terre autrement. Coopérations, alliances et transmissions pour
-              une planète habitable.
+              Soutenir le vivant, apprendre Ã  habiter la Terre autrement. CoopÃ©rations, alliances et transmissions pour
+              une planÃ¨te habitable.
             </p>
           </div>
           <div className="layout-footer__nav">
