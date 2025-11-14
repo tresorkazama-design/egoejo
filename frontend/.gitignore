@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ﻿# Fichiers de build
 /dist
 /.vite
@@ -42,6 +41,3 @@ archive/
 vercel.json.bak*
 vercel.json.bad-pattern
 
-=======
-.vercel
->>>>>>> 154e1db72fc940dea87fbfb88c6ceeb01aac9d19
