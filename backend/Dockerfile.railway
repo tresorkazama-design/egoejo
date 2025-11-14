@@ -28,9 +28,11 @@ RUN chmod +x /wait_for_db.sh
 # Collecter les fichiers statiques
 RUN python manage.py collectstatic --noinput || true
 
+# Copie le script de démarrage
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 # Railway utilise la variable PORT automatiquement
-# On utilise Daphne pour ASGI (WebSockets) et on utilise $PORT si disponible
-# Railway gère la disponibilité de la base de données, donc pas besoin de wait_for_db.sh
-# Le CMD est défini dans railway.toml (startCommand), donc on ne le met pas ici
-# CMD sh -c "python manage.py migrate && daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application"
+# On utilise le script de démarrage qui exécute les migrations puis Daphne
+CMD ["/start.sh"]
 
