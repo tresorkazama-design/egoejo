@@ -3,7 +3,9 @@ builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile.railway"
 
 [deploy]
-startCommand = "python manage.py migrate && daphne -b 0.0.0.0 -p $PORT config.asgi:application"
+# Railway utilise le CMD du Dockerfile, donc on ne définit pas startCommand ici
+# Le script start.sh gère les migrations et le démarrage de Daphne
+# startCommand = "/start.sh"
 healthcheckPath = "/api/health/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 from django.db import connection
+import logging
+
+logger = logging.getLogger(__name__)
 
 def health_check(request):
     """Endpoint de healthcheck pour Railway"""
@@ -9,9 +12,21 @@ def health_check(request):
         # Vérifier la connexion à la base de données
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-        return JsonResponse({"status": "ok", "database": "connected"})
+            result = cursor.fetchone()
+        logger.info("Health check: Database connection successful")
+        return JsonResponse({
+            "status": "ok",
+            "database": "connected",
+            "service": "egoejo-backend"
+        })
     except Exception as e:
-        return JsonResponse({"status": "error", "database": "disconnected", "error": str(e)}, status=503)
+        logger.error(f"Health check failed: {e}")
+        return JsonResponse({
+            "status": "error",
+            "database": "disconnected",
+            "error": str(e),
+            "service": "egoejo-backend"
+        }, status=503)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

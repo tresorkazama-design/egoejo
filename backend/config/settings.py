@@ -8,6 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY must be set")
+if len(SECRET_KEY) < 50:
+    import warnings
+    warnings.warn("SECRET_KEY should be at least 50 characters long for production use")
 
 DEBUG = os.environ.get('DEBUG', '0') == '1'
 
@@ -182,8 +185,44 @@ SIMPLE_JWT = {
 
 LOGGING = {
     'version': 1,
-    'handlers': {'console': {'class': 'logging.StreamHandler'}},
-    'root': {'handlers': ['console'], 'level': os.environ.get('LOG_LEVEL','INFO')},
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.environ.get('LOG_LEVEL', 'INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': os.environ.get('DB_LOG_LEVEL', 'WARNING'),
+            'propagate': False,
+        },
+        'channels': {
+            'handlers': ['console'],
+            'level': os.environ.get('CHANNELS_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -197,10 +236,25 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS','1') == '1'
 # CORRECTION DÉFINITIVE POUR DÉVELOPPEMENT LOCAL (HTTPS/SSL)
 # Force le SSL/Cookies sécurisés à OFF quand DEBUG=True (pour localhost)
 # ====================================================================
+# ====================================================================
+# CORRECTION DÉFINITIVE POUR DÉVELOPPEMENT LOCAL (HTTPS/SSL)
+# Force le SSL/Cookies sécurisés à OFF quand DEBUG=True (pour localhost)
+# ====================================================================
 if DEBUG:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+else:
+    # En production, forcer HTTPS et cookies sécurisés
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', '1') == '1'
+    SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', '1') == '1'
 # Fichiers Média (Images, Vidéos, PDF uploadés par les utilisateurs)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
