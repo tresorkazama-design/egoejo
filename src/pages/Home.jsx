@@ -1,104 +1,105 @@
-﻿import { useMemo } from "react";
+﻿import HeroSorgho from "../shared/components/HeroSorgho.jsx";
 
-import HeroSorgho from "../components/HeroSorgho.jsx";
-import AnimatedTitle from "../components/AnimatedTitle.jsx";
-import BlocSubtitle from "../components/BlocSubtitle.jsx";
+const DONATION_LINKS = [
+  {
+    label: "Adhésion • HelloAsso",
+    description: "Rejoindre l’association et contribuer en France",
+    href: "https://www.helloasso.com/associations",
+    variant: "ghost",
+  },
+  {
+    label: "Soutien international",
+    description: "Faire un don ponctuel ou récurrent via Stripe",
+    href: "https://donate.stripe.com",
+    variant: "primary",
+  },
+];
+
+const PILLARS = [
+  {
+    title: "Relier",
+    text: "Tisser des alliances entre habitants, organisations et territoires pour restaurer les communs du vivant.",
+  },
+  {
+    title: "Apprendre en faisant",
+    text: "Expérimenter sur le terrain, documenter et partager des pratiques régénératives à l’échelle locale.",
+  },
+  {
+    title: "Transmettre",
+    text: "Accompagner les acteurs du changement avec des formats immersifs, sensibles et ancrés dans le réel.",
+  },
+];
 
 export default function Home() {
-  const donationLinks = useMemo(
-    () => [
-      {
-        label: "HelloAsso (externe)",
-        href: "https://www.helloasso.com/associations",
-        variant: "ghost",
-      },
-      {
-        label: "Adhésion / Don Stripe",
-        href: "https://donate.stripe.com",
-        variant: "solid",
-      },
-    ],
-    []
-  );
-
   return (
-    <>
-      <HeroSorgho />
-      <section
-        id="soutenir"
-        className="section section--support"
-        data-animate
-        style={{ padding: "48px 6vw", maxWidth: 1200, margin: "0 auto" }}
-      >
-        <AnimatedTitle as="h2" className="section-title">
-          Soutenir le projet
-        </AnimatedTitle>
-        <BlocSubtitle content="Deux options rapides pour devenir allié·e du vivant" />
+    <div>
+      <section className="page hero">
+        <div className="container hero__content">
+          <div className="hero__tag">Collectif pour le vivant</div>
+          <h1 className="heading-xl">
+            Habiter la Terre autrement,
+            <br />
+            ensemble.
+          </h1>
+          <p className="lead">
+            EGOEJO rassemble des gardiens du vivant. Nous mettons en réseau les ressources, les
+            savoirs et les personnes engagées pour prendre soin du monde. Ateliers, lieux vivants,
+            recherche-action : chaque projet est une expérience à partager.
+          </p>
+          <div className="hero__actions">
+            <a className="btn btn-primary" href="#soutenir">
+              Soutenir EGOEJO
+            </a>
+            <a className="btn btn-ghost" href="/rejoindre">
+              Rejoindre l’Alliance
+            </a>
+          </div>
+        </div>
+        <HeroSorgho />
+      </section>
 
-        <p style={{ margin: "20px 0", maxWidth: 720, color: "#d6fdef" }}>
-          Adhérez ou faites un don pour soutenir nos actions. Les contributions financières
-          permettent d’expérimenter et de partager de nouvelles manières d’habiter la Terre.
-        </p>
+      <section className="page">
+        <div className="container grid grid-3">
+          {PILLARS.map(({ title, text }) => (
+            <article key={title} className="glass">
+              <div className="tag">{title}</div>
+              <p className="lead" style={{ marginTop: 12 }}>
+                {text}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
 
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 24 }}>
-          {donationLinks.map(({ label, href, variant }) => {
-            const baseStyle = {
-              borderRadius: 10,
-              padding: "12px 20px",
-              fontWeight: 600,
-              fontSize: "1rem",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease",
-            };
+      <section id="soutenir" className="page surface">
+        <div className="container grid" style={{ gap: "32px" }}>
+          <div>
+            <span className="tag">Nous soutenir</span>
+            <h2 className="heading-l">Devenez allié·e du vivant</h2>
+            <p className="muted" style={{ lineHeight: 1.6 }}>
+              Chaque contribution alimente des actions concrètes : refuges, jardins nourriciers,
+              ateliers de transmission, résidences de recherche, accompagnement des communautés
+              locales. <strong>100&nbsp;% des dons</strong> sont utilisés pour financer ces projets.
+            </p>
+          </div>
 
-            const specificStyle =
-              variant === "ghost"
-                ? {
-                    ...baseStyle,
-                    background: "transparent",
-                    color: "#74ffd7",
-                    border: "1px solid rgba(116,255,215,.6)",
-                    boxShadow: "0 0 0 1px rgba(116,255,215,.3) inset",
-                  }
-                : {
-                    ...baseStyle,
-                    background: "linear-gradient(135deg, #20f3a6, #12bfa5)",
-                    color: "#041310",
-                    border: "none",
-                    boxShadow: "0 18px 35px -18px rgba(20,220,170,.6)",
-                  };
-
-            return (
+          <div className="grid">
+            {DONATION_LINKS.map(({ label, description, href, variant }) => (
               <a
                 key={href}
                 href={href}
                 target="_blank"
                 rel="noreferrer"
-                style={specificStyle}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow =
-                    variant === "ghost"
-                      ? "0 12px 24px -16px rgba(116,255,215,.35)"
-                      : "0 20px 40px -18px rgba(20,220,170,.7)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow =
-                    variant === "ghost"
-                      ? "0 0 0 1px rgba(116,255,215,.3) inset"
-                      : "0 18px 35px -18px rgba(20,220,170,.6)";
-                }}
+                className={`home-support__card glass ${variant === "primary" ? "is-primary" : ""}`}
               >
-                {label}
+                <h3>{label}</h3>
+                <p className="muted">{description}</p>
+                <span className="home-support__cta">Contribuer →</span>
               </a>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }

@@ -4,13 +4,29 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { api } from "../config/api.js";
 
-gsap.registerPlugin(ScrollTrigger);
-
 const PROFILS = [
-  { value: "je-decouvre", label: "Je découvre" },
-  { value: "je-protege", label: "Je protège" },
+  { value: "je-decouvre", label: "Je decouvre" },
+  { value: "je-protege", label: "Je protege" },
   { value: "je-soutiens", label: "Je soutiens" },
 ];
+
+const PROJECT_TEMPLATE = `Titre du projet :
+Objectifs principaux :
+Publics touches :
+Ressources disponibles :
+Ressources recherchees :
+Impacts esperes :
+`;
+
+const PROJECT_GUIDELINES = [
+  "Precisez le contexte et les personnes impliquees (collectifs, territoires, partenaires).",
+  "Indiquez les besoins materiels ou financiers si vous en avez identifies.",
+  "Ajoutez des liens vers des supports en ligne ou des pieces jointes pour illustrer votre projet.",
+  "Mentionnez vos disponibilites ou les dates clefs si vous avez un calendrier en tete.",
+];
+
+const ACCEPTED_FILE_TYPES = "application/pdf,image/*,video/*";
+const MAX_PROJECT_FILES = 3;
 
 export default function Rejoindre() {
   const [formData, setFormData] = useState({
@@ -24,6 +40,10 @@ export default function Rejoindre() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [projectBrief, setProjectBrief] = useState(PROJECT_TEMPLATE);
+  const [projectLinks, setProjectLinks] = useState("");
+  const [projectFiles, setProjectFiles] = useState([]);
+  const [fileError, setFileError] = useState("");
 
   const titleRef = useRef(null);
   const introRef = useRef(null);
@@ -78,6 +98,51 @@ export default function Rejoindre() {
     setError("");
   };
 
+  const handleProjectFiles = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    const availableSlots = MAX_PROJECT_FILES - projectFiles.length;
+    if (availableSlots <= 0) {
+      setFileError(`Vous pouvez ajouter jusqu'a ${MAX_PROJECT_FILES} fichiers.`);
+      event.target.value = "";
+      return;
+    }
+
+    const selected = files.slice(0, availableSlots);
+    try {
+      const encoded = await Promise.all(
+        selected.map(
+          (file) =>
+            new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                resolve({
+                  id: `${file.name}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  dataUrl: reader.result,
+                });
+              };
+              reader.onerror = () => reject(new Error("Lecture du fichier impossible."));
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+      setProjectFiles((prev) => [...prev, ...encoded]);
+      setFileError("");
+    } catch (err) {
+      setFileError(err.message || "Impossible d'ajouter ce fichier.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleRemoveProjectFile = (id) => {
+    setProjectFiles((prev) => prev.filter((file) => file.id !== id));
+  };
+
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async (e) => {
@@ -121,10 +186,19 @@ export default function Rejoindre() {
           message: formData.message.trim() || null,
           document_url: formData.document_url.trim() || null,
           website: formData.website,
+          project_brief: projectBrief.trim() || null,
+          project_links: projectLinks.trim() || null,
+          project_files: projectFiles.map(({ name, type, size, dataUrl }) => ({
+            name,
+            type,
+            size,
+            data_url: dataUrl,
+          })),
         }),
       });
 
       const data = await response.json();
+
       if (!response.ok || !data.ok) {
         throw new Error(data.error || "Erreur lors de l'envoi");
       }
@@ -138,6 +212,10 @@ export default function Rejoindre() {
         document_url: "",
         website: "",
       });
+      setProjectBrief(PROJECT_TEMPLATE);
+      setProjectLinks("");
+      setProjectFiles([]);
+      setFileError("");
 
       setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
@@ -147,118 +225,60 @@ export default function Rejoindre() {
     }
   };
 
-  const containerStyle = {
-    maxWidth: "720px",
-    margin: "0 auto",
-    padding: "60px 6vw",
-    fontFamily: "inherit",
-    color: "#dffdf5",
-  };
-
-  const formStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "1.2rem",
-    background: "rgba(8,18,16,.6)",
-    borderRadius: 18,
-    padding: "28px 24px",
-    boxShadow: "0 30px 60px -45px rgba(12,220,180,.45)",
-    border: "1px solid rgba(116,255,215,.08)",
-  };
-
-  const inputStyle = {
-    padding: "0.75rem 1rem",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,.1)",
-    background: "rgba(10,18,16,0.6)",
-    color: "inherit",
-    fontSize: "1rem",
-    fontFamily: "inherit",
-    transition: "border-color .25s ease, box-shadow .25s ease",
-  };
-
-  const textareaStyle = {
-    ...inputStyle,
-    minHeight: "140px",
-    resize: "vertical",
-  };
-
-  const buttonStyle = {
-    padding: "0.85rem 1.6rem",
-    borderRadius: "12px",
-    border: "none",
-    background: loading
-      ? "linear-gradient(135deg, rgba(117,255,214,.4), rgba(54,185,154,.3))"
-      : "linear-gradient(135deg, #20f3a6, #12bfa5)",
-    color: "#041310",
-    fontSize: "1.05rem",
-    fontWeight: 700,
-    cursor: loading ? "not-allowed" : "pointer",
-    opacity: loading ? 0.7 : 1,
-    transition: "transform .25s ease, box-shadow .25s ease, opacity .25s ease",
-    boxShadow: loading ? "none" : "0 22px 45px -20px rgba(20,220,170,.55)",
-  };
-
-  const alertStyle = (background, border, color) => ({
-    padding: "0.9rem 1rem",
-    borderRadius: "12px",
-    background,
-    color,
-    border,
-    fontWeight: 500,
-  });
-
-  const honeypotStyle = {
-    position: "absolute",
-    left: "-9999px",
-    opacity: 0,
-    pointerEvents: "none",
-  };
-
-  const labelStyle = {
-    display: "block",
-    marginBottom: "0.4rem",
-    fontWeight: 600,
-    color: "#bffbea",
-  };
-
   return (
-    <main className="section" data-animate style={containerStyle}>
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 ref={titleRef} className="animated-title" style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>
-          Rejoindre EGOEJO
-        </h1>
-        <p ref={introRef} style={{ maxWidth: "54ch", color: "#b1eee0", lineHeight: 1.6 }}>
-          Partagez votre intention de nous rejoindre. Nous reviendrons vers vous rapidement pour
-          explorer les alliances possibles et imaginer ensemble de nouvelles manières d’habiter la
-          Terre.
+    <main className="page page--form">
+      <h1 ref={titleRef} className="heading-l">
+        Rejoindre EGOEJO
+      </h1>
+      <p ref={introRef} className="lead" style={{ marginBottom: "2rem" }}>
+        Partagez votre intention de rejoindre notre organisation. Racontez-nous qui vous etes, ce qui vous anime et, si
+        vous le souhaitez, decrivez un projet ou une idee que vous aimeriez porter avec EGOEJO.
+      </p>
+
+      <section className="glass" style={{ marginBottom: "32px", padding: "24px", display: "grid", gap: "12px" }}>
+        <h2 className="heading-l" style={{ margin: 0, fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)" }}>
+          Comment nous aider a comprendre votre elan
+        </h2>
+        <p className="muted" style={{ margin: 0 }}>
+          Quelques pistes pour nous transmettre les informations utiles. Vous pouvez vous en inspirer librement ou
+          utiliser l'espace de redaction pre-rempli plus bas.
         </p>
+        <ul className="muted" style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
+          <li>Qui etes-vous et quelles sont vos motivations principales ?</li>
+          <li>Quel lien souhaitez-vous tisser avec EGOEJO (apprendre, transmettre, co-construire...)?</li>
+          <li>Quels savoirs, experiences ou ressources souhaitez-vous partager ?</li>
+          <li>Y a-t-il un projet concret que vous aimeriez decrire ou documenter ?</li>
+        </ul>
+      </section>
+
+      <div aria-live="assertive" style={{ minHeight: error ? "auto" : 0 }}>
+        {error && (
+          <div className="form-message form-message--error" role="alert" data-testid="intent-error">
+          {error}
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div role="alert" style={alertStyle("#330f11", "1px solid #ffb3b9", "#ff9aa2")}> {error} </div>
-      )}
-
       {success && (
-        <div role="status" style={alertStyle("#103321", "1px solid #98ffcc", "#8cf8c5")}>
-          Merci ! Votre intention a été enregistrée. Nous vous recontacterons bientôt.
+        <div className="form-message form-message--success" role="alert">
+          Merci ! Votre intention a été enregistrée avec succès. Nous vous recontacterons bientôt.
         </div>
       )}
 
-      <form ref={formRef} onSubmit={handleSubmit} style={formStyle}>
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="form-grid">
         <input
           type="text"
           name="website"
           value={formData.website}
           onChange={handleChange}
-          style={honeypotStyle}
+          className="honeypot-field"
           tabIndex="-1"
           autoComplete="off"
         />
 
-        <div>
-          <label htmlFor="nom" style={labelStyle}>
-            Nom <span style={{ color: "#ff8585" }}>*</span>
+        <div className="form-field">
+          <label htmlFor="nom">
+            Nom <span className="required">*</span>
           </label>
           <input
             type="text"
@@ -267,14 +287,14 @@ export default function Rejoindre() {
             value={formData.nom}
             onChange={handleChange}
             required
-            style={inputStyle}
+            className="input-text"
             disabled={loading}
           />
         </div>
 
-        <div>
-          <label htmlFor="email" style={labelStyle}>
-            Email <span style={{ color: "#ff8585" }}>*</span>
+        <div className="form-field">
+          <label htmlFor="email">
+            Email <span className="required">*</span>
           </label>
           <input
             type="email"
@@ -283,14 +303,14 @@ export default function Rejoindre() {
             value={formData.email}
             onChange={handleChange}
             required
-            style={inputStyle}
+            className="input-text"
             disabled={loading}
           />
         </div>
 
-        <div>
-          <label htmlFor="profil" style={labelStyle}>
-            Profil <span style={{ color: "#ff8585" }}>*</span>
+        <div className="form-field">
+          <label htmlFor="profil">
+            Profil <span className="required">*</span>
           </label>
           <select
             id="profil"
@@ -298,7 +318,7 @@ export default function Rejoindre() {
             value={formData.profil}
             onChange={handleChange}
             required
-            style={inputStyle}
+            className="input-select"
             disabled={loading}
           >
             <option value="">Sélectionnez un profil</option>
@@ -310,61 +330,133 @@ export default function Rejoindre() {
           </select>
         </div>
 
-        <div>
-          <label htmlFor="message" style={labelStyle}>
-            Message (optionnel)
-          </label>
+        <div className="form-field">
+          <label htmlFor="message">Message (optionnel)</label>
           <textarea
             id="message"
             name="message"
             value={formData.message}
             onChange={handleChange}
             maxLength={2000}
-            style={textareaStyle}
+            className="input-textarea"
             disabled={loading}
             placeholder="Partagez vos motivations, vos compétences ou toute information pertinente..."
           />
-          <div style={{ fontSize: "0.85rem", color: "#87d9cb", marginTop: "0.25rem" }}>
-            {formData.message.length}/2000 caractères
-          </div>
+          <div className="input-help">{formData.message.length}/2000 caractères</div>
         </div>
 
-        <div>
-          <label htmlFor="document_url" style={labelStyle}>
-            URL d'un document (optionnel)
-          </label>
+        <div className="form-field">
+          <label htmlFor="document_url">URL d'un document (optionnel)</label>
           <input
             type="url"
             id="document_url"
             name="document_url"
             value={formData.document_url}
             onChange={handleChange}
-            style={inputStyle}
+            className="input-text"
             disabled={loading}
             placeholder="https://..."
           />
         </div>
 
-        <button
-          type="submit"
-          style={buttonStyle}
-          disabled={loading}
-          onMouseEnter={(e) => {
-            if (!loading) {
-              e.currentTarget.style.transform = "translateY(-3px)";
-              e.currentTarget.style.boxShadow = "0 26px 55px -20px rgba(20,220,170,.65)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = loading
-              ? "none"
-              : "0 22px 45px -20px rgba(20,220,170,.55)";
-          }}
+        <section
+          className="glass"
+          style={{ gridColumn: "1 / -1", padding: "24px", display: "grid", gap: "16px" }}
         >
+          <h2 className="heading-l" style={{ margin: 0, fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)" }}>
+            Partager un projet
+          </h2>
+          <p className="muted" style={{ margin: 0 }}>
+            Ajoutez un resume, des liens ou des fichiers (PDF, images ou videos) pour presenter votre projet ou une idee en cours de maturation.
+          </p>
+
+          <div className="form-field" style={{ margin: 0 }}>
+            <label>Quelques reperes</label>
+            <ul className="muted" style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
+              {PROJECT_GUIDELINES.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="form-field" style={{ margin: 0 }}>
+            <label htmlFor="project_brief">Espace de redaction (pre-rempli)</label>
+            <textarea
+              id="project_brief"
+              name="project_brief"
+              value={projectBrief}
+              onChange={(event) => setProjectBrief(event.target.value)}
+              className="input-textarea"
+              rows={8}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-field" style={{ margin: 0 }}>
+            <label htmlFor="project_links">
+              Liens vers des ressources (drive, portfolio, video...) <span className="muted">(optionnel)</span>
+            </label>
+            <textarea
+              id="project_links"
+              name="project_links"
+              value={projectLinks}
+              onChange={(event) => setProjectLinks(event.target.value)}
+              className="input-textarea"
+              rows={4}
+              placeholder="https://exemple.com/mon-projet"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-field" style={{ margin: 0 }}>
+            <label htmlFor="project_files">
+              Ajouter des fichiers (PDF, images, videos)
+            </label>
+            <input
+              id="project_files"
+              type="file"
+              accept={ACCEPTED_FILE_TYPES}
+              multiple
+              onChange={handleProjectFiles}
+              className="input-text"
+              disabled={loading || projectFiles.length >= MAX_PROJECT_FILES}
+            />
+            <div className="input-help">
+              {projectFiles.length}/{MAX_PROJECT_FILES} fichier(s) selectionne(s).
+            </div>
+            {fileError && (
+              <div className="form-message form-message--error" role="alert" style={{ marginTop: 12 }}>
+                {fileError}
+              </div>
+            )}
+            {projectFiles.length > 0 && (
+              <ul className="muted" style={{ margin: "12px 0 0", paddingLeft: 18, display: "grid", gap: 8 }}>
+                {projectFiles.map((file) => (
+                  <li key={file.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>
+                      {file.name} ({Math.round(file.size / 1024)} Ko)
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{ padding: "4px 10px", fontSize: "0.8rem" }}
+                      onClick={() => handleRemoveProjectFile(file.id)}
+                      disabled={loading}
+                    >
+                      Retirer
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        <button type="submit" className="btn btn-primary" disabled={loading}>
           {loading ? "Envoi en cours..." : "Envoyer"}
         </button>
       </form>
     </main>
   );
 }
+

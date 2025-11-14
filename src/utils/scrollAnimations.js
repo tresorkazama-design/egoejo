@@ -1,8 +1,6 @@
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
-
 export function initScrollAnimations() {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
