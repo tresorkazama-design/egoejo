@@ -123,16 +123,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', '1') == '1'
-SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', '1') == '1'
-SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', '1') == '1'
-
+# Configuration de sécurité (redéfinie plus bas selon DEBUG)
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
-
-SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', '1') == '1'
-CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', '1') == '1'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 STATIC_URL = '/static/'
@@ -232,10 +225,6 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER','')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD','')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS','1') == '1'
 
-# ====================================================================
-# CORRECTION DÉFINITIVE POUR DÉVELOPPEMENT LOCAL (HTTPS/SSL)
-# Force le SSL/Cookies sécurisés à OFF quand DEBUG=True (pour localhost)
-# ====================================================================
 # ====================================================================
 # CORRECTION DÉFINITIVE POUR DÉVELOPPEMENT LOCAL (HTTPS/SSL)
 # Force le SSL/Cookies sécurisés à OFF quand DEBUG=True (pour localhost)
