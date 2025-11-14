@@ -1,0 +1,54 @@
+##############################
+# Fichiers générés automatiquement
+##############################
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environnements Python
+venv/
+*/venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+coverage/
+
+# Bases de données locales
+*.sqlite3
+
+# Environnements Node/Vite
+node_modules/
+**/node_modules/
+.vercel/
+dist/
+build/
+.parcel-cache/
+.vite/
+
+# Artefacts Playwright/Vitest
+playwright-report/
+test-results/
+.vitest/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environnements
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+
+# Backups
+*.orig
+*.bak
+
+
