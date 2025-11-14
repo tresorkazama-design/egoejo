@@ -38,8 +38,10 @@ RUN python manage.py collectstatic --noinput || echo "Warning: collectstatic fai
 RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app
 
-# Passer à l'utilisateur non-root
-USER app
+# Railway nécessite que l'application écoute sur le port défini par $PORT
+# On utilise root pour éviter les problèmes de permissions avec les ports < 1024
+# En production, Railway gère la sécurité au niveau du réseau
+# USER app
 
 # Railway utilise la variable PORT automatiquement
 # Le script de démarrage exécute les migrations puis démarre Daphne
