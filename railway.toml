@@ -8,6 +8,7 @@ dockerfilePath = "backend/Dockerfile.railway"
 # startCommand = "/start.sh"
 healthcheckPath = "/api/health/"
 healthcheckTimeout = 300
+# Railway attend que le healthcheck retourne 200 (pas 503) pour router le trafic
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 

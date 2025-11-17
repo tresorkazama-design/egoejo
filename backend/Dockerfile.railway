@@ -43,6 +43,10 @@ RUN useradd --create-home --shell /bin/bash app && \
 # En production, Railway gère la sécurité au niveau du réseau
 # USER app
 
+# Exposer le port pour Railway (Railway détecte automatiquement via $PORT)
+# Note: EXPOSE ne peut pas utiliser de variables, mais Railway le détectera via $PORT
+EXPOSE 8080
+
 # Railway utilise la variable PORT automatiquement
 # Le script de démarrage exécute les migrations puis démarre Daphne
 CMD ["/start.sh"]
