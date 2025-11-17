@@ -67,10 +67,35 @@ def extract_admin_token(request) -> Optional[str]:
     return None
 
 
-def require_admin_token(request) -> Optional[str]:
-    token = extract_admin_token(request)
-    admin_token = os.environ.get("ADMIN_TOKEN")
-    if not admin_token or token != admin_token:
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+def require_admin_token(request):
+    """
+    Valide le token admin passé soit en query ?token=..., soit en header.
+    Ne doit JAMAIS lever d'exception : renvoie None si invalide.
+    """
+    expected = os.environ.get("ADMIN_TOKEN")
+
+    if not expected:
+        logger.error("ADMIN_TOKEN is not configured in environment.")
         return None
-    return admin_token
+
+    token = (
+        request.GET.get("token")
+        or request.headers.get("X-Admin-Token")
+        or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    )
+
+    if not token:
+        logger.warning("No admin token provided in request.")
+        return None
+
+    if token != expected:
+        logger.warning("Invalid admin token provided.")
+        return None
+
+    return token
 
