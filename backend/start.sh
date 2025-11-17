@@ -2,9 +2,12 @@
 set -e
 
 echo "=== EGOEJO Backend Starting ==="
-echo "PORT=\"
+PORT=${PORT:-8080}
+echo "PORT=$PORT"
 echo ""
 
-python manage.py migrate
+echo "Running migrations..."
+python manage.py migrate --no-input
 
-exec daphne -b 0.0.0.0 -p "\" config.asgi:application
+echo "Starting Daphne on port $PORT..."
+exec daphne -b 0.0.0.0 -p "$PORT" config.asgi:application
