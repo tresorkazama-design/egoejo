@@ -17,6 +17,28 @@ DEBUG = os.environ.get('DEBUG', '0') == '1'
 _raw_allowed = os.environ.get('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = [h.strip() for h in _raw_allowed.split(',') if h.strip()]
 
+# Ajouter automatiquement le domaine Railway si disponible
+_railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+if _railway_domain and _railway_domain not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_railway_domain)
+
+# Extraire le domaine depuis RAILWAY_STATIC_URL si disponible
+_railway_static = os.environ.get('RAILWAY_STATIC_URL', '')
+if _railway_static:
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(_railway_static)
+        if parsed.hostname and parsed.hostname not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(parsed.hostname)
+    except Exception:
+        pass
+
+# En production sur Railway, autoriser aussi *.up.railway.app
+if not DEBUG and not any('railway' in h for h in ALLOWED_HOSTS):
+    # Vérifier si on est sur Railway via la présence de certaines variables
+    if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_PROJECT_ID'):
+        ALLOWED_HOSTS.extend(['*.up.railway.app', '.up.railway.app'])
+
 INSTALLED_APPS = [
     'jazzmin', # <--- AJOUTEZ ICI EN PREMIER
     'channels',

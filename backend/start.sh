@@ -23,7 +23,14 @@ echo "  - DEBUG: ${DEBUG:-0}"
 echo "  - ALLOWED_HOSTS: ${ALLOWED_HOSTS:-not set}"
 echo "  - DATABASE_URL: ${DATABASE_URL:+set (hidden)}"
 echo "  - PORT: ${PORT:-8000}"
+echo "  - RAILWAY_PUBLIC_DOMAIN: ${RAILWAY_PUBLIC_DOMAIN:-not set}"
 echo ""
+
+# Vérifier que le port est défini
+if [ -z "$PORT" ]; then
+    echo "WARNING: PORT environment variable is not set, using default 8000"
+    export PORT=8000
+fi
 
 # Exécuter les migrations
 echo "Running migrations..."
@@ -35,10 +42,37 @@ python manage.py migrate --no-input || {
 echo "Migrations completed successfully"
 echo ""
 
-# Démarrer Daphne
-echo "Starting Daphne ASGI server on port ${PORT:-8000}..."
-echo "Application: config.asgi:application"
+# Vérifier que Django peut démarrer (syntax check)
+echo "Checking Django configuration..."
+python manage.py check --deploy || {
+    echo "WARNING: Django check failed, continuing anyway..."
+}
 echo ""
 
-exec daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application
+# Test rapide de l'endpoint health
+echo "Testing health endpoint locally..."
+python manage.py shell <<EOF || echo "WARNING: Shell test failed"
+from django.test import Client
+c = Client()
+try:
+    response = c.get('/api/health/')
+    print(f"Health check response: {response.status_code}")
+except Exception as e:
+    print(f"Health check error: {e}")
+EOF
+echo ""
+
+# Démarrer Daphne avec logging détaillé
+echo "Starting Daphne ASGI server..."
+echo "  - Host: 0.0.0.0"
+echo "  - Port: ${PORT}"
+echo "  - Application: config.asgi:application"
+echo ""
+echo "Daphne will listen on all interfaces (0.0.0.0) on port ${PORT}"
+echo "Railway will route traffic to this port automatically"
+echo ""
+echo "=== Starting server ==="
+
+# Utiliser exec pour que Daphne soit le processus principal
+exec daphne -b 0.0.0.0 -p "${PORT}" -v 2 config.asgi:application
 
