@@ -25,12 +25,11 @@ HONEYPOT_FIELDS = {"website", "nickname", "comment"}
 
 
 def _parse_payload(request):
-    if request.content_type == "application/json":
-        try:
-            return json.loads(request.body.decode("utf-8"))
-        except json.JSONDecodeError:
-            return {}
-    return request.POST.dict()
+    """
+    Utilise la Request DRF pour parser les données (JSON, form, etc.)
+    et gérer correctement l'encodage (UTF-8, accents, ...).
+    """
+    return dict(request.data)
 
 
 def _has_honeypot(data: dict) -> bool:
