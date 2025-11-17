@@ -42,7 +42,40 @@ def health_check(request):
             "service": "egoejo-backend"
         }, status=503)
 
+@csrf_exempt
+@require_http_methods(["GET", "HEAD"])
+def api_root(request):
+    """Endpoint racine pour afficher les informations de l'API"""
+    return JsonResponse({
+        "service": "egoejo-backend",
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/api/health/",
+            "api_root": "/api/",
+            "admin": "/admin/",
+            "intents": {
+                "rejoindre": "/api/intents/rejoindre/",
+                "admin": "/api/intents/admin/",
+                "export": "/api/intents/export/",
+            },
+            "chat": {
+                "threads": "/api/chat/threads/",
+                "messages": "/api/chat/messages/",
+            },
+            "polls": "/api/polls/",
+            "projets": "/api/projets/",
+            "cagnottes": "/api/cagnottes/",
+            "moderation": {
+                "reports": "/api/moderation/reports/",
+                "audit_logs": "/api/audit/logs/",
+            },
+        },
+        "documentation": "https://github.com/tresorkazama-design/egoejo"
+    })
+
 urlpatterns = [
+    path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
     path('api/health/', health_check, name='health-check'),
