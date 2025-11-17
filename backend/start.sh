@@ -44,22 +44,9 @@ echo ""
 
 # Vérifier que Django peut démarrer (syntax check)
 echo "Checking Django configuration..."
-python manage.py check --deploy || {
+python manage.py check --deploy 2>&1 || {
     echo "WARNING: Django check failed, continuing anyway..."
 }
-echo ""
-
-# Test rapide de l'endpoint health
-echo "Testing health endpoint locally..."
-python manage.py shell <<EOF || echo "WARNING: Shell test failed"
-from django.test import Client
-c = Client()
-try:
-    response = c.get('/api/health/')
-    print(f"Health check response: {response.status_code}")
-except Exception as e:
-    print(f"Health check error: {e}")
-EOF
 echo ""
 
 # Démarrer Daphne avec logging détaillé
