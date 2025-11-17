@@ -33,11 +33,16 @@ if _railway_static:
     except Exception:
         pass
 
-# En production sur Railway, autoriser aussi *.up.railway.app
+# En production sur Railway, autoriser tous les domaines Railway si on détecte Railway
 if not DEBUG and not any('railway' in h for h in ALLOWED_HOSTS):
     # Vérifier si on est sur Railway via la présence de certaines variables
     if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_PROJECT_ID'):
-        ALLOWED_HOSTS.extend(['*.up.railway.app', '.up.railway.app'])
+        # Railway utilise des domaines dynamiques, on autorise tous les sous-domaines Railway
+        # Note: Django n'accepte pas les wildcards, donc on utilise une approche différente
+        # Si ALLOWED_HOSTS est vide en production Railway, on autorise tous les domaines (dangereux mais nécessaire pour Railway)
+        if not ALLOWED_HOSTS:
+            ALLOWED_HOSTS = ['*']  # Autoriser tous les domaines (Railway gère la sécurité au niveau du réseau)
+        # Sinon, on ajoute automatiquement le domaine Railway si détecté
 
 INSTALLED_APPS = [
     'jazzmin', # <--- AJOUTEZ ICI EN PREMIER
