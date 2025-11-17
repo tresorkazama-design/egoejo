@@ -182,6 +182,18 @@ if DEBUG and not CORS_ALLOWED_ORIGINS:
     ]
     CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
+# En production, ajouter automatiquement le frontend Vercel si disponible
+if not DEBUG:
+    _vercel_url = os.environ.get('VERCEL_URL') or os.environ.get('FRONTEND_URL')
+    if _vercel_url:
+        # Si VERCEL_URL est fourni sans protocole, ajouter https://
+        if not _vercel_url.startswith('http'):
+            _vercel_url = f'https://{_vercel_url}'
+        if _vercel_url not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(_vercel_url)
+        if _vercel_url not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_vercel_url)
+
 _auth_classes = (
     'rest_framework.authentication.SessionAuthentication',
     'rest_framework.authentication.BasicAuthentication',
