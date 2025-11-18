@@ -14,6 +14,8 @@ from .views import (
     PollViewSet,
     ModerationReportViewSet,
     AuditLogViewSet,
+    ContenuEducatifViewSet,
+    CommentaireViewSet,
 )
 
 router = DefaultRouter()
@@ -22,6 +24,8 @@ router.register('chat/messages', ChatMessageViewSet, basename='chat-message')
 router.register('polls', PollViewSet, basename='poll')
 router.register('moderation/reports', ModerationReportViewSet, basename='moderation-report')
 router.register('audit/logs', AuditLogViewSet, basename='audit-log')
+router.register('contenus-educatifs', ContenuEducatifViewSet, basename='contenu-educatif')
+router.register('commentaires', CommentaireViewSet, basename='commentaire')
 
 urlpatterns = [
     path('', include(router.urls)),

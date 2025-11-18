@@ -7,8 +7,11 @@ from .models import (
     ChatMembership,
     ChatMessage,
     ChatThread,
+    Commentaire,
+    ContenuEducatif,
     Contribution,
     Intent,
+    Like,
     Media,
     ModerationReport,
     Poll,
@@ -109,3 +112,98 @@ class AuditLogAdmin(admin.ModelAdmin):
     list_display = ('action', 'actor', 'target_type', 'target_id', 'created_at')
     list_filter = ('action', 'target_type')
     search_fields = ('target_id', 'action')
+
+
+class CommentaireInline(admin.TabularInline):
+    """Inline pour afficher les commentaires dans l'admin des contenus."""
+    model = Commentaire
+    extra = 0
+    readonly_fields = ('user', 'texte', 'created_at', 'updated_at')
+    fields = ('user', 'texte', 'is_validated', 'created_at', 'updated_at')
+
+
+@admin.register(ContenuEducatif)
+class ContenuEducatifAdmin(admin.ModelAdmin):
+    """Admin pour les contenus éducatifs avec validation."""
+    list_display = ('titre', 'type_contenu', 'auteur', 'is_validated', 'created_at')
+    list_filter = ('type_contenu', 'is_validated', 'created_at')
+    search_fields = ('titre', 'description', 'auteur__username')
+    readonly_fields = ('auteur', 'created_at', 'updated_at')
+    inlines = [CommentaireInline]
+    
+    fieldsets = (
+        ('Informations générales', {
+            'fields': ('titre', 'description', 'type_contenu', 'fichier', 'auteur')
+        }),
+        ('Validation', {
+            'fields': ('is_validated',)
+        }),
+        ('Dates', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['valider_contenus', 'invalider_contenus']
+    
+    def valider_contenus(self, request, queryset):
+        """Action pour valider plusieurs contenus."""
+        count = queryset.update(is_validated=True)
+        self.message_user(request, f'{count} contenu(s) validé(s).')
+    valider_contenus.short_description = "Valider les contenus sélectionnés"
+    
+    def invalider_contenus(self, request, queryset):
+        """Action pour invalider plusieurs contenus."""
+        count = queryset.update(is_validated=False)
+        self.message_user(request, f'{count} contenu(s) invalidé(s).')
+    invalider_contenus.short_description = "Invalider les contenus sélectionnés"
+
+
+@admin.register(Commentaire)
+class CommentaireAdmin(admin.ModelAdmin):
+    """Admin pour les commentaires avec validation."""
+    list_display = ('contenu', 'user', 'texte_preview', 'is_validated', 'created_at')
+    list_filter = ('is_validated', 'created_at')
+    search_fields = ('texte', 'user__username', 'contenu__titre')
+    readonly_fields = ('user', 'contenu', 'created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Commentaire', {
+            'fields': ('contenu', 'user', 'texte')
+        }),
+        ('Validation', {
+            'fields': ('is_validated',)
+        }),
+        ('Dates', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def texte_preview(self, obj):
+        """Affiche un aperçu du texte du commentaire."""
+        return obj.texte[:50] + '...' if len(obj.texte) > 50 else obj.texte
+    texte_preview.short_description = 'Aperçu'
+    
+    actions = ['valider_commentaires', 'invalider_commentaires']
+    
+    def valider_commentaires(self, request, queryset):
+        """Action pour valider plusieurs commentaires."""
+        count = queryset.update(is_validated=True)
+        self.message_user(request, f'{count} commentaire(s) validé(s).')
+    valider_commentaires.short_description = "Valider les commentaires sélectionnés"
+    
+    def invalider_commentaires(self, request, queryset):
+        """Action pour invalider plusieurs commentaires."""
+        count = queryset.update(is_validated=False)
+        self.message_user(request, f'{count} commentaire(s) invalidé(s).')
+    invalider_commentaires.short_description = "Invalider les commentaires sélectionnés"
+
+
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    """Admin pour les likes."""
+    list_display = ('contenu', 'user', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('contenu__titre', 'user__username')
+    readonly_fields = ('contenu', 'user', 'created_at')

@@ -13,4 +13,5 @@ from .polls import PollViewSet  # noqa: F401
 from .moderation import ModerationReportViewSet  # noqa: F401
 from .audit import AuditLogViewSet  # noqa: F401
 from .intents import rejoindre, admin_data, export_intents, delete_intent  # noqa: F401
+from .content_views import ContenuEducatifViewSet, CommentaireViewSet  # noqa: F401
 

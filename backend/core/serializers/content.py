@@ -3,6 +3,7 @@ Sérialiseurs pour les contenus éducatifs, likes et commentaires.
 """
 
 from rest_framework import serializers
+from django.conf import settings
 
 from core.models import ContenuEducatif, Like, Commentaire
 
@@ -36,6 +37,14 @@ class ContenuEducatifSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('auteur', 'created_at', 'updated_at')
     
+    def get_fields(self):
+        """Rend is_validated en lecture seule sauf pour les admins."""
+        fields = super().get_fields()
+        request = self.context.get('request')
+        if request and not request.user.is_staff:
+            fields['is_validated'].read_only = True
+        return fields
+    
     def get_likes_count(self, obj):
         """Retourne le nombre de likes."""
         return obj.likes.count()
@@ -50,6 +59,19 @@ class ContenuEducatifSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(user=request.user).exists()
         return False
+    
+    def to_representation(self, instance):
+        """Surcharge pour construire l'URL complète du fichier."""
+        representation = super().to_representation(instance)
+        if representation.get('fichier'):
+            # Construire l'URL complète du fichier
+            request = self.context.get('request')
+            if request:
+                representation['fichier'] = request.build_absolute_uri(representation['fichier'])
+            else:
+                # Fallback si pas de request (peu probable)
+                representation['fichier'] = f"{settings.MEDIA_URL}{representation['fichier']}"
+        return representation
     
     def create(self, validated_data):
         """Assigne automatiquement l'auteur lors de la création."""
@@ -94,7 +116,15 @@ class CommentaireSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('user', 'is_validated', 'created_at', 'updated_at')
+        read_only_fields = ('user', 'created_at', 'updated_at')
+    
+    def get_fields(self):
+        """Rend is_validated en lecture seule sauf pour les admins."""
+        fields = super().get_fields()
+        request = self.context.get('request')
+        if request and not request.user.is_staff:
+            fields['is_validated'].read_only = True
+        return fields
     
     def create(self, validated_data):
         """Assigne automatiquement l'utilisateur lors de la création."""

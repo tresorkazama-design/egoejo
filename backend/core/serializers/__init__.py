@@ -10,4 +10,5 @@ from .chat import ChatThreadSerializer, ChatMessageSerializer  # noqa: F401
 from .polls import PollSerializer, PollOptionSerializer, PollVoteSerializer, PollBallotSerializer  # noqa: F401
 from .moderation import ModerationReportSerializer  # noqa: F401
 from .audit import AuditLogSerializer  # noqa: F401
+from .content import ContenuEducatifSerializer, LikeSerializer, CommentaireSerializer  # noqa: F401
 
