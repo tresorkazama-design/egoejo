@@ -42,6 +42,7 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+!.env.template
 
 # IDE
 .idea/
@@ -50,5 +51,21 @@ pnpm-debug.log*
 # Backups
 *.orig
 *.bak
+*.backup-*
+
+# Dossiers d'archive / anciens (exclure des scans)
+# frontend/backend/     # Ancien backend (optionnel : déplacer dans archive/)
+# frontend/admin-panel/ # Ancien admin panel (optionnel : déplacer dans archive/)
+# admin-panel/          # Ancien admin panel (optionnel : déplacer dans archive/)
+
+# Coverage et rapports
+htmlcov/
+.coverage
+*.coverage
+
+# Fichiers temporaires
+*.tmp
+*.temp
+runserver.log
 
 
