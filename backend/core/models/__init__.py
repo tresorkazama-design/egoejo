@@ -16,4 +16,5 @@ from .chat import ChatThread, ChatMembership, ChatMessage  # noqa: F401
 from .polls import Poll, PollOption, PollBallot  # noqa: F401
 from .moderation import ModerationReport  # noqa: F401
 from .audit import AuditLog  # noqa: F401
+from .content import ContenuEducatif, Like, Commentaire  # noqa: F401
 
