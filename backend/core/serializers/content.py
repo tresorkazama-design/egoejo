@@ -1,135 +1,69 @@
-"""
-Sérialiseurs pour les contenus éducatifs, likes et commentaires.
-"""
-
 from rest_framework import serializers
-from django.conf import settings
-
-from core.models import ContenuEducatif, Like, Commentaire
+from core.models import EducationalContent, ContentLike, ContentComment
 
 
-class ContenuEducatifSerializer(serializers.ModelSerializer):
-    """Serializer pour les contenus éducatifs."""
-    
-    type_contenu_display = serializers.CharField(source='get_type_contenu_display', read_only=True)
-    auteur_username = serializers.CharField(source='auteur.username', read_only=True, allow_null=True)
-    likes_count = serializers.SerializerMethodField()
-    commentaires_count = serializers.SerializerMethodField()
-    user_has_liked = serializers.SerializerMethodField()
-    
+class EducationalContentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ContenuEducatif
-        fields = (
-            'id',
-            'titre',
-            'description',
-            'type_contenu',
-            'type_contenu_display',
-            'fichier',
-            'auteur',
-            'auteur_username',
-            'is_validated',
-            'likes_count',
-            'commentaires_count',
-            'user_has_liked',
-            'created_at',
-            'updated_at',
-        )
-        read_only_fields = ('auteur', 'created_at', 'updated_at')
-    
-    def get_fields(self):
-        """Rend is_validated en lecture seule sauf pour les admins."""
-        fields = super().get_fields()
-        request = self.context.get('request')
-        if request and not request.user.is_staff:
-            fields['is_validated'].read_only = True
-        return fields
-    
-    def get_likes_count(self, obj):
-        """Retourne le nombre de likes."""
-        return obj.likes.count()
-    
-    def get_commentaires_count(self, obj):
-        """Retourne le nombre de commentaires validés."""
-        return obj.commentaires.filter(is_validated=True).count()
-    
-    def get_user_has_liked(self, obj):
-        """Vérifie si l'utilisateur actuel a liké ce contenu."""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.likes.filter(user=request.user).exists()
-        return False
-    
-    def to_representation(self, instance):
-        """Surcharge pour construire l'URL complète du fichier."""
-        representation = super().to_representation(instance)
-        if representation.get('fichier'):
-            # Construire l'URL complète du fichier
-            request = self.context.get('request')
-            if request:
-                representation['fichier'] = request.build_absolute_uri(representation['fichier'])
-            else:
-                # Fallback si pas de request (peu probable)
-                representation['fichier'] = f"{settings.MEDIA_URL}{representation['fichier']}"
-        return representation
-    
-    def create(self, validated_data):
-        """Assigne automatiquement l'auteur lors de la création."""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            validated_data['auteur'] = request.user
-        return super().create(validated_data)
+        model = EducationalContent
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "type",
+            "status",
+            "description",
+            "external_url",
+            "file",
+            "created_at",
+            "likes_count",
+            "comments_count",
+        ]
+        read_only_fields = ("status", "created_at", "likes_count", "comments_count")
 
 
-class LikeSerializer(serializers.ModelSerializer):
-    """Serializer pour les likes."""
-    
-    user_username = serializers.CharField(source='user.username', read_only=True)
-    
+class ContentCommentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Like
-        fields = ('id', 'contenu', 'user', 'user_username', 'created_at')
-        read_only_fields = ('user', 'created_at')
-    
-    def create(self, validated_data):
-        """Assigne automatiquement l'utilisateur lors de la création."""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            validated_data['user'] = request.user
-        return super().create(validated_data)
+        model = ContentComment
+        fields = [
+            "id",
+            "text",
+            "display_name",
+            "created_at",
+        ]
+        read_only_fields = ("created_at",)
 
 
-class CommentaireSerializer(serializers.ModelSerializer):
-    """Serializer pour les commentaires."""
-    
-    user_username = serializers.CharField(source='user.username', read_only=True, allow_null=True)
-    
+class ContentLikeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Commentaire
-        fields = (
-            'id',
-            'contenu',
-            'user',
-            'user_username',
-            'texte',
-            'is_validated',
-            'created_at',
-            'updated_at',
-        )
-        read_only_fields = ('user', 'created_at', 'updated_at')
-    
-    def get_fields(self):
-        """Rend is_validated en lecture seule sauf pour les admins."""
-        fields = super().get_fields()
-        request = self.context.get('request')
-        if request and not request.user.is_staff:
-            fields['is_validated'].read_only = True
-        return fields
-    
-    def create(self, validated_data):
-        """Assigne automatiquement l'utilisateur lors de la création."""
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            validated_data['user'] = request.user
-        return super().create(validated_data)
+        model = ContentLike
+        fields = [
+            "id",
+            "content",
+            "created_at",
+        ]
+        read_only_fields = ("created_at",)
+
+
+# -------------------------------------------------------------------
+# Compatibilité avec l'ancien code : alias vers les nouveaux serializers
+# -------------------------------------------------------------------
+
+
+class ContenuEducatifSerializer(EducationalContentSerializer):
+    class Meta(EducationalContentSerializer.Meta):
+        pass
+
+
+class CommentaireSerializer(ContentCommentSerializer):
+    class Meta(ContentCommentSerializer.Meta):
+        pass
+
+
+class LikeSerializer(ContentLikeSerializer):
+    class Meta(ContentLikeSerializer.Meta):
+        pass
+
+
+
+
 

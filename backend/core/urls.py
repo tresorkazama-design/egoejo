@@ -1,5 +1,11 @@
-from django.urls import include, path
+﻿from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from core.api.engagement_views import EngagementViewSet
+from core.api.help_views import HelpRequestViewSet
+from core.api.content_views import EducationalContentViewSet
+from core.api.auth_views import RegisterView, CurrentUserView
 
 from .views import (
     CagnotteListCreate,
@@ -14,26 +20,42 @@ from .views import (
     PollViewSet,
     ModerationReportViewSet,
     AuditLogViewSet,
-    ContenuEducatifViewSet,
-    CommentaireViewSet,
 )
 
 router = DefaultRouter()
-router.register('chat/threads', ChatThreadViewSet, basename='chat-thread')
-router.register('chat/messages', ChatMessageViewSet, basename='chat-message')
-router.register('polls', PollViewSet, basename='poll')
-router.register('moderation/reports', ModerationReportViewSet, basename='moderation-report')
-router.register('audit/logs', AuditLogViewSet, basename='audit-log')
-router.register('contenus-educatifs', ContenuEducatifViewSet, basename='contenu-educatif')
-router.register('commentaires', CommentaireViewSet, basename='commentaire')
+
+# Chat
+router.register(r"chat/threads", ChatThreadViewSet, basename="chat-thread")
+router.register(r"chat/messages", ChatMessageViewSet, basename="chat-message")
+
+# Sondages / modération / audit
+router.register(r"polls", PollViewSet, basename="poll")
+router.register(r"moderation/reports", ModerationReportViewSet, basename="moderation-report")
+router.register(r"audit/logs", AuditLogViewSet, basename="audit-log")
+
+# Contenus éducatifs
+router.register(r"contents", EducationalContentViewSet, basename="content")
+
+# Aide & engagement
+router.register(r"help-requests", HelpRequestViewSet, basename="help-request")
+router.register(r"engagements", EngagementViewSet, basename="engagement")
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('projets/', ProjetListCreate.as_view(), name='projet-list-create'),
-    path('cagnottes/', CagnotteListCreate.as_view(), name='cagnotte-list-create'),
-    path('cagnottes/<int:pk>/contribute/', contribute, name='cagnotte-contribute'),
-    path('intents/rejoindre/', rejoindre, name='intent-rejoindre'),
-    path('intents/admin/', admin_data, name='intent-admin-data'),
-    path('intents/export/', export_intents, name='intent-export'),
-    path('intents/<int:intent_id>/delete/', delete_intent, name='intent-delete'),
+    # Toutes les routes issues du router DRF (chat, polls, contents, help, engagements, etc.)
+    path("", include(router.urls)),
+
+    # --- AUTHENTIFICATION (JWT) ---
+    path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("auth/register/", RegisterView.as_view(), name="auth_register"),
+    path("auth/me/", CurrentUserView.as_view(), name="auth_me"),
+
+    # --- AUTRES VUES ---
+    path("projets/", ProjetListCreate.as_view(), name="projet-list-create"),
+    path("cagnottes/", CagnotteListCreate.as_view(), name="cagnotte-list-create"),
+    path("cagnottes/<int:pk>/contribute/", contribute, name="cagnotte-contribute"),
+    path("intents/rejoindre/", rejoindre, name="intent-rejoindre"),
+    path("intents/admin/", admin_data, name="intent-admin-data"),
+    path("intents/export/", export_intents, name="intent-export"),
+    path("intents/<int:intent_id>/delete/", delete_intent, name="intent-delete"),
 ]

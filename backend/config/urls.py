@@ -85,3 +85,15 @@ from django.conf.urls.static import static
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# --- Routes ajoutées pour les contenus éducatifs (Dashboard) ---
+from core.api.content_views import EducationalContentViewSet
+
+educational_content_list = EducationalContentViewSet.as_view({
+    "get": "list",
+    "post": "create",
+})
+
+urlpatterns += [
+    path("api/contents/", educational_content_list, name="educationalcontent-list"),
+]
+# --- Fin ajout contenus éducatifs ---
