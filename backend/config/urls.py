@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.db import connection
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 import logging
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
     path('api/health/', health_check, name='health-check'),
+    # OpenAPI/Swagger documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
 from django.conf import settings
 from django.conf.urls.static import static

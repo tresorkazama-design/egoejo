@@ -1,6 +1,6 @@
 # Core Django
-Django>=4.2,<5.0
-djangorestframework>=3.14.0
+Django>=5.0,<6.0
+djangorestframework>=3.15.0
 djangorestframework-simplejwt>=5.2.0
 
 # Database
@@ -39,3 +39,13 @@ daphne>=4.0.0
 
 # Static files
 whitenoise>=6.6.0
+
+# Security
+django-csp>=3.8
+
+# API Documentation
+drf-spectacular>=0.27.0
+
+# Security tools (dev only)
+bandit>=1.7.5
+safety>=2.3.5

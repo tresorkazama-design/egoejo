@@ -6,6 +6,8 @@ from core.api.engagement_views import EngagementViewSet
 from core.api.help_views import HelpRequestViewSet
 from core.api.content_views import EducationalContentViewSet
 from core.api.auth_views import RegisterView, CurrentUserView
+from core.api.token_views import RefreshTokenView
+from core.api.security_views import SecurityAuditView, SecurityMetricsView
 
 from .views import (
     CagnotteListCreate,
@@ -46,10 +48,14 @@ urlpatterns = [
 
     # --- AUTHENTIFICATION (JWT) ---
     path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("auth/refresh/", RefreshTokenView.as_view(), name="token_refresh"),  # Rotation des tokens
     path("auth/register/", RegisterView.as_view(), name="auth_register"),
     path("auth/me/", CurrentUserView.as_view(), name="auth_me"),
 
+    # --- SÉCURITÉ (Admin uniquement) ---
+    path("security/audit/", SecurityAuditView.as_view(), name="security-audit"),
+    path("security/metrics/", SecurityMetricsView.as_view(), name="security-metrics"),
+    
     # --- AUTRES VUES ---
     path("projets/", ProjetListCreate.as_view(), name="projet-list-create"),
     path("cagnottes/", CagnotteListCreate.as_view(), name="cagnotte-list-create"),

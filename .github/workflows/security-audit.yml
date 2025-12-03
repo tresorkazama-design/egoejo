@@ -1,0 +1,76 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 0 * * 0'  # Tous les dimanches
+
+jobs:
+  frontend-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd frontend/frontend
+          npm ci
+      
+      - name: Run npm audit
+        run: |
+          cd frontend/frontend
+          npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Check for secrets
+        run: |
+          if grep -r "password\|secret\|token\|api_key" --include="*.js" --include="*.jsx" frontend/frontend/src/ | grep -v "node_modules" | grep -v ".test." | grep -v "logger"; then
+            echo "⚠️  Attention: Vérifiez qu'aucun secret n'est commité"
+            exit 1
+          fi
+
+  backend-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install bandit safety
+          pip install -r requirements.txt
+      
+      - name: Run Bandit (security linter)
+        run: |
+          cd backend
+          bandit -r core/ -f json -o bandit-report.json || true
+          bandit -r core/ -ll
+        continue-on-error: true
+      
+      - name: Run Safety (check dependencies)
+        run: |
+          cd backend
+          safety check --json || true
+          safety check
+        continue-on-error: true
+      
+      - name: Check for secrets
+        run: |
+          if grep -r "password\|secret\|token\|api_key" --include="*.py" backend/core/ | grep -v "node_modules" | grep -v ".test." | grep -v "logger" | grep -v "settings.py" | grep -v "env.template"; then
+            echo "⚠️  Attention: Vérifiez qu'aucun secret n'est commité"
+            exit 1
+          fi
+

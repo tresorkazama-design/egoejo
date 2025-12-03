@@ -68,4 +68,14 @@ htmlcov/
 *.temp
 runserver.log
 
+# Fichiers média volumineux (trop gros pour GitHub)
+backend/media/projets/*.mp4
+backend/media/projets/*.mov
+backend/media/projets/*.avi
+backend/media/projets/*.mkv
+*.mp4
+*.mov
+*.avi
+*.mkv
+
 

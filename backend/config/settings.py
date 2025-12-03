@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'csp',  # Content Security Policy
+    'drf_spectacular',  # OpenAPI/Swagger documentation
     'rest_framework_simplejwt.token_blacklist',
     'core',
 ]
@@ -72,6 +74,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'csp.middleware.CSPMiddleware',  # Content Security Policy
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -116,6 +119,30 @@ else:
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
+
+# ======================
+# CACHING
+# ======================
+# Utiliser Redis pour le cache si disponible, sinon cache en mémoire
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL.replace('/0', '/1'),  # Utiliser la DB 1 pour le cache (DB 0 pour Channels)
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'egoejo',
+            'TIMEOUT': 300,  # 5 minutes par défaut
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
         }
     }
 
@@ -245,6 +272,7 @@ if os.environ.get('DISABLE_THROTTLE_FOR_TESTS') == '1':
         'DEFAULT_AUTHENTICATION_CLASSES': _auth_classes,
         'DEFAULT_THROTTLE_CLASSES': [],
         'DEFAULT_THROTTLE_RATES': {},
+        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     }
 else:
     REST_FRAMEWORK = {
@@ -252,12 +280,28 @@ else:
         'DEFAULT_THROTTLE_CLASSES': [
             'rest_framework.throttling.AnonRateThrottle',
             'rest_framework.throttling.UserRateThrottle',
+            # 'core.api.rate_limiting.IPRateThrottle',  # Décommenter si nécessaire
         ],
         'DEFAULT_THROTTLE_RATES': {
             'anon': os.environ.get('THROTTLE_ANON', '10/minute'),
             'user': os.environ.get('THROTTLE_USER', '100/minute'),
+            'ip': os.environ.get('THROTTLE_IP', '100/hour'),  # Limite par IP
         },
+        'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     }
+
+# ======================
+# OPENAPI / SWAGGER (drf-spectacular)
+# ======================
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'EGOEJO API',
+    'DESCRIPTION': 'API pour le collectif EGOEJO - Relier des citoyens à des projets sociaux à fort impact',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'COMPONENT_SPLIT_REQUEST': True,
+    'COMPONENT_NO_READ_ONLY_REQUIRED': True,
+}
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(
@@ -268,7 +312,7 @@ SIMPLE_JWT = {
     ),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('JWT',),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 # ======================
