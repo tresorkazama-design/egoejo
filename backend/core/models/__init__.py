@@ -11,4 +11,5 @@ from .audit import AuditLog  # noqa: F401
 from .content import EducationalContent, ContentLike, ContentComment  # noqa: F401
 from .help import HelpRequest  # noqa: F401
 from .engagement import Engagement  # noqa: F401
+from .monitoring import PerformanceMetric, MonitoringAlert  # noqa: F401
 

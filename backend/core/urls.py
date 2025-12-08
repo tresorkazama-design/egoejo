@@ -8,6 +8,8 @@ from core.api.content_views import EducationalContentViewSet
 from core.api.auth_views import RegisterView, CurrentUserView
 from core.api.token_views import RefreshTokenView
 from core.api.security_views import SecurityAuditView, SecurityMetricsView
+from core.api.gdpr_views import DataExportView, DataDeleteView
+from core.api.monitoring_views import MetricsView, AlertsView, MetricsStatsView, AlertsListView
 
 from .views import (
     CagnotteListCreate,
@@ -55,6 +57,16 @@ urlpatterns = [
     # --- SÉCURITÉ (Admin uniquement) ---
     path("security/audit/", SecurityAuditView.as_view(), name="security-audit"),
     path("security/metrics/", SecurityMetricsView.as_view(), name="security-metrics"),
+    
+    # --- GDPR/RGPD (Utilisateur authentifié) ---
+    path("user/data-export/", DataExportView.as_view(), name="user-data-export"),
+    path("user/data-delete/", DataDeleteView.as_view(), name="user-data-delete"),
+    
+    # --- MONITORING & ANALYTICS ---
+    path("analytics/metrics/", MetricsView.as_view(), name="analytics-metrics"),
+    path("monitoring/alerts/", AlertsView.as_view(), name="monitoring-alerts"),
+    path("monitoring/metrics/stats/", MetricsStatsView.as_view(), name="monitoring-metrics-stats"),
+    path("monitoring/alerts/list/", AlertsListView.as_view(), name="monitoring-alerts-list"),
     
     # --- AUTRES VUES ---
     path("projets/", ProjetListCreate.as_view(), name="projet-list-create"),

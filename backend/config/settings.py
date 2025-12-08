@@ -74,6 +74,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'core.security.middleware.SecurityHeadersMiddleware',  # Headers de sécurité renforcés
+    'core.security.middleware.DataProtectionMiddleware',  # Protection des données sensibles
     'csp.middleware.CSPMiddleware',  # Content Security Policy
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -201,11 +203,25 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ======================
-# SECURITY
+# SECURITY - RENFORCÉE
 # ======================
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Headers de sécurité supplémentaires
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Protection des cookies
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'  # Protection CSRF
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Timeout de session (30 minutes)
+SESSION_COOKIE_AGE = 1800
+SESSION_SAVE_EVERY_REQUEST = True  # Renouveler le cookie à chaque requête
 
 # ======================
 # STATIC & MEDIA
@@ -335,6 +351,11 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+        },
+    },
+    'filters': {
+        'mask_sensitive': {
+            '()': 'core.security.logging.SecureFormatter',
         },
     },
     'root': {
