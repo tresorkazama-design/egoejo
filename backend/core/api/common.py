@@ -83,18 +83,28 @@ def require_admin_token(request):
         logger.error("ADMIN_TOKEN is not configured in environment.")
         return None
 
-    token = (
-        request.GET.get("token")
-        or request.headers.get("X-Admin-Token")
-        or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-    )
+    # Essayer plusieurs méthodes pour obtenir le token
+    # 1. Query parameter
+    token = request.GET.get("token")
+    
+    # 2. Header X-Admin-Token (via request.META pour compatibilité tests)
+    if not token:
+        token = request.META.get("HTTP_X_ADMIN_TOKEN") or request.headers.get("X-Admin-Token")
+    
+    # 3. Header Authorization Bearer (via request.META pour compatibilité tests)
+    if not token:
+        auth_header = request.META.get("HTTP_AUTHORIZATION") or request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "").strip()
+        elif auth_header.startswith("bearer "):
+            token = auth_header.replace("bearer ", "").strip()
 
     if not token:
-        logger.warning("No admin token provided in request.")
+        logger.warning("No admin token provided in request. META keys: %s", list(request.META.keys())[:10])
         return None
 
     if token != expected:
-        logger.warning("Invalid admin token provided.")
+        logger.warning("Invalid admin token provided. Expected: %s, Got: %s", expected, token)
         return None
 
     return token

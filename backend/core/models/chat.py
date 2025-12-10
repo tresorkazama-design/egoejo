@@ -10,7 +10,23 @@ from .common import default_metadata
 
 
 class ChatThread(models.Model):
+    THREAD_TYPE_GENERAL = 'GENERAL'
+    THREAD_TYPE_PROJECT = 'PROJECT'
+    THREAD_TYPE_SUPPORT_CONCIERGE = 'SUPPORT_CONCIERGE'
+    
+    THREAD_TYPE_CHOICES = [
+        (THREAD_TYPE_GENERAL, 'Général'),
+        (THREAD_TYPE_PROJECT, 'Projet'),
+        (THREAD_TYPE_SUPPORT_CONCIERGE, 'Support Concierge'),
+    ]
+    
     title = models.CharField(max_length=255, blank=True)
+    thread_type = models.CharField(
+        max_length=20,
+        choices=THREAD_TYPE_CHOICES,
+        default=THREAD_TYPE_GENERAL,
+        help_text="Type de thread (GENERAL, PROJECT, SUPPORT_CONCIERGE)"
+    )
     project = models.ForeignKey(
         "core.Projet",
         on_delete=models.SET_NULL,
@@ -37,6 +53,14 @@ class ChatThread(models.Model):
     class Meta:
         ordering = ["-last_message_at", "-created_at"]
         app_label = "core"
+        # Un seul thread SUPPORT_CONCIERGE par utilisateur
+        constraints = [
+            models.UniqueConstraint(
+                fields=['created_by', 'thread_type'],
+                condition=models.Q(thread_type='SUPPORT_CONCIERGE'),
+                name='unique_support_concierge_per_user'
+            )
+        ]
 
     def __str__(self):
         return self.title or f"Thread #{self.pk}"

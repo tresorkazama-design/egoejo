@@ -1,0 +1,11 @@
+# Solution : Configurer Root Directory dans Vercel
+
+# Option 1 : Via l'interface web (RECOMMANDE)
+# 1. Aller sur : https://vercel.com/kazamas-projects-67d737b9/frontend/settings/general
+# 2. Root Directory : frontend/frontend
+# 3. Save
+# 4. Redeploy
+
+# Option 2 : Créer vercel.json à la racine
+# (Voir FIX_ROOT_DIRECTORY_VERCEL.md)
+

@@ -1,0 +1,98 @@
+name: Tests EGOEJO
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        # CORRECTION Chantier 3 : Matrix Testing pour V1.6 et V2.0
+        # Teste les deux modes (Dons uniquement et Investissement activé)
+        investment_features: ['True', 'False']
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: egotest
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+      
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest
+          SECRET_KEY: test-secret-key-for-ci-testing-only-min-50-chars-required
+        run: |
+          cd backend
+          python manage.py migrate
+      
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-ci-testing-only-min-50-chars-required
+          # CORRECTION Chantier 3 : Variable d'environnement pour tester les deux modes
+          ENABLE_INVESTMENT_FEATURES: ${{ matrix.investment_features }}
+          EGOEJO_COMMISSION_RATE: 0.05
+          STRIPE_FEE_ESTIMATE: 0.03
+          FOUNDER_GROUP_NAME: Founders_V1_Protection
+        run: |
+          cd backend
+          pytest -v --tb=short
+      
+      - name: Test investment API blocked (si feature désactivée)
+        if: matrix.investment_features == 'False'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest
+          SECRET_KEY: test-secret-key-for-ci-testing-only-min-50-chars-required
+          ENABLE_INVESTMENT_FEATURES: False
+        run: |
+          cd backend
+          python manage.py shell -c "
+          from django.test import Client
+          from django.contrib.auth import get_user_model
+          User = get_user_model()
+          user = User.objects.create_user('test', 'test@test.com', 'test')
+          client = Client()
+          client.force_login(user)
+          response = client.get('/api/investment/shareholders/')
+          assert response.status_code == 403, f'API investment devrait être bloquée (403), reçu {response.status_code}'
+          print('✅ API investment correctement bloquée quand feature désactivée')
+          "
+

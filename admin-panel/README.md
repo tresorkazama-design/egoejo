@@ -1,1 +1,0 @@
-Admin panel (React) placeholder. Configure to connect to API at /api/.

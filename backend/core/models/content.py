@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+import hashlib
 
 User = settings.AUTH_USER_MODEL
 
@@ -27,10 +28,34 @@ class EducationalContent(models.Model):
       ("rejected", "Rejeté"),
   ]
 
+  CATEGORY_CHOICES = [
+      ("ressources", "Ressources"),
+      ("guides", "Guides"),
+      ("videos", "Vidéos"),
+      ("racines-philosophie", "Racines & Philosophie"),
+      ("autres", "Autres"),
+  ]
+
   title = models.CharField(max_length=255)
   slug = models.SlugField(max_length=255, unique=True)
   type = models.CharField(max_length=20, choices=CONTENT_TYPES, default="article")
   status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+  category = models.CharField(
+      max_length=50,
+      choices=CATEGORY_CHOICES,
+      default="autres",
+      help_text="Catégorie du contenu (ex: Racines & Philosophie pour Steiner, Biodynamie)"
+  )
+  tags = models.JSONField(
+      default=list,
+      blank=True,
+      help_text="Tags comme 'Steiner', 'Biodynamie', etc."
+  )
+  embedding = models.JSONField(
+      blank=True,
+      null=True,
+      help_text="Vecteur d'embedding pour recherche sémantique (pgvector future)"
+  )
 
   author = models.ForeignKey(
       User,
@@ -63,6 +88,27 @@ class EducationalContent(models.Model):
       help_text="Lien externe (YouTube, Spotify, site…) si pas de fichier uploadé.",
   )
 
+  # Fichier audio généré (TTS) ⭐ NOUVEAU v1.5.0
+  audio_file = models.FileField(
+      upload_to="educational_contents/audio/",
+      blank=True,
+      null=True,
+      help_text="Fichier audio généré automatiquement (TTS) pour accessibilité terrain.",
+  )
+  # Hash du texte ayant servi à générer l'audio (évite régénérations payantes)
+  audio_source_hash = models.CharField(
+      max_length=64,
+      blank=True,
+      help_text="SHA-256 du texte source utilisé pour le TTS (pour éviter les doublons)."
+  )
+
+  # Hash du texte ayant servi à générer l'embedding (évite régénérations payantes)
+  embedding_source_hash = models.CharField(
+      max_length=64,
+      blank=True,
+      help_text="SHA-256 du texte source utilisé pour l'embedding (pour éviter les doublons)."
+  )
+
   # Lien éventuel vers un projet EGOEJO
   project = models.ForeignKey(
       "core.Projet",
@@ -89,6 +135,14 @@ class EducationalContent(models.Model):
   @property
   def comments_count(self):
       return self.comments.count()
+
+  # Helpers de hash (pour TTS / embeddings)
+  def compute_text_hash(self):
+      """
+      Calcule le hash du texte (titre + description) pour éviter les recalculs coûteux.
+      """
+      text = (self.title or "") + "\n" + (self.description or "")
+      return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 class ContentLike(models.Model):

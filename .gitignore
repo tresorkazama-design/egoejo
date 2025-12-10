@@ -79,3 +79,5 @@ backend/media/projets/*.mkv
 *.mkv
 
 
+admin-panel-legacy-*.zip
+audit-report-*.json

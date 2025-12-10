@@ -125,34 +125,105 @@ class PollViewSet(viewsets.ModelViewSet):
 
         serializer = PollVoteSerializer(data=request.data, context={"poll": poll})
         serializer.is_valid(raise_exception=True)
-        option_ids = serializer.validated_data["options"]
         voter_hash = build_voter_hash(request, poll)
+        option_ids = []  # Pour log_action
+        votes_data = []  # Pour log_action
+        rankings_data = []  # Pour log_action
 
-        PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).exclude(option_id__in=option_ids).delete()
+        # Gérer selon la méthode de vote
+        if poll.voting_method == 'quadratic':
+            # Vote Quadratique : points distribués
+            votes_data = request.data.get("votes", [])  # [{option_id: 1, points: 25}, ...]
+            max_points = poll.max_points or 100
+            total_points = sum(v.get('points', 0) for v in votes_data)
+            
+            if total_points > max_points:
+                return Response({
+                    "detail": f"Total de points ({total_points}) dépasse le maximum ({max_points})"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Supprimer les anciens votes
+            PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).delete()
+            
+            # Créer les nouveaux votes avec points
+            for vote_data in votes_data:
+                option_id = vote_data.get('option_id')
+                points = vote_data.get('points', 0)
+                if points > 0:
+                    option = poll.options.get(pk=option_id)
+                    metadata = {"ts": now.isoformat(), "points": points}
+                    if not poll.is_anonymous:
+                        metadata["user_id"] = request.user.pk
+                    PollBallot.objects.create(
+                        poll=poll,
+                        option=option,
+                        voter_hash=voter_hash,
+                        points=points,
+                        metadata=metadata,
+                    )
+                    option_ids.append(option_id)
+        
+        elif poll.voting_method == 'majority':
+            # Jugement Majoritaire : classement
+            rankings_data = request.data.get("rankings", [])  # [{option_id: 1, ranking: 1}, ...]
+            
+            # Supprimer les anciens votes
+            PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).delete()
+            
+            # Créer les votes avec classement
+            for rank_data in rankings_data:
+                option_id = rank_data.get('option_id')
+                ranking = rank_data.get('ranking')
+                option = poll.options.get(pk=option_id)
+                metadata = {"ts": now.isoformat(), "ranking": ranking}
+                if not poll.is_anonymous:
+                    metadata["user_id"] = request.user.pk
+                PollBallot.objects.create(
+                    poll=poll,
+                    option=option,
+                    voter_hash=voter_hash,
+                    ranking=ranking,
+                    metadata=metadata,
+                )
+                option_ids.append(option_id)
+        
+        else:
+            # Vote Binaire (défaut)
+            option_ids = serializer.validated_data["options"]
+            PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).exclude(option_id__in=option_ids).delete()
 
-        for option_id in option_ids:
-            option = poll.options.get(pk=option_id)
-            metadata = {"ts": now.isoformat()}
-            if not poll.is_anonymous:
-                metadata["user_id"] = request.user.pk
-            PollBallot.objects.update_or_create(
-                poll=poll,
-                option=option,
-                voter_hash=voter_hash,
-                defaults={"metadata": metadata},
-            )
+            for option_id in option_ids:
+                option = poll.options.get(pk=option_id)
+                metadata = {"ts": now.isoformat()}
+                if not poll.is_anonymous:
+                    metadata["user_id"] = request.user.pk
+                PollBallot.objects.update_or_create(
+                    poll=poll,
+                    option=option,
+                    voter_hash=voter_hash,
+                    defaults={"metadata": metadata},
+                )
 
         broadcast_to_group(
             f"poll_{poll.pk}",
             "poll_update",
             PollSerializer(poll, context={"request": request}).data,
         )
+        # Log action avec les bonnes données selon la méthode
+        log_data = {"hash": voter_hash}
+        if poll.voting_method == 'quadratic':
+            log_data["votes"] = votes_data
+        elif poll.voting_method == 'majority':
+            log_data["rankings"] = rankings_data
+        else:
+            log_data["options"] = option_ids
+        
         log_action(
             request.user,
             "poll_vote",
             "poll",
             poll.pk,
-            {"options": option_ids, "hash": voter_hash},
+            log_data,
         )
         return Response(self.get_serializer(poll).data)
 

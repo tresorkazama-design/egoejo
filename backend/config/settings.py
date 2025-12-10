@@ -69,6 +69,8 @@ INSTALLED_APPS = [
     'drf_spectacular',  # OpenAPI/Swagger documentation
     'rest_framework_simplejwt.token_blacklist',
     'core',
+    'finance',  # Système financier unifié (V1.6 + V2.0 dormant)
+    'investment',  # Investissement (V2.0 dormant)
 ]
 
 MIDDLEWARE = [
@@ -234,8 +236,57 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Configuration des médias (upload utilisateurs)
+# Utiliser R2/S3 en production, système de fichiers local en développement
+USE_S3_STORAGE = os.environ.get('USE_S3_STORAGE', 'False').lower() == 'true'
+
+if USE_S3_STORAGE:
+    # Configuration Cloudflare R2 (compatible S3) ou AWS S3
+    # Variables d'environnement requises :
+    # - R2_ACCESS_KEY_ID ou AWS_ACCESS_KEY_ID
+    # - R2_SECRET_ACCESS_KEY ou AWS_SECRET_ACCESS_KEY
+    # - R2_BUCKET_NAME ou AWS_STORAGE_BUCKET_NAME
+    # - R2_ENDPOINT_URL (pour R2 uniquement, ex: https://xxx.r2.cloudflarestorage.com)
+    # - R2_CUSTOM_DOMAIN (optionnel, pour CDN)
+    
+    INSTALLED_APPS.append('storages')
+    
+    AWS_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID') or os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY') or os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME') or os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    
+    # Configuration spécifique R2 (Cloudflare)
+    R2_ENDPOINT_URL = os.environ.get('R2_ENDPOINT_URL')
+    if R2_ENDPOINT_URL:
+        AWS_S3_ENDPOINT_URL = R2_ENDPOINT_URL
+        AWS_S3_CUSTOM_DOMAIN = os.environ.get('R2_CUSTOM_DOMAIN')
+        AWS_S3_REGION_NAME = 'auto'  # R2 utilise 'auto'
+    else:
+        # Configuration AWS S3 standard
+        AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
+    
+    # Paramètres de stockage
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',  # 24 heures
+    }
+    AWS_DEFAULT_ACL = os.environ.get('AWS_DEFAULT_ACL', 'public-read')  # 'public-read' ou 'private'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_QUERYSTRING_AUTH = False
+    
+    # Utiliser R2/S3 pour les médias
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    # URL des médias
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+    else:
+        MEDIA_URL = f'{AWS_S3_ENDPOINT_URL or f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"}/'
+    
+    MEDIA_ROOT = ''  # Non utilisé avec S3
+else:
+    # Stockage local (développement uniquement)
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # ======================
 # CORS & CSRF
@@ -410,4 +461,19 @@ else:
         'SECURE_HSTS_INCLUDE_SUBDOMAINS', '1'
     ) == '1'
     SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', '1') == '1'
+
+# ==============================================
+# EGOEJO FEATURE FLAGS (Le Cerveau Hybride)
+# ==============================================
+# Si False : Mode V1.6 (Dons uniquement, interface simplifiée)
+# Si True  : Mode V2.0 (Investissement, KYC, Actions, Signatures)
+ENABLE_INVESTMENT_FEATURES = os.environ.get('ENABLE_INVESTMENT_FEATURES', 'False').lower() == 'true'
+
+# Modèle Économique (5% + 3%)
+EGOEJO_COMMISSION_RATE = float(os.environ.get('EGOEJO_COMMISSION_RATE', '0.05'))  # 5%
+STRIPE_FEE_ESTIMATE = float(os.environ.get('STRIPE_FEE_ESTIMATE', '0.03'))  # 3%
+
+# Sécurité Fondateur
+# CORRECTION 3 : Nom unique et explicite pour éviter magic strings
+FOUNDER_GROUP_NAME = os.environ.get('FOUNDER_GROUP_NAME', 'Founders_V1_Protection')
 
