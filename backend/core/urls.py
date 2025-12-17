@@ -36,6 +36,14 @@ from core.api.config_views import FeaturesConfigView  # Feature flags V1.6/V2.0
 from investment.views import ShareholderRegisterViewSet  # V2.0 dormant (protégé par permission)
 from core.api import saka_views  # Phase 3 SAKA : Compostage & Silo Commun
 from core.api import communities_views  # Communautés (subsidiarité)
+from core.api.saka_metrics_views import (  # Métriques SAKA pour monitoring
+    SakaCompostMetricsView,
+    SakaRedistributionMetricsView,
+    SakaSiloMetricsView,
+    SakaGlobalMetricsView,
+    SakaCycleMetricsView,
+    SakaAllMetricsView,
+)
 
 router = DefaultRouter()
 
@@ -121,6 +129,14 @@ urlpatterns = [
           path("saka/compost-logs/", saka_views.saka_compost_logs_view, name="saka-compost-logs"),  # Admin uniquement - Audit logs
           path("saka/cycles/", saka_views.saka_cycles_view, name="saka-cycles"),  # Liste des cycles SAKA avec stats
           path("saka/redistribute/", saka_views.saka_redistribute_view, name="saka-redistribute"),  # Admin uniquement - Redistribution Silo (avec rate optionnel)
+          
+          # --- SAKA METRICS (Admin uniquement - Monitoring) ---
+          path("saka/metrics/compost/", SakaCompostMetricsView.as_view(), name="saka-metrics-compost"),
+          path("saka/metrics/redistribution/", SakaRedistributionMetricsView.as_view(), name="saka-metrics-redistribution"),
+          path("saka/metrics/silo/", SakaSiloMetricsView.as_view(), name="saka-metrics-silo"),
+          path("saka/metrics/global/", SakaGlobalMetricsView.as_view(), name="saka-metrics-global"),
+          path("saka/metrics/cycles/", SakaCycleMetricsView.as_view(), name="saka-metrics-cycles"),
+          path("saka/metrics/all/", SakaAllMetricsView.as_view(), name="saka-metrics-all"),  # Toutes les métriques en une requête
           
           # --- COMMUNAUTÉS (V1 - Lecture seule) ---
           path("communities/", communities_views.community_list_view, name="community-list"),

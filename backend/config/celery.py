@@ -46,6 +46,21 @@ app.conf.beat_schedule = {
         'task': 'core.tasks.run_saka_silo_redistribution',
         'schedule': crontab(hour=4, minute=0, day_of_month=1),  # 1er du mois à 4h
     },
+    # Monitoring : Vérification santé Celery Beat (tous les jours à 2h UTC)
+    'check-celery-beat-health': {
+        'task': 'core.tasks.check_celery_beat_health',
+        'schedule': crontab(hour=2, minute=0),  # Tous les jours à 2h
+    },
+    # Monitoring : Vérification échecs compostage (après chaque cycle, lundi à 3h30)
+    'check-compost-failures': {
+        'task': 'core.tasks.check_compost_failures',
+        'schedule': crontab(hour=3, minute=30, day_of_week=1),  # Lundi à 3h30
+    },
+    # Monitoring : Vérification santé Redis (toutes les heures)
+    'check-redis-health': {
+        'task': 'core.tasks.check_redis_health',
+        'schedule': crontab(minute=0),  # Toutes les heures
+    },
 }
 
 # Découverte automatique des tâches
