@@ -1,0 +1,66 @@
+/**
+ * Styles pour le mode éco-responsable
+ * Réduit l'empreinte carbone en désactivant les animations et optimisant les images
+ */
+
+.eco-mode {
+  /* Désactiver les animations */
+  --animation-duration: 0s;
+  --transition-duration: 0s;
+}
+
+.eco-mode *,
+.eco-mode *::before,
+.eco-mode *::after {
+  animation: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}
+
+/* Images en basse résolution */
+.eco-mode img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Désactiver le lazy loading pour réduire les requêtes */
+  loading: eager;
+}
+
+/* Masquer les éléments 3D */
+.eco-mode .three-js-container,
+.eco-mode canvas[data-three] {
+  display: none !important;
+}
+
+/* Hero statique */
+.eco-mode .hero-sorgho-static {
+  background: #050607;
+  color: #00ffa3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+}
+
+/* Réduire les ombres et effets */
+.eco-mode * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+/* Désactiver les effets de hover complexes */
+.eco-mode .card-tilt:hover {
+  transform: none !important;
+}
+
+/* Optimiser les polices */
+.eco-mode {
+  font-display: swap;
+}
+
+/* Réduire les gradients complexes */
+.eco-mode {
+  background: #050607 !important;
+}
+

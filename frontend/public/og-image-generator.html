@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générateur d'Image Open Graph - EGOEJO</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #00ffa3;
+      margin-bottom: 30px;
+    }
+    .canvas-container {
+      background: white;
+      border: 2px solid #ddd;
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      display: block;
+    }
+    .controls {
+      margin: 20px 0;
+    }
+    button {
+      background: #00ffa3;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #00cc82;
+    }
+    .info {
+      background: #e8f5e9;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Générateur d'Image Open Graph - EGOEJO</h1>
+    
+    <div class="info">
+      <p><strong>Instructions :</strong></p>
+      <ol>
+        <li>L'image sera générée en 1200x630px (format recommandé pour Open Graph)</li>
+        <li>Cliquez sur "Générer l'image" pour créer l'image</li>
+        <li>Cliquez sur "Télécharger l'image" pour sauvegarder le fichier</li>
+        <li>Renommez le fichier en <code>og-image.jpg</code> et placez-le dans <code>public/</code></li>
+      </ol>
+    </div>
+
+    <div class="controls">
+      <button onclick="generateImage()">Générer l'image</button>
+      <button onclick="downloadImage()">Télécharger l'image</button>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="ogCanvas" width="1200" height="630"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('ogCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function generateImage() {
+      // Clear canvas
+      ctx.clearRect(0, 0, 1200, 630);
+
+      // Create gradient background
+      const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+      gradient.addColorStop(0, '#00ffa3');
+      gradient.addColorStop(1, '#00cc82');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      // Decorative circles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.arc(200, 150, 80, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(1000, 480, 100, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(1100, 200, 60, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main title
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 72px Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('EGOEJO', 100, 200);
+
+      // Subtitle
+      ctx.font = '32px Arial, sans-serif';
+      ctx.fillText('Collectif pour le vivant', 100, 280);
+
+      // Description
+      ctx.font = '24px Arial, sans-serif';
+      const description = 'Relier des citoyens à des projets sociaux à fort impact';
+      ctx.fillText(description, 100, 340);
+
+      // Tagline
+      ctx.font = 'italic 20px Arial, sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillText('Habiter la Terre autrement, ensemble.', 100, 400);
+
+      // Bottom accent
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 580, 1200, 50);
+    }
+
+    function downloadImage() {
+      canvas.toBlob(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'og-image.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 'image/jpeg', 0.95);
+    }
+
+    // Generate on load
+    window.onload = generateImage;
+  </script>
+</body>
+</html>
+

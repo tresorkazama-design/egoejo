@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# CORRECTION Chantier 3 : Lint-staged pour "Boy Scout Rule"
+# Vérifie uniquement les fichiers modifiés (pas tout le codebase)
+npx lint-staged

@@ -1,0 +1,12 @@
+{
+  "name": "EGOEJO",
+  "short_name": "EGOEJO",
+  "description": "EGOEJO — relier des citoyens à des projets sociaux à fort impact.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050607",
+  "theme_color": "#00f5a0",
+  "orientation": "portrait-primary",
+  "icons": []
+}
+

@@ -30,7 +30,13 @@ export default function Dashboard() {
   const [assets, setAssets] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [transferModal, setTransferModal] = useState(null); // { pocketId, pocketName }
+  const [transferModal, setTransferModal] = useState(null); // { pocketId, pocketName })
+
+  // ⚠️ IMPORTANT : Les hooks doivent être appelés AVANT les retours précoces
+  // pour respecter les règles de React (Rules of Hooks)
+  // Les hooks doivent toujours être appelés dans le même ordre à chaque rendu
+  const { data: silo, loading: isSiloLoading } = useSakaSilo();
+  const { data: compost, loading: compostLoading, error: compostError } = useSakaCompostPreview();
 
   useEffect(() => {
     if (!user) {
@@ -149,9 +155,7 @@ export default function Dashboard() {
     }
   };
 
-  // Hooks pour Phase 3 SAKA : Compostage & Silo Commun
-  const { data: silo, loading: isSiloLoading } = useSakaSilo();
-  const { data: compost } = useSakaCompostPreview();
+  // Les hooks SAKA sont maintenant appelés AVANT les retours précoces (ligne ~35)
 
   // Fonction pour formater les dates
   const formatDate = (dateString) => {

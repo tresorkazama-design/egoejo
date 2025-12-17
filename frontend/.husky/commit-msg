@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Vérifier le format des messages de commit
+# Format attendu: type(scope): description
+# Types: feat, fix, docs, style, refactor, test, chore
+
+commit_msg=$(cat "$1")
+
+if ! echo "$commit_msg" | grep -qE "^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?:"; then
+  echo "❌ Format de commit invalide. Utilisez: type(scope): description"
+  echo "Exemples:"
+  echo "  feat(auth): ajout de la connexion"
+  echo "  fix(ui): correction du bug de layout"
+  exit 1
+fi
+

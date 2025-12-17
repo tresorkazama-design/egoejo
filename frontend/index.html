@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EGOEJO</title>
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+    <!-- theme-color: Supporté par Chrome, Safari mobile, Edge. Firefox ne le supporte pas mais ce n'est pas critique -->
+    <meta name="theme-color" content="#00ffa3" />
+    <!-- Alternative pour Firefox (optionnel, non standard) -->
+    <meta name="msapplication-navbutton-color" content="#00ffa3" />
+    
+    <!-- Preload des ressources critiques -->
+    <!-- Note: Vite gère automatiquement le preload des modules, pas besoin de le faire manuellement -->
+    
+    <!-- Preconnect pour les domaines externes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- DNS prefetch pour améliorer les performances -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <meta
+      name="description"
+      content="EGOEJO — relier des citoyens à des projets sociaux à fort impact."
+    />
+    <meta property="og:title" content="EGOEJO" />
+    <meta
+      property="og:description"
+      content="Investir dans le futur avec sens — dons qui circulent, relient et fécondent."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/favicon.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- IMPORTANT : point d'entrée React -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

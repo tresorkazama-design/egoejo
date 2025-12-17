@@ -1,0 +1,345 @@
+﻿
+> frontend@1.0.0 test
+> vitest --run src/test/accessibility.test.jsx
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/treso/Downloads/egoejo/frontend/frontend[39m
+
+[90m16:54:53:798[0m [34m[websocket][0m constructing the interceptor...
+[90m16:54:53:858[0m [34m[client-request-interceptor][0m constructing the interceptor...
+[90m16:54:53:858[0m [34m[xhr][0m constructing the interceptor...
+[90m16:54:53:858[0m [34m[fetch][0m constructing the interceptor...
+[90m16:54:53:859[0m [34m[setup-server][0m constructing the interceptor...
+[90m16:54:54:557[0m [34m[setup-server:apply][0m applying the interceptor...
+[90m16:54:54:557[0m [34m[setup-server][0m retrieved global instance: undefined
+[90m16:54:54:557[0m [34m[setup-server:apply][0m no running instance found, setting up a new instance...
+[90m16:54:54:558[0m [34m[setup-server:setup][0m applying all 3 interceptors...
+[90m16:54:54:558[0m [34m[setup-server:setup][0m applying "_ClientRequestInterceptor" interceptor...
+[90m16:54:54:558[0m [34m[client-request-interceptor:apply][0m applying the interceptor...
+[90m16:54:54:558[0m [34m[client-request-interceptor][0m retrieved global instance: undefined
+[90m16:54:54:558[0m [34m[client-request-interceptor:apply][0m no running instance found, setting up a new instance...
+[90m16:54:54:558[0m [34m[client-request-interceptor][0m set global instance! client-request-interceptor
+[90m16:54:54:558[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m16:54:54:558[0m [34m[setup-server:setup][0m applying "_XMLHttpRequestInterceptor" interceptor...
+[90m16:54:54:558[0m [34m[xhr:apply][0m applying the interceptor...
+[90m16:54:54:559[0m [34m[xhr][0m retrieved global instance: undefined
+[90m16:54:54:559[0m [34m[xhr:apply][0m no running instance found, setting up a new instance...
+[90m16:54:54:559[0m [34m[xhr:setup][0m patching "XMLHttpRequest" module...
+[90m16:54:54:559[0m [34m[xhr:setup][0m native "XMLHttpRequest" module patched! XMLHttpRequest
+[90m16:54:54:559[0m [34m[xhr][0m set global instance! xhr
+[90m16:54:54:559[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m16:54:54:559[0m [34m[setup-server:setup][0m applying "_FetchInterceptor" interceptor...
+[90m16:54:54:559[0m [34m[fetch:apply][0m applying the interceptor...
+[90m16:54:54:559[0m [34m[fetch][0m retrieved global instance: undefined
+[90m16:54:54:559[0m [34m[fetch:apply][0m no running instance found, setting up a new instance...
+[90m16:54:54:559[0m [34m[fetch][0m set global instance! fetch
+[90m16:54:54:559[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m16:54:54:559[0m [34m[setup-server][0m set global instance! setup-server
+[90m16:54:54:559[0m [34m[client-request-interceptor:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+        const response = await handleRequest(
+          request,
+          requestId,
+          this.handlersController.currentHandlers().filter(isHandlerKind("RequestHandler")),
+          this.resolvedOptions,
+          this.emitter,
+          {
+            onPassthroughResponse(request2) {
+              const acceptHeader = request2.headers.get("accept");
+              if (acceptHeader) {
+                const nextAcceptHeader = acceptHeader.replace(
+                  /(,\s+)?msw\/passthrough/,
+                  ""
+                );
+                if (nextAcceptHeader) {
+                  request2.headers.set("accept", nextAcceptHeader);
+                } else {
+                  request2.headers.delete("accept");
+                }
+              }
+            }
+          }
+        );
+        if (response) {
+          controller.respondWith(response);
+        }
+        return;
+      }
+[90m16:54:54:560[0m [34m[xhr:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+        const response = await handleRequest(
+          request,
+          requestId,
+          this.handlersController.currentHandlers().filter(isHandlerKind("RequestHandler")),
+          this.resolvedOptions,
+          this.emitter,
+          {
+            onPassthroughResponse(request2) {
+              const acceptHeader = request2.headers.get("accept");
+              if (acceptHeader) {
+                const nextAcceptHeader = acceptHeader.replace(
+                  /(,\s+)?msw\/passthrough/,
+                  ""
+                );
+                if (nextAcceptHeader) {
+                  request2.headers.set("accept", nextAcceptHeader);
+                } else {
+                  request2.headers.delete("accept");
+                }
+              }
+            }
+          }
+        );
+        if (response) {
+          controller.respondWith(response);
+        }
+        return;
+      }
+[90m16:54:54:560[0m [34m[fetch:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+        const response = await handleRequest(
+          request,
+          requestId,
+          this.handlersController.currentHandlers().filter(isHandlerKind("RequestHandler")),
+          this.resolvedOptions,
+          this.emitter,
+          {
+            onPassthroughResponse(request2) {
+              const acceptHeader = request2.headers.get("accept");
+              if (acceptHeader) {
+                const nextAcceptHeader = acceptHeader.replace(
+                  /(,\s+)?msw\/passthrough/,
+                  ""
+                );
+                if (nextAcceptHeader) {
+                  request2.headers.set("accept", nextAcceptHeader);
+                } else {
+                  request2.headers.delete("accept");
+                }
+              }
+            }
+          }
+        );
+        if (response) {
+          controller.respondWith(response);
+        }
+        return;
+      }
+[90m16:54:54:560[0m [34m[client-request-interceptor:on][0m adding "unhandledException" event listener: ({ error }) => {
+      if (error instanceof InternalError) {
+        throw error;
+      }
+    }
+[90m16:54:54:560[0m [34m[xhr:on][0m adding "unhandledException" event listener: ({ error }) => {
+      if (error instanceof InternalError) {
+        throw error;
+      }
+    }
+[90m16:54:54:560[0m [34m[fetch:on][0m adding "unhandledException" event listener: ({ error }) => {
+      if (error instanceof InternalError) {
+        throw error;
+      }
+    }
+[90m16:54:54:560[0m [34m[client-request-interceptor:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+        this.emitter.emit(
+          isMockedResponse ? "response:mocked" : "response:bypass",
+          {
+            response,
+            request,
+            requestId
+          }
+        );
+      }
+[90m16:54:54:560[0m [34m[xhr:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+        this.emitter.emit(
+          isMockedResponse ? "response:mocked" : "response:bypass",
+          {
+            response,
+            request,
+            requestId
+          }
+        );
+      }
+[90m16:54:54:560[0m [34m[fetch:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+        this.emitter.emit(
+          isMockedResponse ? "response:mocked" : "response:bypass",
+          {
+            response,
+            request,
+            requestId
+          }
+        );
+      }
+[90m16:54:54:560[0m [34m[websocket:on][0m adding "connection" event listener: async (connection) => {
+    const handlers = options.getHandlers().filter(isHandlerKind("EventHandler"));
+    if (handlers.length > 0) {
+      options?.onMockedConnection(connection);
+      await Promise.all(
+        handlers.map((handler) => {
+          return handler.run(connection);
+        })
+      );
+      return;
+    }
+    const request = new Request(connection.client.url, {
+      headers: {
+        upgrade: "websocket",
+        connection: "upgrade"
+      }
+    });
+    await onUnhandledRequest(
+      request,
+      options.getUnhandledRequestStrategy()
+    ).catch((error) => {
+      const errorEvent = new Event("error");
+      Object.defineProperty(errorEvent, "cause", {
+        enumerable: true,
+        configurable: false,
+        value: error
+      });
+      connection.client.socket.dispatchEvent(errorEvent);
+    });
+    options?.onPassthroughConnection(connection);
+    connection.server.connect();
+  }
+[90m16:54:54:560[0m [34m[websocket:apply][0m applying the interceptor...
+[90m16:54:54:560[0m [34m[websocket][0m retrieved global instance: undefined
+[90m16:54:54:560[0m [34m[websocket:apply][0m no running instance found, setting up a new instance...
+[90m16:54:54:560[0m [34m[websocket][0m set global instance! websocket
+[90mstdout[2m | src/test/accessibility.test.jsx[2m > [22m[2mTests d'accessibilit├®[2m > [22m[2mPages[2m > [22m[2mHome devrait ├¬tre accessible
+[22m[39mViolations critiques/s├®rieuses: [
+  {
+    "id": "aria-required-children",
+    "impact": "critical",
+    "tags": [
+      "cat.aria",
+      "wcag2a",
+      "wcag131",
+      "EN-301-549",
+      "EN-9.1.3.1"
+    ],
+    "description": "Ensure elements with an ARIA role that require child roles contain them",
+    "help": "Certain ARIA roles must contain particular children",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/aria-required-children?application=axeAPI",
+    "nodes": [
+      {
+        "any": [
+          {
+            "id": "aria-required-children",
+            "data": {
+              "messageKey": "unallowed",
+              "values": "article[tabindex]"
+            },
+            "relatedNodes": [
+              {
+                "html": "<article class=\"glass\"><h3 class=\"tag\" id=\"pillar-Relier\">Relier</h3><p class=\"lead\" style=\"margin-top: 12px;\" aria-labelledby=\"pillar-Relier\">Tisser des alliances entre habitants, organisations et territoires pour restaurer les communs du vivant.</p></article>",
+                "target": [
+                  ".card-tilt:nth-child(1) > article"
+                ]
+              },
+              {
+                "html": "<article class=\"glass\"><h3 class=\"tag\" id=\"pillar-Apprendre en faisant\">Apprendre en faisant</h3><p class=\"lead\" style=\"margin-top: 12px;\" aria-labelledby=\"pillar-Apprendre en faisant\">Exp├®rimenter sur le terrain, documenter et partager des pratiques r├®g├®n├®ratives ├á l'├®chelle locale.</p></article>",
+                "target": [
+                  ".card-tilt:nth-child(2) > article"
+                ]
+              },
+              {
+                "html": "<article class=\"glass\"><h3 class=\"tag\" id=\"pillar-Transmettre\">Transmettre</h3><p class=\"lead\" style=\"margin-top: 12px;\" aria-labelledby=\"pillar-Transmettre\">Accompagner les acteurs du changement avec des formats immersifs, sensibles et ancr├®s dans le r├®el.</p></article>",
+                "target": [
+                  ".card-tilt:nth-child(3) > article"
+                ]
+              }
+            ],
+            "impact": "critical",
+            "message": "Element has children which are not allowed: article[tabindex]"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "critical",
+        "html": "<div class=\"container grid grid-3\" role=\"list\" aria-label=\"Piliers fondamentaux\">",
+        "target": [
+          ".grid-3"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has children which are not allowed: article[tabindex]"
+      },
+      {
+        "any": [
+          {
+            "id": "aria-required-children",
+            "data": {
+              "messageKey": "unallowed",
+              "values": "a[aria-label]"
+            },
+            "relatedNodes": [
+              {
+                "html": "<a href=\"https://www.helloasso.com/associations\" target=\"_blank\" rel=\"noreferrer noopener\" class=\"home-support__card glass \" aria-label=\"Adh├®sion ÔÇó HelloAsso - Rejoindre l'association et contribuer en France - Contribuer\">",
+                "target": [
+                  ".card-tilt:nth-child(1) > .home-support__card[target=\"_blank\"][rel=\"noreferrer noopener\"]"
+                ]
+              },
+              {
+                "html": "<a href=\"https://donate.stripe.com\" target=\"_blank\" rel=\"noreferrer noopener\" class=\"home-support__card glass is-primary\" aria-label=\"Soutien international - Faire un don ponctuel ou r├®current via Stripe - Contribuer\">",
+                "target": [
+                  ".is-primary"
+                ]
+              }
+            ],
+            "impact": "critical",
+            "message": "Element has children which are not allowed: a[aria-label]"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "critical",
+        "html": "<div class=\"grid\" role=\"list\" aria-label=\"Options de don\">",
+        "target": [
+          "div[aria-label=\"Options de don\"]"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has children which are not allowed: a[aria-label]"
+      }
+    ]
+  }
+]
+
+[90m16:54:55:180[0m [34m[setup-server:dispose][0m disposing the interceptor...
+[90m16:54:55:180[0m [34m[setup-server][0m retrieved global instance: BatchInterceptor
+[90m16:54:55:180[0m [34m[setup-server][0m cleared global instance! setup-server
+[90m16:54:55:180[0m [34m[setup-server:dispose][0m global symbol deleted: undefined
+[90m16:54:55:180[0m [34m[setup-server:dispose][0m disposing of 3 subscriptions...
+[90m16:54:55:180[0m [34m[client-request-interceptor:dispose][0m disposing the interceptor...
+[90m16:54:55:180[0m [34m[client-request-interceptor][0m retrieved global instance: _ClientRequestInterceptor
+[90m16:54:55:180[0m [34m[client-request-interceptor][0m cleared global instance! client-request-interceptor
+[90m16:54:55:180[0m [34m[client-request-interceptor:dispose][0m global symbol deleted: undefined
+[90m16:54:55:180[0m [34m[client-request-interceptor:dispose][0m disposing of 1 subscriptions...
+[90m16:54:55:180[0m [34m[client-request-interceptor:dispose][0m disposed of all subscriptions! 0
+[90m16:54:55:180[0m [34m[client-request-interceptor:dispose][0m destroyed the listener!
+[90m16:54:55:180[0m [34m[xhr:dispose][0m disposing the interceptor...
+[90m16:54:55:180[0m [34m[xhr][0m retrieved global instance: _XMLHttpRequestInterceptor
+[90m16:54:55:180[0m [34m[xhr][0m cleared global instance! xhr
+[90m16:54:55:180[0m [34m[xhr:dispose][0m global symbol deleted: undefined
+[90m16:54:55:180[0m [34m[xhr:dispose][0m disposing of 1 subscriptions...
+[90m16:54:55:180[0m [34m[xhr:setup][0m native "XMLHttpRequest" module restored! XMLHttpRequest
+[90m16:54:55:180[0m [34m[xhr:dispose][0m disposed of all subscriptions! 0
+[90m16:54:55:180[0m [34m[xhr:dispose][0m destroyed the listener!
+[90m16:54:55:180[0m [34m[fetch:dispose][0m disposing the interceptor...
+[90m16:54:55:180[0m [34m[fetch][0m retrieved global instance: _FetchInterceptor
+[90m16:54:55:180[0m [34m[fetch][0m cleared global instance! fetch
+[90m16:54:55:180[0m [34m[fetch:dispose][0m global symbol deleted: undefined
+[90m16:54:55:180[0m [34m[fetch:dispose][0m disposing of 1 subscriptions...
+[90m16:54:55:180[0m [34m[fetch][0m restored native "globalThis.fetch"! spy
+[90m16:54:55:180[0m [34m[fetch:dispose][0m disposed of all subscriptions! 0
+[90m16:54:55:181[0m [34m[fetch:dispose][0m destroyed the listener!
+[90m16:54:55:181[0m [34m[setup-server:dispose][0m disposed of all subscriptions! 0
+[90m16:54:55:181[0m [34m[setup-server:dispose][0m destroyed the listener!
+[90m16:54:55:181[0m [34m[websocket:dispose][0m disposing the interceptor...
+[90m16:54:55:181[0m [34m[websocket][0m retrieved global instance: _WebSocketInterceptor
+[90m16:54:55:181[0m [34m[websocket][0m cleared global instance! websocket
+[90m16:54:55:181[0m [34m[websocket:dispose][0m global symbol deleted: undefined
+[90m16:54:55:181[0m [34m[websocket:dispose][0m disposing of 1 subscriptions...
+[90m16:54:55:181[0m [34m[websocket:dispose][0m disposed of all subscriptions! 0
+[90m16:54:55:181[0m [34m[websocket:dispose][0m destroyed the listener!
+ [32mÔ£ô[39m src/test/accessibility.test.jsx [2m([22m[2m8 tests[22m[2m)[22m[33m 625[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m8 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 16:54:52
+[2m   Duration [22m 3.06s[2m (transform 346ms, setup 353ms, collect 693ms, tests 625ms, environment 732ms, prepare 215ms)[22m
+

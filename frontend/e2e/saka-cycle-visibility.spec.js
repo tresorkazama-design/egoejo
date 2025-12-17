@@ -204,11 +204,24 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
   });
 
   test('devrait afficher la prévisualisation du compostage dans le Dashboard', async ({ page }) => {
+    // Capturer les logs de la console pour le débogage
+    const consoleLogs = [];
+    page.on('console', (msg) => {
+      const text = msg.text();
+      consoleLogs.push({ type: msg.type(), text });
+      if (text.includes('[Dashboard]') || text.includes('[useSakaCompostPreview]') || text.includes('[TEST]')) {
+        console.log(`[CONSOLE ${msg.type()}] ${text}`);
+      }
+    });
+
     // Mock de l'authentification (NÉCESSAIRE pour useAuth() qui appelle /api/auth/me/)
     // Le AuthContext appelle /api/auth/me/ avec Authorization: Bearer token
     // Le token est maintenant défini dans beforeEach via context.addInitScript()
     // IMPORTANT : Définir le mock AVANT de naviguer vers la page
+    let authMeCalled = false;
     await page.route('**/api/auth/me/', async (route) => {
+      authMeCalled = true;
+      console.log('[TEST] API /api/auth/me/ appelée');
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -221,7 +234,10 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
     });
 
     // Mock de la réponse API pour le compostage preview
+    let compostPreviewCalled = false;
     await page.route('**/api/saka/compost-preview/', async (route) => {
+      compostPreviewCalled = true;
+      console.log('[TEST] API /api/saka/compost-preview/ appelée');
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -263,17 +279,30 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
     // Naviguer vers le Dashboard
     // Le token est défini dans beforeEach via context.addInitScript()
     // Le AuthContext devrait détecter le token et appeler /api/auth/me/
+    console.log('[TEST] Navigation vers /dashboard');
     const navigationPromise = page.goto('/dashboard');
     
     // Attendre que l'utilisateur soit chargé (useAuth() appelle /api/auth/me/)
     // Attendre la réponse AVANT que la navigation soit complète
+    console.log('[TEST] Attente de la réponse /api/auth/me/');
     const authResponsePromise = page.waitForResponse('**/api/auth/me/', { timeout: 10000 });
     
     // Attendre que la navigation soit terminée
     await navigationPromise;
+    console.log('[TEST] Navigation terminée');
     
     // Attendre que l'API auth soit appelée
     await authResponsePromise;
+    console.log('[TEST] Réponse /api/auth/me/ reçue, authMeCalled =', authMeCalled);
+
+    // Attendre un peu pour que le composant se mette à jour
+    await page.waitForTimeout(2000);
+
+    // Vérifier les logs de la console
+    const relevantLogs = consoleLogs.filter(log => 
+      log.text.includes('[Dashboard]') || log.text.includes('[useSakaCompostPreview]')
+    );
+    console.log('[TEST] Logs pertinents de la console:', relevantLogs.map(log => `${log.type}: ${log.text}`));
 
     // Attendre que le Dashboard soit complètement chargé
     await page.waitForLoadState('networkidle');
@@ -282,13 +311,15 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
     // Le hook useSakaCompostPreview() appelle l'API après que user soit défini
     // Il peut y avoir un délai entre la définition de user et l'appel de l'API
     // Le hook s'exécute dans un useEffect qui dépend de user, donc il faut attendre
-    // Utiliser une approche tolérante : attendre l'API si possible, sinon continuer
+    console.log('[TEST] Attente de la réponse /api/saka/compost-preview/');
     try {
-      await page.waitForResponse('**/api/saka/compost-preview/', { timeout: 10000 });
+      await page.waitForResponse('**/api/saka/compost-preview/', { timeout: 15000 });
+      console.log('[TEST] Réponse /api/saka/compost-preview/ reçue, compostPreviewCalled =', compostPreviewCalled);
     } catch (error) {
-      // Si l'API n'est pas appelée, continuer quand même
-      // Peut-être que le hook ne s'exécute pas ou que les conditions ne sont pas remplies
-      console.log('API compost-preview non appelée, continuer quand même');
+      console.log('[TEST] Timeout en attendant /api/saka/compost-preview/, compostPreviewCalled =', compostPreviewCalled);
+      console.log('[TEST] Erreur:', error.message);
+      // Afficher tous les logs pour le débogage
+      console.log('[TEST] Tous les logs de la console:', consoleLogs.map(log => `${log.type}: ${log.text}`).slice(0, 50));
     }
 
     // Attendre que la notification soit chargée (avec timeout plus long)
@@ -310,10 +341,13 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
     await expect(compostAmount).toBeVisible();
 
     // Vérifier que le texte explique le retour au Silo Commun
-    await expect(page.getByText(/Silo Commun/i)).toBeVisible();
+    // Le texte "Silo Commun" apparaît dans la notification de compostage
+    // Utiliser un sélecteur plus spécifique pour éviter l'ambiguïté
+    const notificationSection = page.locator('div').filter({ hasText: /Vos grains vont bientôt retourner à la terre/i });
+    await expect(notificationSection.getByText(/Silo Commun/i).first()).toBeVisible();
 
     // Vérifier que le texte explique que l'utilisateur peut encore planter
-    await expect(page.getByText(/planter/i)).toBeVisible();
+    await expect(notificationSection.getByText(/planter/i)).toBeVisible();
   });
 
   test('devrait gérer le cas où aucun cycle SAKA n\'existe encore', async ({ page }) => {

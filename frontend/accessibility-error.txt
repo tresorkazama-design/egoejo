@@ -1,0 +1,289 @@
+﻿
+> frontend@1.0.0 test
+> vitest --run src/test/accessibility.test.jsx
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/treso/Downloads/egoejo/frontend/frontend[39m
+
+[90m16:54:09:153[0m [34m[websocket][0m constructing the interceptor...
+[90m16:54:09:218[0m [34m[client-request-interceptor][0m constructing the interceptor...
+[90m16:54:09:218[0m [34m[xhr][0m constructing the interceptor...
+[90m16:54:09:218[0m [34m[fetch][0m constructing the interceptor...
+[90m16:54:09:218[0m [34m[setup-server][0m constructing the interceptor...
+[90m16:54:09:928[0m [34m[setup-server:apply][0m applying the interceptor...
+[90m16:54:09:928[0m [34m[setup-server][0m retrieved global instance: undefined
+[90m16:54:09:928[0m [34m[setup-server:apply][0m no running instance found, setting up a new instance...
+[90m16:54:09:928[0m [34m[setup-server:setup][0m applying all 3 interceptors...
+[90m16:54:09:929[0m [34m[setup-server:setup][0m applying "_ClientRequestInterceptor" interceptor...
+[90m16:54:09:929[0m [34m[client-request-interceptor:apply][0m applying the interceptor...
+[90m16:54:09:929[0m [34m[client-request-interceptor][0m retrieved global instance: undefined
+[90m16:54:09:929[0m [34m[client-request-interceptor:apply][0m no running instance found, setting up a new instance...
+[90m16:54:09:929[0m [34m[client-request-interceptor][0m set global instance! client-request-interceptor
+[90m16:54:09:929[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m16:54:09:929[0m [34m[setup-server:setup][0m applying "_XMLHttpRequestInterceptor" interceptor...
+[90m16:54:09:929[0m [34m[xhr:apply][0m applying the interceptor...
+[90m16:54:09:929[0m [34m[xhr][0m retrieved global instance: undefined
+[90m16:54:09:929[0m [34m[xhr:apply][0m no running instance found, setting up a new instance...
+[90m16:54:09:930[0m [34m[xhr:setup][0m patching "XMLHttpRequest" module...
+[90m16:54:09:930[0m [34m[xhr:setup][0m native "XMLHttpRequest" module patched! XMLHttpRequest
+[90m16:54:09:930[0m [34m[xhr][0m set global instance! xhr
+[90m16:54:09:930[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m16:54:09:930[0m [34m[setup-server:setup][0m applying "_FetchInterceptor" interceptor...
+[90m16:54:09:930[0m [34m[fetch:apply][0m applying the interceptor...
+[90m16:54:09:930[0m [34m[fetch][0m retrieved global instance: undefined
+[90m16:54:09:930[0m [34m[fetch:apply][0m no running instance found, setting up a new instance...
+[90m16:54:09:930[0m [34m[fetch][0m set global instance! fetch
+[90m16:54:09:930[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m16:54:09:930[0m [34m[setup-server][0m set global instance! setup-server
+[90m16:54:09:930[0m [34m[client-request-interceptor:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+        const response = await handleRequest(
+          request,
+          requestId,
+          this.handlersController.currentHandlers().filter(isHandlerKind("RequestHandler")),
+          this.resolvedOptions,
+          this.emitter,
+          {
+            onPassthroughResponse(request2) {
+              const acceptHeader = request2.headers.get("accept");
+              if (acceptHeader) {
+                const nextAcceptHeader = acceptHeader.replace(
+                  /(,\s+)?msw\/passthrough/,
+                  ""
+                );
+                if (nextAcceptHeader) {
+                  request2.headers.set("accept", nextAcceptHeader);
+                } else {
+                  request2.headers.delete("accept");
+                }
+              }
+            }
+          }
+        );
+        if (response) {
+          controller.respondWith(response);
+        }
+        return;
+      }
+[90m16:54:09:930[0m [34m[xhr:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+        const response = await handleRequest(
+          request,
+          requestId,
+          this.handlersController.currentHandlers().filter(isHandlerKind("RequestHandler")),
+          this.resolvedOptions,
+          this.emitter,
+          {
+            onPassthroughResponse(request2) {
+              const acceptHeader = request2.headers.get("accept");
+              if (acceptHeader) {
+                const nextAcceptHeader = acceptHeader.replace(
+                  /(,\s+)?msw\/passthrough/,
+                  ""
+                );
+                if (nextAcceptHeader) {
+                  request2.headers.set("accept", nextAcceptHeader);
+                } else {
+                  request2.headers.delete("accept");
+                }
+              }
+            }
+          }
+        );
+        if (response) {
+          controller.respondWith(response);
+        }
+        return;
+      }
+[90m16:54:09:930[0m [34m[fetch:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+        const response = await handleRequest(
+          request,
+          requestId,
+          this.handlersController.currentHandlers().filter(isHandlerKind("RequestHandler")),
+          this.resolvedOptions,
+          this.emitter,
+          {
+            onPassthroughResponse(request2) {
+              const acceptHeader = request2.headers.get("accept");
+              if (acceptHeader) {
+                const nextAcceptHeader = acceptHeader.replace(
+                  /(,\s+)?msw\/passthrough/,
+                  ""
+                );
+                if (nextAcceptHeader) {
+                  request2.headers.set("accept", nextAcceptHeader);
+                } else {
+                  request2.headers.delete("accept");
+                }
+              }
+            }
+          }
+        );
+        if (response) {
+          controller.respondWith(response);
+        }
+        return;
+      }
+[90m16:54:09:930[0m [34m[client-request-interceptor:on][0m adding "unhandledException" event listener: ({ error }) => {
+      if (error instanceof InternalError) {
+        throw error;
+      }
+    }
+[90m16:54:09:931[0m [34m[xhr:on][0m adding "unhandledException" event listener: ({ error }) => {
+      if (error instanceof InternalError) {
+        throw error;
+      }
+    }
+[90m16:54:09:931[0m [34m[fetch:on][0m adding "unhandledException" event listener: ({ error }) => {
+      if (error instanceof InternalError) {
+        throw error;
+      }
+    }
+[90m16:54:09:931[0m [34m[client-request-interceptor:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+        this.emitter.emit(
+          isMockedResponse ? "response:mocked" : "response:bypass",
+          {
+            response,
+            request,
+            requestId
+          }
+        );
+      }
+[90m16:54:09:931[0m [34m[xhr:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+        this.emitter.emit(
+          isMockedResponse ? "response:mocked" : "response:bypass",
+          {
+            response,
+            request,
+            requestId
+          }
+        );
+      }
+[90m16:54:09:931[0m [34m[fetch:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+        this.emitter.emit(
+          isMockedResponse ? "response:mocked" : "response:bypass",
+          {
+            response,
+            request,
+            requestId
+          }
+        );
+      }
+[90m16:54:09:931[0m [34m[websocket:on][0m adding "connection" event listener: async (connection) => {
+    const handlers = options.getHandlers().filter(isHandlerKind("EventHandler"));
+    if (handlers.length > 0) {
+      options?.onMockedConnection(connection);
+      await Promise.all(
+        handlers.map((handler) => {
+          return handler.run(connection);
+        })
+      );
+      return;
+    }
+    const request = new Request(connection.client.url, {
+      headers: {
+        upgrade: "websocket",
+        connection: "upgrade"
+      }
+    });
+    await onUnhandledRequest(
+      request,
+      options.getUnhandledRequestStrategy()
+    ).catch((error) => {
+      const errorEvent = new Event("error");
+      Object.defineProperty(errorEvent, "cause", {
+        enumerable: true,
+        configurable: false,
+        value: error
+      });
+      connection.client.socket.dispatchEvent(errorEvent);
+    });
+    options?.onPassthroughConnection(connection);
+    connection.server.connect();
+  }
+[90m16:54:09:931[0m [34m[websocket:apply][0m applying the interceptor...
+[90m16:54:09:931[0m [34m[websocket][0m retrieved global instance: undefined
+[90m16:54:09:931[0m [34m[websocket:apply][0m no running instance found, setting up a new instance...
+[90m16:54:09:931[0m [34m[websocket][0m set global instance! websocket
+[90m16:54:10:539[0m [34m[setup-server:dispose][0m disposing the interceptor...
+[90m16:54:10:539[0m [34m[setup-server][0m retrieved global instance: BatchInterceptor
+[90m16:54:10:539[0m [34m[setup-server][0m cleared global instance! setup-server
+[90m16:54:10:539[0m [34m[setup-server:dispose][0m global symbol deleted: undefined
+[90m16:54:10:539[0m [34m[setup-server:dispose][0m disposing of 3 subscriptions...
+[90m16:54:10:539[0m [34m[client-request-interceptor:dispose][0m disposing the interceptor...
+[90m16:54:10:539[0m [34m[client-request-interceptor][0m retrieved global instance: _ClientRequestInterceptor
+[90m16:54:10:539[0m [34m[client-request-interceptor][0m cleared global instance! client-request-interceptor
+[90m16:54:10:539[0m [34m[client-request-interceptor:dispose][0m global symbol deleted: undefined
+[90m16:54:10:539[0m [34m[client-request-interceptor:dispose][0m disposing of 1 subscriptions...
+[90m16:54:10:539[0m [34m[client-request-interceptor:dispose][0m disposed of all subscriptions! 0
+[90m16:54:10:539[0m [34m[client-request-interceptor:dispose][0m destroyed the listener!
+[90m16:54:10:539[0m [34m[xhr:dispose][0m disposing the interceptor...
+[90m16:54:10:539[0m [34m[xhr][0m retrieved global instance: _XMLHttpRequestInterceptor
+[90m16:54:10:539[0m [34m[xhr][0m cleared global instance! xhr
+[90m16:54:10:539[0m [34m[xhr:dispose][0m global symbol deleted: undefined
+[90m16:54:10:539[0m [34m[xhr:dispose][0m disposing of 1 subscriptions...
+[90m16:54:10:540[0m [34m[xhr:setup][0m native "XMLHttpRequest" module restored! XMLHttpRequest
+[90m16:54:10:540[0m [34m[xhr:dispose][0m disposed of all subscriptions! 0
+[90m16:54:10:540[0m [34m[xhr:dispose][0m destroyed the listener!
+[90m16:54:10:540[0m [34m[fetch:dispose][0m disposing the interceptor...
+[90m16:54:10:540[0m [34m[fetch][0m retrieved global instance: _FetchInterceptor
+[90m16:54:10:540[0m [34m[fetch][0m cleared global instance! fetch
+[90m16:54:10:540[0m [34m[fetch:dispose][0m global symbol deleted: undefined
+[90m16:54:10:540[0m [34m[fetch:dispose][0m disposing of 1 subscriptions...
+[90m16:54:10:540[0m [34m[fetch][0m restored native "globalThis.fetch"! spy
+[90m16:54:10:540[0m [34m[fetch:dispose][0m disposed of all subscriptions! 0
+[90m16:54:10:540[0m [34m[fetch:dispose][0m destroyed the listener!
+[90m16:54:10:540[0m [34m[setup-server:dispose][0m disposed of all subscriptions! 0
+[90m16:54:10:540[0m [34m[setup-server:dispose][0m destroyed the listener!
+[90m16:54:10:540[0m [34m[websocket:dispose][0m disposing the interceptor...
+[90m16:54:10:540[0m [34m[websocket][0m retrieved global instance: _WebSocketInterceptor
+[90m16:54:10:540[0m [34m[websocket][0m cleared global instance! websocket
+[90m16:54:10:540[0m [34m[websocket:dispose][0m global symbol deleted: undefined
+[90m16:54:10:540[0m [34m[websocket:dispose][0m disposing of 1 subscriptions...
+[90m16:54:10:540[0m [34m[websocket:dispose][0m disposed of all subscriptions! 0
+[90m16:54:10:540[0m [34m[websocket:dispose][0m destroyed the listener!
+ [31mÔØ»[39m src/test/accessibility.test.jsx [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 613[2mms[22m[39m
+[31m   [31m├ù[31m Tests d'accessibilit├®[2m > [22mPages[2m > [22mHome devrait ├¬tre accessible[90m 212[2mms[22m[31m[39m
+[31m     ÔåÆ expected [ { ÔÇª(7) } ] to have a length of +0 but got 1[39m
+
+node.exe : [31mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1m[7m Failed Tests 1 
+[27m[22mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[39m
+Au caractère Ligne:1 : 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mÔÄ»ÔÄ»ÔÄ»Ô...»ÔÄ»ÔÄ»ÔÄ»[39m 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[31m[1m[7m FAIL [27m[22m[39m src/test/accessibility.test.jsx[2m > 
+[22mTests d'accessibilit├®[2m > [22mPages[2m > [22mHome devrait ├¬tre 
+accessible
+[31m[1mAssertionError[22m: expected [ { ÔÇª(7) } ] to have a length of +0 
+but got 1[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2mÔØ»[22m src/test/accessibility.test.jsx:[2m46:34[22m[39m
+    [90m 44| [39m        v[33m.[39mimpact [33m===[39m 
+[32m'critical'[39m [33m||[39m v[33m.[39mimpact [33m===[39m 
+[32m'serious'[39m
+    [90m 45| [39m      )[33m;[39m
+    [90m 46| [39m      [34mexpect[39m(criticalViolations)[33m.[39m[34mto
+HaveLength[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                                 [31m^[39m
+    [90m 47| [39m      [90m// Accepter jusqu'├á 1 violation mineure 
+(moderate ou minor) - ce[39mÔÇª
+    [90m 48| [39m      [90m// Par exemple, des warnings sur des ├®l├®ments 
+d├®coratifs ou des [39mÔÇª
+
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»Ô
+Ä»[1/1]ÔÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 16:54:07
+[2m   Duration [22m 3.14s[2m (transform 346ms, setup 364ms, collect 704ms, tests 613ms, environment 805ms, prepare 178ms)[22m
+
