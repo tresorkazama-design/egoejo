@@ -203,15 +203,7 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
     await expect(compostedValue.first()).toBeVisible();
   });
 
-  // TODO: Ce test nécessite une investigation plus approfondie
-  // Problème : L'API /api/saka/compost-preview/ n'est jamais appelée
-  // Le hook useSakaCompostPreview() ne s'exécute pas, probablement parce que :
-  // 1. Le hook dépend de user qui n'est pas encore défini au moment du montage
-  // 2. Le hook a une condition qui empêche son exécution
-  // 3. Le composant Dashboard ne charge pas le hook correctement
-  // Solution : Vérifier le code du hook et du composant Dashboard pour comprendre pourquoi
-  // le hook ne s'exécute pas même avec un utilisateur authentifié
-  test.skip('devrait afficher la prévisualisation du compostage dans le Dashboard', async ({ page }) => {
+  test('devrait afficher la prévisualisation du compostage dans le Dashboard', async ({ page }) => {
     // Mock de l'authentification (NÉCESSAIRE pour useAuth() qui appelle /api/auth/me/)
     // Le AuthContext appelle /api/auth/me/ avec Authorization: Bearer token
     // Le token est maintenant défini dans beforeEach via context.addInitScript()
