@@ -101,7 +101,140 @@ def send_email_task(self, to_email, subject, html_content, text_content=None):
         raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
 
 
+@shared_task(bind=True, name='core.tasks.saka_run_compost_cycle')
+def saka_run_compost_cycle(self, dry_run=False):
+    """
+    Tâche périodique appelée par Celery Beat pour exécuter un cycle de compostage SAKA.
+    
+    Phase 3 : Compostage & Silo Commun
+    
+    Args:
+        dry_run: Si True, calcule seulement ce qui serait fait (aucune écriture)
+        
+    Returns:
+        dict: Résultat du cycle de compostage
+    """
+    from core.services.saka import run_saka_compost_cycle
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        result = run_saka_compost_cycle(dry_run=dry_run, source="celery")
+        logger.info(f"SAKA compost cycle result: {result}")
+        return result
+    except Exception as exc:
+        logger.error(f"Erreur lors du cycle de compostage SAKA: {exc}", exc_info=True)
+        raise
+
+
 @shared_task
+def saka_silo_redistribution_task():
+    """
+    Tâche Celery pour redistribuer le Silo Commun SAKA.
+    
+    Phase 3 : Compostage & Silo Commun - Redistribution
+    
+    Vérifie si la redistribution est activée, appelle le service de redistribution
+    avec le taux configuré.
+    
+    Désactivée par défaut (SAKA_SILO_REDIS_ENABLED=False).
+    
+    Returns:
+        dict: Résultat de la redistribution avec stats
+    """
+    from django.conf import settings
+    from core.services.saka import redistribute_saka_silo
+    
+    if not getattr(settings, "SAKA_SILO_REDIS_ENABLED", False):
+        return {"ok": False, "reason": "disabled"}
+    
+    rate = float(getattr(settings, "SAKA_SILO_REDIS_RATE", 0.1))
+    stats = redistribute_saka_silo(rate=rate)
+    return {"ok": True, **stats}
+
+
+@shared_task
+def saka_silo_redistribution_task():
+    """
+    Tâche Celery pour redistribuer le Silo Commun SAKA.
+    
+    Phase 3 : Compostage & Silo Commun - Redistribution
+    
+    Vérifie si la redistribution est activée, appelle le service de redistribution
+    avec le taux configuré.
+    
+    Désactivée par défaut (SAKA_SILO_REDIS_ENABLED=False).
+    
+    Returns:
+        dict: Résultat de la redistribution avec stats
+    """
+    from django.conf import settings
+    from core.services.saka import redistribute_saka_silo
+    
+    if not getattr(settings, "SAKA_SILO_REDIS_ENABLED", False):
+        return {"ok": False, "reason": "disabled"}
+    
+    rate = float(getattr(settings, "SAKA_SILO_REDIS_RATE", 0.1))
+    stats = redistribute_saka_silo(rate=rate)
+    return {"ok": True, **stats}
+
+
+@shared_task(bind=True, name='core.tasks.run_saka_silo_redistribution')
+def run_saka_silo_redistribution(self):
+    """
+    Tâche périodique appelée par Celery Beat pour redistribuer le Silo Commun SAKA.
+    
+    Phase 3 : Compostage & Silo Commun - Redistribution
+    
+    Vérifie si la redistribution est activée, appelle le service de redistribution,
+    et loggue les résultats pour le monitoring.
+    
+    Désactivée par défaut (SAKA_SILO_REDIS_ENABLED=False).
+    Utile pour tester ou activer manuellement.
+    
+    Returns:
+        dict: Résultat de la redistribution avec stats
+    """
+    from django.conf import settings
+    from core.services.saka import redistribute_saka_silo
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Vérifier si la redistribution est activée
+    if not getattr(settings, "SAKA_SILO_REDIS_ENABLED", False):
+        logger.info("Redistribution SAKA Silo désactivée (SAKA_SILO_REDIS_ENABLED=False)")
+        return {"ok": False, "reason": "disabled"}
+    
+    try:
+        # Appeler le service de redistribution
+        result = redistribute_saka_silo()
+        
+        # Logger les résultats pour le monitoring
+        if result.get("ok"):
+            logger.info(
+                f"Redistribution SAKA Silo réussie : "
+                f"{result.get('redistributed', 0)} grains redistribués à "
+                f"{result.get('eligible_wallets', 0)} wallets "
+                f"({result.get('per_wallet', 0)} grains chacun). "
+                f"Silo : {result.get('total_before', 0)} → {result.get('total_after', 0)}"
+            )
+        else:
+            logger.warning(
+                f"Redistribution SAKA Silo non effectuée : {result.get('reason', 'unknown')}"
+            )
+        
+        return result
+        
+    except Exception as exc:
+        logger.error(
+            f"Erreur lors de la redistribution du Silo SAKA : {exc}",
+            exc_info=True
+        )
+        raise
+
+
 def update_impact_dashboard_metrics(user_id):
     """
     Met à jour les métriques du tableau de bord d'impact en arrière-plan.

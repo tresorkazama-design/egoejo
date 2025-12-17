@@ -32,11 +32,29 @@ class RefreshTokenView(APIView):
             # Récupérer l'ancien token
             old_token = RefreshToken(refresh_token)
             
+            # Récupérer l'utilisateur depuis le token
+            user_id = old_token.get('user_id')
+            if not user_id:
+                return Response(
+                    {'error': 'Token invalide : utilisateur introuvable'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response(
+                    {'error': 'Utilisateur introuvable'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
             # Blacklister l'ancien token
             old_token.blacklist()
             
             # Créer un nouveau token pour le même utilisateur
-            new_token = RefreshToken.for_user(old_token.user)
+            new_token = RefreshToken.for_user(user)
             
             return Response({
                 'access': str(new_token.access_token),

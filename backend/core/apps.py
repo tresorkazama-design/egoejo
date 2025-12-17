@@ -10,12 +10,35 @@ class CoreConfig(AppConfig):
     def ready(self):
         """
         Cette méthode s'exécute au démarrage de l'application Django.
-        Nous l'utilisons pour afficher la signature du projet.
+        Nous l'utilisons pour afficher la signature du projet et connecter les signals.
         """
         # On évite d'afficher le logo lors des migrations ou des tâches celery,
         # on veut le voir uniquement lors du 'runserver'
         if 'runserver' in sys.argv:
             self.print_signature()
+        
+        # Connecter le signal pour créer automatiquement un SakaWallet pour chaque nouvel utilisateur
+        # Import ici pour éviter les imports circulaires
+        from django.db.models.signals import post_save
+        from django.dispatch import receiver
+        from django.conf import settings
+        
+        @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+        def create_saka_wallet(sender, instance, created, **kwargs):
+            """Crée automatiquement un SakaWallet pour tout nouvel utilisateur"""
+            if created:
+                # Import ici pour éviter les imports circulaires
+                from core.models.saka import SakaWallet
+                # Utiliser get_or_create pour éviter les doublons
+                SakaWallet.objects.get_or_create(
+                    user=instance,
+                    defaults={
+                        'balance': 0,
+                        'total_harvested': 0,
+                        'total_planted': 0,
+                        'total_composted': 0,
+                    }
+                )
 
     def print_signature(self):
         # Codes couleurs ANSI pour le terminal

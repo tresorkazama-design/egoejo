@@ -67,3 +67,70 @@ class ImpactDashboard(models.Model):
 
         self.save()
 
+
+class ProjectImpact4P(models.Model):
+    """
+    Modèle pour stocker les scores 4P (Performance Partagée) par projet.
+    
+    Les 4 dimensions :
+    - P1 : Performance financière (euros mobilisés)
+      → Dérivé d'agrégats financiers réels (contributions, escrows)
+    
+    - P2 : Performance vivante (SAKA mobilisé)
+      → Dérivé de SAKA réellement mobilisé (supporters, boosts)
+    
+    - P3 : Performance sociale/écologique (score d'impact agrégé)
+      → PROXY V1 INTERNE : Utilise impact_score du projet (ou 0)
+      → À ne pas interpréter comme mesure académique d'impact
+      → Sera affiné avec des données d'impact plus riches dans les versions futures
+    
+    - P4 : Purpose / Sens (indicateur qualitatif)
+      → PROXY V1 INTERNE : Formule simplifiée basée sur supporters SAKA + cagnottes
+      → À ne pas interpréter comme mesure académique d'impact
+      → Sera affiné avec des indicateurs qualitatifs plus robustes dans les versions futures
+    """
+    project = models.OneToOneField(
+        'core.Projet',
+        on_delete=models.CASCADE,
+        related_name='impact_4p',
+        help_text="Projet associé"
+    )
+    
+    # Scores 4P
+    financial_score = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="P1 : Performance financière (euros mobilisés)"
+    )
+    saka_score = models.PositiveIntegerField(
+        default=0,
+        help_text="P2 : Performance vivante (SAKA mobilisé pour ce projet)"
+    )
+    social_score = models.PositiveIntegerField(
+        default=0,
+        help_text="P3 : Performance sociale/écologique (PROXY V1 - score d'impact interne simplifié, non académique)"
+    )
+    purpose_score = models.PositiveIntegerField(
+        default=0,
+        help_text="P4 : Purpose / Sens (PROXY V1 - indicateur interne simplifié, non académique)"
+    )
+    
+    # Métadonnées
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text="Date de dernière mise à jour des scores 4P"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Date de création"
+    )
+
+    class Meta:
+        db_table = 'project_impact_4p'
+        verbose_name = "Score 4P Projet"
+        verbose_name_plural = "Scores 4P Projets"
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"4P - {self.project.titre} (F:{self.financial_score}, S:{self.saka_score}, So:{self.social_score}, P:{self.purpose_score})"

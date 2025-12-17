@@ -9,7 +9,10 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from core.models import Poll, PollBallot, PollOption
+from core.models.polls import compute_quadratic_weight
 from core.serializers import PollSerializer, PollVoteSerializer
+from core.services.saka import harvest_saka, spend_saka, SakaReason
+from django.conf import settings
 
 from .common import broadcast_to_group, build_voter_hash, log_action
 
@@ -129,11 +132,15 @@ class PollViewSet(viewsets.ModelViewSet):
         option_ids = []  # Pour log_action
         votes_data = []  # Pour log_action
         rankings_data = []  # Pour log_action
+        saka_spent = 0  # Initialiser pour tous les cas
+        saka_cost = 0
+        intensity = 1
+        weight = 1.0
 
         # Gérer selon la méthode de vote
         if poll.voting_method == 'quadratic':
-            # Vote Quadratique : points distribués
-            votes_data = request.data.get("votes", [])  # [{option_id: 1, points: 25}, ...]
+            # Vote Quadratique : points distribués avec boost SAKA (Phase 2)
+            votes_data = request.data.get("votes", [])  # [{option_id: 1, points: 25, intensity: 3}, ...]
             max_points = poll.max_points or 100
             total_points = sum(v.get('points', 0) for v in votes_data)
             
@@ -142,16 +149,38 @@ class PollViewSet(viewsets.ModelViewSet):
                     "detail": f"Total de points ({total_points}) dépasse le maximum ({max_points})"
                 }, status=status.HTTP_400_BAD_REQUEST)
             
+            # Récupérer l'intensité globale du vote (ou calculer depuis les votes individuels)
+            intensity = int(request.data.get("intensity", 1))
+            intensity = max(1, min(intensity, 5))  # Clamp 1-5
+            
+            # Calculer le coût SAKA
+            saka_cost_per = getattr(settings, "SAKA_VOTE_COST_PER_INTENSITY", 5)
+            saka_cost = intensity * saka_cost_per
+            saka_spent = 0
+            
+            # Tenter de dépenser les SAKA si activé
+            if getattr(settings, "ENABLE_SAKA", False) and getattr(settings, "SAKA_VOTE_ENABLED", False):
+                if spend_saka(
+                    request.user,
+                    saka_cost,
+                    reason="poll_boost",
+                    metadata={"poll_id": poll.id, "intensity": intensity}
+                ):
+                    saka_spent = saka_cost
+            
+            # Calculer le poids quadratique avec boost SAKA
+            weight = compute_quadratic_weight(intensity=intensity, saka_spent=saka_spent)
+            
             # Supprimer les anciens votes
             PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).delete()
             
-            # Créer les nouveaux votes avec points
+            # Créer les nouveaux votes avec points, poids et SAKA
             for vote_data in votes_data:
                 option_id = vote_data.get('option_id')
                 points = vote_data.get('points', 0)
                 if points > 0:
                     option = poll.options.get(pk=option_id)
-                    metadata = {"ts": now.isoformat(), "points": points}
+                    metadata = {"ts": now.isoformat(), "points": points, "intensity": intensity}
                     if not poll.is_anonymous:
                         metadata["user_id"] = request.user.pk
                     PollBallot.objects.create(
@@ -159,6 +188,8 @@ class PollViewSet(viewsets.ModelViewSet):
                         option=option,
                         voter_hash=voter_hash,
                         points=points,
+                        weight=weight,
+                        saka_spent=saka_spent,
                         metadata=metadata,
                     )
                     option_ids.append(option_id)
@@ -225,5 +256,26 @@ class PollViewSet(viewsets.ModelViewSet):
             poll.pk,
             log_data,
         )
-        return Response(self.get_serializer(poll).data)
+        
+        # Récolter des grains SAKA (Civic Mining) - Phase 1
+        if request.user.is_authenticated:
+            harvest_saka(
+                user=request.user,
+                reason=SakaReason.POLL_VOTE,
+                metadata={'poll_id': poll.id, 'voting_method': poll.voting_method}
+            )
+        
+        # Préparer la réponse avec les informations SAKA (Phase 2)
+        response_data = self.get_serializer(poll).data
+        
+        if poll.voting_method == 'quadratic':
+            # Ajouter les informations SAKA dans la réponse
+            response_data['saka_info'] = {
+                'saka_spent': saka_spent,
+                'saka_cost': saka_cost,
+                'intensity': intensity,
+                'weight': weight,
+            }
+        
+        return Response(response_data)
 

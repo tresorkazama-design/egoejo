@@ -13,6 +13,7 @@ from core.models.impact import ImpactDashboard
 from core.models.fundraising import Contribution
 from core.models.intents import Intent
 from finance.models import UserWallet, WalletPocket, WalletTransaction
+from core.services.saka import get_saka_balance
 
 
 class ImpactDashboardView(APIView):
@@ -88,7 +89,11 @@ class GlobalAssetsView(APIView):
         
         # 1. Cash Balance (solde principal du wallet)
         wallet, _ = UserWallet.objects.get_or_create(user=user)
-        cash_balance = str(wallet.balance.quantize(Decimal('0.01')))
+        # Convertir en Decimal si ce n'est pas déjà le cas
+        if isinstance(wallet.balance, Decimal):
+            cash_balance = str(wallet.balance.quantize(Decimal('0.01')))
+        else:
+            cash_balance = str(Decimal(str(wallet.balance)).quantize(Decimal('0.01')))
         
         # 2. Pockets (sous-comptes)
         pockets = WalletPocket.objects.filter(wallet=wallet).values(
@@ -173,6 +178,19 @@ class GlobalAssetsView(APIView):
         # Pour l'instant, calcul simple basé sur les dons
         social_dividend_value = (total_donations * Decimal('0.1')).quantize(Decimal('0.01'))  # 10% symbolique
         
+        # 6. SAKA (Protocole SAKA - Monnaie interne d'engagement)
+        # Vérifier si SAKA est activé avant d'exposer les données
+        if getattr(settings, 'ENABLE_SAKA', False):
+            saka_data = get_saka_balance(user)
+        else:
+            # Retourner des zéros si SAKA est désactivé
+            saka_data = {
+                'balance': 0,
+                'total_harvested': 0,
+                'total_planted': 0,
+                'total_composted': 0
+            }
+        
         return Response({
             'cash_balance': cash_balance,
             'pockets': pockets_list,
@@ -187,6 +205,12 @@ class GlobalAssetsView(APIView):
             },
             'social_dividend': {
                 'estimated_value': str(social_dividend_value)
+            },
+            'saka': {
+                'balance': saka_data['balance'],
+                'total_harvested': saka_data['total_harvested'],
+                'total_planted': saka_data['total_planted'],
+                'total_composted': saka_data['total_composted']
             }
         })
 

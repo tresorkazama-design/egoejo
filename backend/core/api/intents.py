@@ -16,6 +16,10 @@ from rest_framework.response import Response
 
 from core.models import Intent
 from core.serializers import IntentSerializer
+# TODO: Intégrer la récolte SAKA pour les invitations validées
+# from core.services.saka import harvest_saka, SakaReason
+# Quand un utilisateur invité devient actif, appeler :
+# harvest_saka(inviter_user, SakaReason.INVITE_ACCEPTED, metadata={"invited_id": invited_user.id})
 
 from .common import logger, require_admin_token
 

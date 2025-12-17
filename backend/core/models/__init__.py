@@ -12,5 +12,7 @@ from .content import EducationalContent, ContentLike, ContentComment  # noqa: F4
 from .help import HelpRequest  # noqa: F401
 from .engagement import Engagement  # noqa: F401
 from .monitoring import PerformanceMetric, MonitoringAlert  # noqa: F401
-from .impact import ImpactDashboard  # noqa: F401
+from .impact import ImpactDashboard, ProjectImpact4P  # noqa: F401
+from .saka import SakaWallet, SakaTransaction, SakaSilo, SakaCompostLog, SakaProjectSupport, SakaCycle  # noqa: F401
+from .communities import Community  # noqa: F401
 

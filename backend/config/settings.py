@@ -477,3 +477,44 @@ STRIPE_FEE_ESTIMATE = float(os.environ.get('STRIPE_FEE_ESTIMATE', '0.03'))  # 3%
 # CORRECTION 3 : Nom unique et explicite pour éviter magic strings
 FOUNDER_GROUP_NAME = os.environ.get('FOUNDER_GROUP_NAME', 'Founders_V1_Protection')
 
+# ==============================================
+# PROTOCOLE SAKA 🌾 (V2.1 - Le Cerveau Yin)
+# ==============================================
+# SAKA : Monnaie interne d'engagement (Yin) - Strictement séparée de l'Euro (Yang)
+# Règles fondamentales :
+# - SAKA ne s'achète pas, il se récolte (Proof of Care)
+# - SAKA ne sert pas à consommer, mais à influencer (gouvernance)
+# - SAKA inactif retourne au Silo commun (compostage)
+# - SAKA (Yin) et Euro (Yang) sont strictement séparés
+
+# Activation globale du protocole SAKA
+ENABLE_SAKA = os.environ.get('ENABLE_SAKA', 'False').lower() == 'true'  # Active la récolte + exposition global-assets
+
+# Feature flags par fonctionnalité
+SAKA_VOTE_ENABLED = os.environ.get('SAKA_VOTE_ENABLED', 'False').lower() == 'true'  # Phase 2 : Vote quadratique fertilisé
+SAKA_PROJECT_BOOST_ENABLED = os.environ.get('SAKA_PROJECT_BOOST_ENABLED', 'False').lower() == 'true'  # Phase 2 : Sorgho-boosting
+# ==============================================
+# SAKA PROTOCOL - PHASE 3 : COMPOSTAGE & SILO COMMUN
+# ==============================================
+SAKA_COMPOST_ENABLED = os.environ.get('SAKA_COMPOST_ENABLED', 'False').lower() == 'true'  # Phase 3 : Compostage
+SAKA_COMPOST_INACTIVITY_DAYS = int(os.environ.get('SAKA_COMPOST_INACTIVITY_DAYS', '90'))  # Durée d'inactivité avant compost (jours)
+SAKA_COMPOST_RATE = float(os.environ.get('SAKA_COMPOST_RATE', '0.10'))  # % de balance à composter (10%)
+SAKA_COMPOST_MIN_BALANCE = int(os.environ.get('SAKA_COMPOST_MIN_BALANCE', '50'))  # Ne composter que si balance >= 50 SAKA
+SAKA_COMPOST_MIN_AMOUNT = int(os.environ.get('SAKA_COMPOST_MIN_AMOUNT', '10'))  # Composter au moins 10 SAKA quand on déclenche
+
+# Configuration Vote Quadratique Fertilisé (Phase 2)
+SAKA_VOTE_MAX_MULTIPLIER = float(os.environ.get('SAKA_VOTE_MAX_MULTIPLIER', '2.0'))  # Max x2 de poids
+SAKA_VOTE_SCALE = int(os.environ.get('SAKA_VOTE_SCALE', '200'))  # 200 SAKA => +100% de poids
+SAKA_VOTE_COST_PER_INTENSITY = int(os.environ.get('SAKA_VOTE_COST_PER_INTENSITY', '5'))  # Coût SAKA par unité d'intensité
+
+# Configuration Sorgho-Boosting (Phase 2)
+SAKA_PROJECT_BOOST_COST = int(os.environ.get('SAKA_PROJECT_BOOST_COST', '10'))  # Coût SAKA pour nourrir un projet
+
+# ==============================================
+# SAKA PROTOCOL - REDISTRIBUTION DU SILO (V1)
+# ==============================================
+# Redistribution Silo SAKA (V1)
+SAKA_SILO_REDIS_ENABLED = os.environ.get('SAKA_SILO_REDIS_ENABLED', 'False').lower() == 'true'  # Active la redistribution automatique
+SAKA_SILO_REDIS_RATE = float(os.environ.get('SAKA_SILO_REDIS_RATE', '0.05'))  # 5% du Silo redistribué par cycle
+SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY = int(os.environ.get('SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY', '1'))  # Min total_harvested pour être éligible
+

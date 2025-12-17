@@ -69,6 +69,16 @@ class Projet(models.Model):
         help_text="Coordonnées 3D (x, y, z) pour visualisation Mycélium Numérique"
     )
     
+    # ========== COMMUNITY (V1 - Optionnel) ==========
+    community = models.ForeignKey(
+        'core.Community',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="projects",
+        help_text="Communauté associée (optionnel, pour subsidiarité future)"
+    )
+    
     # ========== V1.6 + V2.0 HYBRID ==========
     # Type de financement
     funding_type = models.CharField(
@@ -114,6 +124,16 @@ class Projet(models.Model):
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # ========== SAKA PROTOCOL (Phase 2) ==========
+    saka_score = models.PositiveIntegerField(
+        default=0,
+        help_text="Score de soutien SAKA (visibilité organique) - Phase 2"
+    )
+    saka_supporters_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Nombre de membres ayant boosté ce projet avec SAKA - Phase 2"
+    )
 
     # Utiliser le QuerySet personnalisé
     objects = ProjetQuerySet.as_manager()

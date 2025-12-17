@@ -28,11 +28,14 @@ from .views import (
     ModerationReportViewSet,
     AuditLogViewSet,
 )
+from core.api.projects import boost_project, ProjetRetrieveUpdateDestroy
 from core.api.search_views import ProjetSearchView
 from core.api.semantic_search_views import SemanticSearchView, SemanticSuggestionsView
 from core.api.mycelium_views import MyceliumDataView, MyceliumReduceView
 from core.api.config_views import FeaturesConfigView  # Feature flags V1.6/V2.0
 from investment.views import ShareholderRegisterViewSet  # V2.0 dormant (protégé par permission)
+from core.api import saka_views  # Phase 3 SAKA : Compostage & Silo Commun
+from core.api import communities_views  # Communautés (subsidiarité)
 
 router = DefaultRouter()
 
@@ -81,7 +84,7 @@ urlpatterns = [
     
     # --- IMPACT & GAMIFICATION ---
     path("impact/dashboard/", ImpactDashboardView.as_view(), name="impact-dashboard"),
-    path("impact/global-assets/", GlobalAssetsView.as_view(), name="global-assets"),
+    path("impact/global-assets/", GlobalAssetsView.as_view(), name="global-assets"),  # Expose SAKA dans la réponse
     
     # --- WALLET & POCKETS ---
     path("wallet/pockets/transfer/", PocketTransferView.as_view(), name="pocket-transfer"),
@@ -95,6 +98,8 @@ urlpatterns = [
     
     # --- AUTRES VUES ---
     path("projets/", ProjetListCreate.as_view(), name="projet-list-create"),
+    path("projets/<int:pk>/", ProjetRetrieveUpdateDestroy.as_view(), name="projet-detail"),  # Détail, mise à jour, suppression
+    path("projets/<int:pk>/boost/", boost_project, name="projet-boost"),  # Phase 2 : Sorgho-boosting SAKA
     path("projets/search/", ProjetSearchView.as_view(), name="projet-search"),
     path("projets/semantic-search/", SemanticSearchView.as_view(), name="semantic-search"),
     path("projets/semantic-suggestions/", SemanticSuggestionsView.as_view(), name="semantic-suggestions"),
@@ -103,10 +108,25 @@ urlpatterns = [
     path("mycelium/data/", MyceliumDataView.as_view(), name="mycelium-data"),
     path("mycelium/reduce/", MyceliumReduceView.as_view(), name="mycelium-reduce"),
     
-    # --- CONFIGURATION FEATURES (V1.6/V2.0) ⭐ NOUVEAU ---
-    path("config/features/", FeaturesConfigView.as_view(), name="config-features"),
-    
-    path("cagnottes/", CagnotteListCreate.as_view(), name="cagnotte-list-create"),
+           # --- CONFIGURATION FEATURES (V1.6/V2.0) ⭐ NOUVEAU ---
+           path("config/features/", FeaturesConfigView.as_view(), name="config-features"),
+           
+           # --- SAKA PROTOCOL - PHASE 3 : COMPOSTAGE & SILO COMMUN 🌾 ---
+           path("saka/silo/", saka_views.saka_silo_view, name="saka-silo"),
+           path("saka/silo/redistribute/", saka_views.saka_silo_redistribute, name="saka-silo-redistribute"),  # Admin uniquement - Redistribution Silo (V1 simple)
+           path("saka/compost-preview/", saka_views.saka_compost_preview_view, name="saka-compost-preview"),
+           path("saka/compost-trigger/", saka_views.saka_compost_trigger_view, name="saka-compost-trigger"),  # Admin uniquement
+           path("saka/compost-run/", saka_views.saka_compost_run_view, name="saka-compost-run"),  # Admin uniquement - Dry-run depuis frontend
+           path("saka/stats/", saka_views.saka_stats_view, name="saka-stats"),  # Admin uniquement - Monitoring & KPIs
+          path("saka/compost-logs/", saka_views.saka_compost_logs_view, name="saka-compost-logs"),  # Admin uniquement - Audit logs
+          path("saka/cycles/", saka_views.saka_cycles_view, name="saka-cycles"),  # Liste des cycles SAKA avec stats
+          path("saka/redistribute/", saka_views.saka_redistribute_view, name="saka-redistribute"),  # Admin uniquement - Redistribution Silo (avec rate optionnel)
+          
+          # --- COMMUNAUTÉS (V1 - Lecture seule) ---
+          path("communities/", communities_views.community_list_view, name="community-list"),
+          path("communities/<str:slug>/", communities_views.community_detail_view, name="community-detail"),
+          
+          path("cagnottes/", CagnotteListCreate.as_view(), name="cagnotte-list-create"),
     path("cagnottes/<int:pk>/contribute/", contribute, name="cagnotte-contribute"),
     path("intents/rejoindre/", rejoindre, name="intent-rejoindre"),
     path("intents/admin/", admin_data, name="intent-admin-data"),

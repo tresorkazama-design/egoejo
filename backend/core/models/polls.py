@@ -134,6 +134,15 @@ class PollBallot(models.Model):
         blank=True,
         help_text="Classement de cette option (Jugement Majoritaire: 1=meilleur, N=pire)"
     )
+    saka_spent = models.PositiveIntegerField(
+        default=0,
+        help_text="SAKA plantés pour ce vote (Phase 2 : Vote quadratique fertilisé)"
+    )
+    weight = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Poids calculé du vote (sqrt(intensity) * multiplier SAKA)"
+    )
 
     class Meta:
         unique_together = ("poll", "option", "voter_hash")
@@ -141,4 +150,29 @@ class PollBallot(models.Model):
 
     def __str__(self):
         return f"Ballot {self.pk} for {self.poll.title}"
+
+
+def compute_quadratic_weight(intensity: int, saka_spent: int) -> float:
+    """
+    Calcule le poids quadratique d'un vote avec boost SAKA.
+    
+    Args:
+        intensity: Intensité du vote (1-5)
+        saka_spent: Nombre de grains SAKA plantés
+        
+    Returns:
+        Poids calculé (sqrt(intensity) * multiplier SAKA)
+    """
+    from math import sqrt
+    
+    base = sqrt(max(intensity, 0))
+    
+    if not getattr(settings, "SAKA_VOTE_ENABLED", False) or saka_spent <= 0:
+        return float(base)
+    
+    boost_unit = saka_spent / float(getattr(settings, "SAKA_VOTE_SCALE", 200))
+    max_mult = getattr(settings, "SAKA_VOTE_MAX_MULTIPLIER", 2.0)
+    multiplier = 1.0 + min(max_mult - 1.0, boost_unit)
+    
+    return float(base * multiplier)
 
