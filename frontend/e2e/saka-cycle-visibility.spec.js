@@ -28,11 +28,15 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
     },
   };
 
-  test.beforeEach(async ({ page }) => {
-    // Mock de l'authentification (token dans localStorage)
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'mock-access-token');
-      window.localStorage.setItem('refreshToken', 'mock-refresh-token');
+  // Définir le token dans localStorage AVANT le chargement de chaque page
+  // Le AuthContext vérifie localStorage.getItem('token') au chargement initial
+  // Sans token, il ne fait pas d'appel API et user reste null
+  // Utiliser context.addInitScript() pour que le token soit disponible dès le chargement
+  test.beforeEach(async ({ context, page }) => {
+    // Définir le token dans localStorage via context (avant le chargement de la page)
+    await context.addInitScript(() => {
+      window.localStorage.setItem('token', 'test-token-123');
+      window.localStorage.setItem('refresh_token', 'test-refresh-token-123');
     });
 
     // Mock de la configuration des features (SAKA activé)
@@ -199,42 +203,29 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
     await expect(compostedValue.first()).toBeVisible();
   });
 
-  // TODO: Ce test nécessite une correction de l'authentification dans les tests E2E
-  // Le problème : l'API /api/auth/me/ n'est pas appelée car le token n'est pas correctement défini
-  // dans localStorage avant le chargement de la page. Le AuthContext vérifie localStorage.getItem('token')
-  // au chargement, et si le token n'est pas présent, il ne fait pas d'appel API.
-  // Solution à implémenter : utiliser context.addInitScript() au niveau du contexte du navigateur
-  // ou utiliser une authentification réelle via l'API de login.
+  // TODO: Ce test nécessite une investigation plus approfondie
+  // Problème : L'API /api/saka/compost-preview/ n'est jamais appelée
+  // Le hook useSakaCompostPreview() ne s'exécute pas, probablement parce que :
+  // 1. Le hook dépend de user qui n'est pas encore défini au moment du montage
+  // 2. Le hook a une condition qui empêche son exécution
+  // 3. Le composant Dashboard ne charge pas le hook correctement
+  // Solution : Vérifier le code du hook et du composant Dashboard pour comprendre pourquoi
+  // le hook ne s'exécute pas même avec un utilisateur authentifié
   test.skip('devrait afficher la prévisualisation du compostage dans le Dashboard', async ({ page }) => {
-    // IMPORTANT : Définir un token dans localStorage AVANT de naviguer
-    // Le AuthContext vérifie localStorage.getItem('token') au chargement
-    // Sans token, il ne fait pas d'appel API et user reste null
-    await page.addInitScript(() => {
-      localStorage.setItem('token', 'test-token-123');
-    });
-
     // Mock de l'authentification (NÉCESSAIRE pour useAuth() qui appelle /api/auth/me/)
     // Le AuthContext appelle /api/auth/me/ avec Authorization: Bearer token
+    // Le token est maintenant défini dans beforeEach via context.addInitScript()
+    // IMPORTANT : Définir le mock AVANT de naviguer vers la page
     await page.route('**/api/auth/me/', async (route) => {
-      // Vérifier que le header Authorization est présent
-      const headers = route.request().headers();
-      if (headers['authorization'] && headers['authorization'].includes('Bearer')) {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            id: 1,
-            username: 'testuser',
-            email: 'test@example.com',
-          }),
-        });
-      } else {
-        await route.fulfill({
-          status: 401,
-          contentType: 'application/json',
-          body: JSON.stringify({ detail: 'Unauthorized' }),
-        });
-      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 1,
+          username: 'testuser',
+          email: 'test@example.com',
+        }),
+      });
     });
 
     // Mock de la réponse API pour le compostage preview
@@ -277,36 +268,45 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
       });
     });
 
-    // Naviguer vers le Dashboard et attendre que toutes les requêtes soient terminées
-    await page.goto('/dashboard', { waitUntil: 'networkidle' });
+    // Naviguer vers le Dashboard
+    // Le token est défini dans beforeEach via context.addInitScript()
+    // Le AuthContext devrait détecter le token et appeler /api/auth/me/
+    const navigationPromise = page.goto('/dashboard');
     
     // Attendre que l'utilisateur soit chargé (useAuth() appelle /api/auth/me/)
-    // Utiliser une approche plus tolérante : attendre soit la réponse, soit un délai
-    const authResponsePromise = page.waitForResponse('**/api/auth/me/', { timeout: 5000 }).catch(() => null);
+    // Attendre la réponse AVANT que la navigation soit complète
+    const authResponsePromise = page.waitForResponse('**/api/auth/me/', { timeout: 10000 });
+    
+    // Attendre que la navigation soit terminée
+    await navigationPromise;
+    
+    // Attendre que l'API auth soit appelée
     await authResponsePromise;
+
+    // Attendre que le Dashboard soit complètement chargé
+    await page.waitForLoadState('networkidle');
 
     // Attendre explicitement que l'API compost-preview soit appelée
     // Le hook useSakaCompostPreview() appelle l'API après que user soit défini
     // Il peut y avoir un délai entre la définition de user et l'appel de l'API
-    const compostResponsePromise = page.waitForResponse('**/api/saka/compost-preview/', { timeout: 15000 }).catch(() => null);
-    await compostResponsePromise;
+    // Le hook s'exécute dans un useEffect qui dépend de user, donc il faut attendre
+    // Utiliser une approche tolérante : attendre l'API si possible, sinon continuer
+    try {
+      await page.waitForResponse('**/api/saka/compost-preview/', { timeout: 10000 });
+    } catch (error) {
+      // Si l'API n'est pas appelée, continuer quand même
+      // Peut-être que le hook ne s'exécute pas ou que les conditions ne sont pas remplies
+      console.log('API compost-preview non appelée, continuer quand même');
+    }
 
     // Attendre que la notification soit chargée (avec timeout plus long)
     // La notification est conditionnelle : compost?.enabled && compost?.eligible && compost.amount >= 20
     // Attendre que le texte soit visible dans le DOM
     // Si l'API n'a pas été appelée, le hook retourne null et la notification ne s'affiche pas
-    // Utiliser une approche plus tolérante : si la notification n'apparaît pas, c'est peut-être normal
-    try {
-      await page.waitForSelector('text=/Vos grains vont bientôt retourner à la terre/i', { 
-        timeout: 20000,
-        state: 'visible'
-      });
-    } catch (error) {
-      // Si la notification n'apparaît pas, vérifier pourquoi
-      // Peut-être que l'utilisateur n'est pas authentifié ou que les conditions ne sont pas remplies
-      // Pour l'instant, on skip le test avec un message explicatif
-      test.skip(true, 'La notification de compostage ne s\'affiche pas. Vérifier que l\'utilisateur est authentifié et que les conditions sont remplies.');
-    }
+    await page.waitForSelector('text=/Vos grains vont bientôt retourner à la terre/i', { 
+      timeout: 20000,
+      state: 'visible'
+    });
 
     // Vérifier que la notification de compostage est affichée
     // (seulement si eligible et amount >= 20)
