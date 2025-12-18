@@ -53,6 +53,9 @@ class ProjetSerializer(serializers.ModelSerializer):
         """
         Retourne les scores 4P du projet, ou des valeurs par défaut si non calculés.
         Structure uniformisée : p1_financier, p2_saka, p3_social, p4_sens.
+        
+        MÉTADONNÉES : P3 et P4 incluent des labels explicites "PROXY V1 INTERNE"
+        pour indiquer qu'ils ne sont pas des mesures académiques.
         """
         try:
             impact_4p = obj.impact_4p
@@ -62,6 +65,30 @@ class ProjetSerializer(serializers.ModelSerializer):
                 "p3_social": impact_4p.social_score,
                 "p4_sens": impact_4p.purpose_score,
                 "updated_at": impact_4p.updated_at.isoformat() if impact_4p.updated_at else None,
+                "meta": {
+                    "p1": {
+                        "label": "Performance financière",
+                        "description": "Somme des contributions et escrows (en euros). Basé sur des données financières réelles et traçables.",
+                        "is_measured": True,
+                    },
+                    "p2": {
+                        "label": "Performance vivante (SAKA)",
+                        "description": "Score SAKA du projet. Basé sur le SAKA réellement mobilisé (supporters, boosts).",
+                        "is_measured": True,
+                    },
+                    "p3": {
+                        "label": "PROXY V1 INTERNE",
+                        "description": "Score d'impact social/écologique simplifié. Ce score est un indicateur interne, non académique. Il ne doit pas être interprété comme une mesure d'impact robuste. Sera affiné avec des données d'impact plus riches dans les versions futures.",
+                        "is_measured": False,
+                        "disclaimer": "Ce score est un proxy simplifié à usage interne uniquement. Il ne constitue pas une mesure académique d'impact.",
+                    },
+                    "p4": {
+                        "label": "PROXY V1 INTERNE",
+                        "description": "Score de sens/purpose simplifié. Ce score est un indicateur interne, non académique. Il ne doit pas être interprété comme une mesure d'impact robuste. Sera affiné avec des indicateurs qualitatifs plus robustes dans les versions futures.",
+                        "is_measured": False,
+                        "disclaimer": "Ce score est un proxy simplifié à usage interne uniquement. Il ne constitue pas une mesure académique d'impact.",
+                    },
+                },
             }
         except ProjectImpact4P.DoesNotExist:
             # Retourner des valeurs par défaut si le 4P n'a pas encore été calculé
@@ -71,6 +98,30 @@ class ProjetSerializer(serializers.ModelSerializer):
                 "p3_social": 0,
                 "p4_sens": 0,
                 "updated_at": None,
+                "meta": {
+                    "p1": {
+                        "label": "Performance financière",
+                        "description": "Somme des contributions et escrows (en euros). Basé sur des données financières réelles et traçables.",
+                        "is_measured": True,
+                    },
+                    "p2": {
+                        "label": "Performance vivante (SAKA)",
+                        "description": "Score SAKA du projet. Basé sur le SAKA réellement mobilisé (supporters, boosts).",
+                        "is_measured": True,
+                    },
+                    "p3": {
+                        "label": "PROXY V1 INTERNE",
+                        "description": "Score d'impact social/écologique simplifié. Ce score est un indicateur interne, non académique. Il ne doit pas être interprété comme une mesure d'impact robuste. Sera affiné avec des données d'impact plus riches dans les versions futures.",
+                        "is_measured": False,
+                        "disclaimer": "Ce score est un proxy simplifié à usage interne uniquement. Il ne constitue pas une mesure académique d'impact.",
+                    },
+                    "p4": {
+                        "label": "PROXY V1 INTERNE",
+                        "description": "Score de sens/purpose simplifié. Ce score est un indicateur interne, non académique. Il ne doit pas être interprété comme une mesure d'impact robuste. Sera affiné avec des indicateurs qualitatifs plus robustes dans les versions futures.",
+                        "is_measured": False,
+                        "disclaimer": "Ce score est un proxy simplifié à usage interne uniquement. Il ne constitue pas une mesure académique d'impact.",
+                    },
+                },
             }
 
 
