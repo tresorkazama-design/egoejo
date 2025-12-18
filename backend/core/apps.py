@@ -1,6 +1,9 @@
 import sys
+import logging
 from django.apps import AppConfig
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class CoreConfig(AppConfig):
@@ -16,6 +19,10 @@ class CoreConfig(AppConfig):
         # on veut le voir uniquement lors du 'runserver'
         if 'runserver' in sys.argv:
             self.print_signature()
+        
+        # Vérification des feature flags SAKA en production
+        # La structure relationnelle (SAKA) est PRIORITAIRE et doit être activée en production
+        self.check_saka_flags_in_production()
         
         # Connecter le signal pour créer automatiquement un SakaWallet pour chaque nouvel utilisateur
         # Import ici pour éviter les imports circulaires
@@ -39,6 +46,63 @@ class CoreConfig(AppConfig):
                         'total_composted': 0,
                     }
                 )
+
+    def check_saka_flags_in_production(self):
+        """
+        Vérifie que les feature flags SAKA sont activés en production.
+        
+        PHILOSOPHIE EGOEJO :
+        La structure relationnelle (SAKA) est PRIORITAIRE et FONDAMENTALE.
+        Elle ne peut pas être désactivée en production.
+        
+        Cette vérification s'exécute UNIQUEMENT en production (DEBUG=False).
+        En développement/local, les flags peuvent être désactivés pour les tests.
+        """
+        # Ne vérifier qu'en production (DEBUG=False)
+        if settings.DEBUG:
+            logger.debug("Mode développement détecté : vérification des flags SAKA ignorée")
+            return
+        
+        # Vérifier les flags SAKA requis
+        errors = []
+        
+        if not getattr(settings, 'ENABLE_SAKA', False):
+            errors.append("ENABLE_SAKA=False")
+        
+        if not getattr(settings, 'SAKA_COMPOST_ENABLED', False):
+            errors.append("SAKA_COMPOST_ENABLED=False")
+        
+        if not getattr(settings, 'SAKA_SILO_REDIS_ENABLED', False):
+            errors.append("SAKA_SILO_REDIS_ENABLED=False")
+        
+        # Si des flags sont désactivés, lever une exception explicite
+        if errors:
+            error_message = (
+                "\n" + "="*80 + "\n"
+                "❌ ERREUR CRITIQUE : PROTOCOLE SAKA DÉSACTIVÉ EN PRODUCTION\n"
+                "="*80 + "\n\n"
+                "PHILOSOPHIE EGOEJO :\n"
+                "La structure relationnelle (SAKA) est PRIORITAIRE et FONDAMENTALE.\n"
+                "Elle ne peut PAS être désactivée en production.\n\n"
+                "FLAGS DÉSACTIVÉS :\n"
+                + "\n".join(f"  - {flag}" for flag in errors) + "\n\n"
+                "ACTION REQUISE :\n"
+                "Activez les feature flags SAKA en définissant les variables d'environnement :\n"
+                "  - ENABLE_SAKA=True\n"
+                "  - SAKA_COMPOST_ENABLED=True\n"
+                "  - SAKA_SILO_REDIS_ENABLED=True\n\n"
+                "DOCUMENTATION :\n"
+                "Consultez docs/deployment/GUIDE_ACTIVATION_FEATURE_FLAGS.md\n"
+                "="*80 + "\n"
+            )
+            
+            logger.error(error_message)
+            raise RuntimeError(
+                "Le protocole SAKA (structure relationnelle prioritaire) est désactivé en production. "
+                "Activez ENABLE_SAKA, SAKA_COMPOST_ENABLED et SAKA_SILO_REDIS_ENABLED."
+            )
+        
+        logger.info("✅ Vérification SAKA : Tous les feature flags sont activés en production")
 
     def print_signature(self):
         # Codes couleurs ANSI pour le terminal
