@@ -12,7 +12,7 @@ Ces tests vérifient que :
 """
 import pytest
 from django.test import override_settings
-from django.conf import settings
+from django.apps import apps
 from core.apps import CoreConfig
 
 
@@ -34,8 +34,8 @@ class TestSakaProductionFlags:
             SAKA_COMPOST_ENABLED=True,
             SAKA_SILO_REDIS_ENABLED=True,
         ):
-            # Utiliser l'instance de CoreConfig existante
-            config = CoreConfig.create('core')
+            # Obtenir l'instance réelle de CoreConfig
+            config = apps.get_app_config('core')
             
             # La vérification doit lever une exception
             with pytest.raises(RuntimeError) as exc_info:
@@ -57,7 +57,7 @@ class TestSakaProductionFlags:
             SAKA_COMPOST_ENABLED=False,  # Flag désactivé
             SAKA_SILO_REDIS_ENABLED=True,
         ):
-            config = CoreConfig('core', None)
+            config = apps.get_app_config('core')
             
             with pytest.raises(RuntimeError) as exc_info:
                 config.check_saka_flags_in_production()
@@ -78,7 +78,7 @@ class TestSakaProductionFlags:
             SAKA_COMPOST_ENABLED=True,
             SAKA_SILO_REDIS_ENABLED=False,  # Flag désactivé
         ):
-            config = CoreConfig('core', None)
+            config = apps.get_app_config('core')
             
             with pytest.raises(RuntimeError) as exc_info:
                 config.check_saka_flags_in_production()
@@ -98,7 +98,7 @@ class TestSakaProductionFlags:
             SAKA_COMPOST_ENABLED=False,
             SAKA_SILO_REDIS_ENABLED=False,
         ):
-            config = CoreConfig('core', None)
+            config = apps.get_app_config('core')
             
             with pytest.raises(RuntimeError) as exc_info:
                 config.check_saka_flags_in_production()
@@ -120,7 +120,7 @@ class TestSakaProductionFlags:
             SAKA_COMPOST_ENABLED=True,
             SAKA_SILO_REDIS_ENABLED=True,
         ):
-            config = CoreConfig('core', None)
+            config = apps.get_app_config('core')
             
             # Ne doit pas lever d'exception
             try:
@@ -140,7 +140,7 @@ class TestSakaProductionFlags:
             SAKA_COMPOST_ENABLED=False,
             SAKA_SILO_REDIS_ENABLED=False,
         ):
-            config = CoreConfig('core', None)
+            config = apps.get_app_config('core')
             
             # Ne doit pas lever d'exception en mode développement
             try:
@@ -160,7 +160,7 @@ class TestSakaProductionFlags:
             SAKA_COMPOST_ENABLED=False,
             SAKA_SILO_REDIS_ENABLED=False,
         ):
-            config = CoreConfig('core', None)
+            config = apps.get_app_config('core')
             
             with pytest.raises(RuntimeError) as exc_info:
                 config.check_saka_flags_in_production()
@@ -173,4 +173,3 @@ class TestSakaProductionFlags:
             assert "SAKA_SILO_REDIS_ENABLED" in error_message
             assert "production" in error_message.lower()
             assert "structure relationnelle" in error_message.lower() or "SAKA" in error_message
-
