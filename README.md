@@ -1,5 +1,11 @@
 # EGOEJO Full Stack
 
+[![EGOEJO Compliant](https://github.com/YOUR_OWNER/YOUR_REPO/actions/workflows/egoejo-guardian.yml/badge.svg)](https://github.com/YOUR_OWNER/YOUR_REPO/actions/workflows/egoejo-guardian.yml)
+
+> **Ce badge atteste du respect des règles EGOEJO. Il n'atteste ni d'un rendement financier, ni d'une performance économique.**
+
+[Documentation du badge](docs/compliance/EGOEJO_COMPLIANT.md)
+
 ## Structure
 
 - `backend/` – API Django + tests

@@ -1,0 +1,66 @@
+# Règles de conformité EGOEJO Guardian
+# Version autonome pour projets tiers
+
+# ======================
+# RÈGLES ABSOLUES
+# ======================
+
+# Règle 1 : Aucune conversion SAKA ↔ EUR
+no_conversion:
+  description: "Interdiction de conversion SAKA ↔ EUR"
+  patterns:
+    - "convert.*saka.*eur|convert.*eur.*saka"
+    - "saka.*exchange.*rate|exchange.*rate.*saka"
+    - "saka.*price|price.*saka"
+    - "saka.*=.*eur|eur.*=.*saka"
+    - "saka_to_eur|eur_to_saka"
+  severity: "CRITICAL"
+
+# Règle 2 : Aucun rendement financier basé sur SAKA
+no_financial_return:
+  description: "Interdiction de calcul de rendement financier basé sur SAKA"
+  patterns:
+    - "saka.*interest|interest.*saka"
+    - "saka.*yield|yield.*saka"
+    - "saka.*profit|profit.*saka"
+    - "saka.*dividend|dividend.*saka"
+    - "saka.*roi|roi.*saka"
+    - "saka.*apy|apy.*saka"
+  severity: "CRITICAL"
+
+# Règle 3 : Aucun affichage SAKA en euros
+no_monetary_display:
+  description: "Interdiction d'affichage SAKA en euros"
+  patterns:
+    - "saka.*€|€.*saka"
+    - "saka.*euro|euro.*saka"
+    - "saka.*eur|eur.*saka"
+    - "saka.*currency|currency.*saka"
+    - "format.*saka.*money|format.*money.*saka"
+  severity: "HIGH"
+
+# Règle 4 : Obligation de tests pour modifications SAKA
+saka_tests_required:
+  description: "Obligation de tests pour toute modification SAKA"
+  saka_files:
+    - "**/saka*.py"
+    - "**/Saka*.py"
+  test_files:
+    - "**/test*saka*.py"
+    - "**/test*Saka*.py"
+  severity: "HIGH"
+
+# ======================
+# FICHIERS SAKA
+# ======================
+saka_file_patterns:
+  - "**/saka*.py"
+  - "**/Saka*.py"
+
+# ======================
+# FICHIERS DE TEST
+# ======================
+test_file_patterns:
+  - "**/test*saka*.py"
+  - "**/test*Saka*.py"
+

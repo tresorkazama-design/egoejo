@@ -1,0 +1,15 @@
+# Exemple d'intégration GitLab CI pour EGOEJO Compliance
+# Copiez ce fichier dans votre .gitlab-ci.yml ou incluez-le
+
+egoejo_compliance:
+  image: python:3.11
+  before_script:
+    - pip install --upgrade pip
+  script:
+    - python egoejo-compliance/guardian.py
+  artifacts:
+    when: always
+    reports:
+      junit: egoejo-compliance-report.xml
+  allow_failure: false
+

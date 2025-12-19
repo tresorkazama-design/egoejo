@@ -1,0 +1,139 @@
+name: EGOEJO Compliance Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  compliance-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-django pytest-cov
+      
+      - name: Run compliance tests
+        run: |
+          cd backend
+          pytest tests/compliance/ -v --tb=short
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Check forbidden words
+        run: |
+          # Mots interdits dans le code SAKA
+          FORBIDDEN_WORDS="ROI|yield|conversion.*saka.*eur|eur.*saka|interest|dividend"
+          if grep -r -i -E "$FORBIDDEN_WORDS" backend/core/services/saka.py backend/core/models/saka.py backend/finance/services.py 2>/dev/null; then
+            echo "❌ VIOLATION : Mots interdits détectés dans le code SAKA"
+            exit 1
+          fi
+          echo "✅ Aucun mot interdit détecté"
+      
+      - name: Check feature flags in production
+        run: |
+          # Vérifier que les flags SAKA ne sont pas désactivés en production
+          if grep -r "ENABLE_SAKA.*=.*False" backend/config/settings.py 2>/dev/null; then
+            echo "❌ VIOLATION : ENABLE_SAKA=False détecté en production"
+            exit 1
+          fi
+          if grep -r "SAKA_COMPOST_ENABLED.*=.*False" backend/config/settings.py 2>/dev/null; then
+            echo "❌ VIOLATION : SAKA_COMPOST_ENABLED=False détecté en production"
+            exit 1
+          fi
+          if grep -r "SAKA_SILO_REDIS_ENABLED.*=.*False" backend/config/settings.py 2>/dev/null; then
+            echo "❌ VIOLATION : SAKA_SILO_REDIS_ENABLED=False détecté en production"
+            exit 1
+          fi
+          echo "✅ Feature flags SAKA correctement configurés"
+      
+      - name: Check SAKA/EUR separation
+        run: |
+          cd backend
+          pytest tests/compliance/test_saka_eur_separation.py -v
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Check no SAKA accumulation
+        run: |
+          cd backend
+          pytest tests/compliance/test_no_saka_accumulation.py -v
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Check no SAKA/EUR conversion
+        run: |
+          cd backend
+          pytest tests/compliance/test_no_saka_eur_conversion.py -v
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Check SAKA cycle integrity
+        run: |
+          cd backend
+          pytest tests/compliance/test_saka_cycle_integrity.py -v
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Check SAKA philosophy tests
+        run: |
+          cd backend
+          pytest core/tests_saka_philosophy.py -v
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Check financial rollback tests
+        run: |
+          cd backend
+          pytest finance/tests_finance_rollback*.py -v
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Check coverage minimum
+        run: |
+          cd backend
+          pytest --cov=core --cov=finance --cov-report=term-missing --cov-fail-under=70 || echo "⚠️ Couverture < 70% (non bloquant mais recommandé)"
+        env:
+          ENABLE_SAKA: True
+          SAKA_COMPOST_ENABLED: True
+          SAKA_SILO_REDIS_ENABLED: True
+          DJANGO_SETTINGS_MODULE: config.settings
+      
+      - name: Fail if compliance checks fail
+        if: failure()
+        run: |
+          echo "❌ CI FAILED : Conformité EGOEJO non respectée"
+          echo "Consultez docs/reports/AUDIT_COMPLET_TESTS_EGOEJO_2025-12-19.md pour plus de détails"
+          exit 1
+

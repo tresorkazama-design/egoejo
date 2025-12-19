@@ -1,0 +1,267 @@
+name: 🏛️ EGOEJO Guardian - CI de Conformité Constitutionnelle
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main, develop]
+
+jobs:
+  egoejo-conformity:
+    runs-on: ubuntu-latest
+    name: 🛡️ Vérification Conformité Constitution EGOEJO
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Nécessaire pour git diff complet
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: 🔍 Scan Guardian - Analyse Git Diff
+        id: guardian_scan
+        run: |
+          echo "🏛️ EGOEJO Guardian - Analyse de conformité"
+          echo "=========================================="
+          
+          # Déterminer la branche de base
+          if [ -n "${{ github.base_ref }}" ]; then
+            BASE_BRANCH="origin/${{ github.base_ref }}"
+          else
+            BASE_BRANCH="origin/main"
+          fi
+          
+          echo "Branche de base: $BASE_BRANCH"
+          
+          # Exécuter le script Guardian
+          python .egoejo/guardian.py "$BASE_BRANCH"
+          
+          EXIT_CODE=$?
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Guardian Scan: PASS"
+            echo "guardian_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Guardian Scan: FAIL"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Le Guardian a détecté des violations critiques"
+            echo "guardian_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 🔒 Scan Séparation SAKA/EUR - Vérification Étanchéité
+        id: separation_scan
+        run: |
+          echo "🔒 Vérification Étanchéité SAKA ↔ EUR"
+          echo "===================================="
+          
+          # Déterminer la branche de base
+          if [ -n "${{ github.base_ref }}" ]; then
+            BASE_BRANCH="origin/${{ github.base_ref }}"
+          else
+            BASE_BRANCH="origin/main"
+          fi
+          
+          # Récupérer les fichiers modifiés
+          MODIFIED_FILES=$(git diff --name-only "$BASE_BRANCH" | grep -E '\.(py|js|jsx|ts|tsx)$' || true)
+          
+          if [ -z "$MODIFIED_FILES" ]; then
+            echo "✅ Aucun fichier modifié à vérifier"
+            echo "separation_passed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          VIOLATIONS=0
+          VIOLATION_FILES=""
+          
+          # Fichiers admin explicites autorisés (peuvent contenir les deux pour comparaison/test)
+          ADMIN_FILES="admin.py|tests.*compliance.*test_saka_eur_etancheite|tests.*compliance.*test_saka_eur_separation"
+          
+          echo "Fichiers à vérifier:"
+          echo "$MODIFIED_FILES" | while read -r file; do
+            if [ -z "$file" ]; then
+              continue
+            fi
+            
+            # Ignorer les fichiers admin explicites
+            if echo "$file" | grep -qiE "$ADMIN_FILES"; then
+              echo "  [SKIP] $file (fichier admin/test de séparation autorisé)"
+              continue
+            fi
+            
+            # Vérifier si le fichier contient à la fois UserWallet et SakaWallet
+            if [ -f "$file" ]; then
+              if grep -qi "UserWallet" "$file" && grep -qi "SakaWallet" "$file"; then
+                # Vérifier que ce n'est pas juste un import ou un commentaire
+                # Compter les occurrences réelles (hors commentaires, hors imports simples)
+                USERWALLET_COUNT=$(grep -vE '^\s*#|^\s*//|^\s*\*|from.*import|import.*UserWallet' "$file" | grep -ci "UserWallet" || echo "0")
+                SAKAWALLET_COUNT=$(grep -vE '^\s*#|^\s*//|^\s*\*|from.*import|import.*SakaWallet' "$file" | grep -ci "SakaWallet" || echo "0")
+                
+                if [ "$USERWALLET_COUNT" -gt 0 ] && [ "$SAKAWALLET_COUNT" -gt 0 ]; then
+                  echo "❌ VIOLATION: $file contient à la fois UserWallet et SakaWallet"
+                  echo "::error file=$file::🚫 VIOLATION CONSTITUTION EGOEJO : Étanchéité SAKA/EUR rompue. Un fichier ne peut pas contenir à la fois UserWallet (EUR) et SakaWallet (SAKA), sauf fichiers admin explicites."
+                  VIOLATIONS=$((VIOLATIONS + 1))
+                  VIOLATION_FILES="$VIOLATION_FILES $file"
+                fi
+              fi
+            fi
+          done
+          
+          # Vérifier aussi dans tous les fichiers du repo (pas seulement modifiés) pour détecter les violations existantes
+          echo ""
+          echo "Scan complet du codebase pour violations de séparation..."
+          
+          ALL_VIOLATIONS=$(find backend frontend -type f \( -name "*.py" -o -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" \) 2>/dev/null | while read -r file; do
+            # Ignorer les fichiers admin explicites
+            if echo "$file" | grep -qiE "$ADMIN_FILES"; then
+              continue
+            fi
+            
+            # Ignorer node_modules, migrations, etc.
+            if echo "$file" | grep -qiE "node_modules|migrations|__pycache__|\.git"; then
+              continue
+            fi
+            
+            if [ -f "$file" ]; then
+              if grep -qi "UserWallet" "$file" && grep -qi "SakaWallet" "$file"; then
+                USERWALLET_COUNT=$(grep -vE '^\s*#|^\s*//|^\s*\*|from.*import|import.*UserWallet' "$file" 2>/dev/null | grep -ci "UserWallet" || echo "0")
+                SAKAWALLET_COUNT=$(grep -vE '^\s*#|^\s*//|^\s*\*|from.*import|import.*SakaWallet' "$file" 2>/dev/null | grep -ci "SakaWallet" || echo "0")
+                
+                if [ "$USERWALLET_COUNT" -gt 0 ] && [ "$SAKAWALLET_COUNT" -gt 0 ]; then
+                  echo "$file"
+                fi
+              fi
+            fi
+          done)
+          
+          if [ -n "$ALL_VIOLATIONS" ]; then
+            echo "❌ VIOLATIONS DÉTECTÉES dans le codebase:"
+            echo "$ALL_VIOLATIONS" | while read -r file; do
+              echo "  - $file"
+              echo "::error file=$file::🚫 VIOLATION CONSTITUTION EGOEJO : Étanchéité SAKA/EUR rompue"
+            done
+            VIOLATIONS=$((VIOLATIONS + $(echo "$ALL_VIOLATIONS" | wc -l)))
+          fi
+          
+          if [ $VIOLATIONS -eq 0 ]; then
+            echo "✅ Séparation SAKA/EUR: PASS"
+            echo "separation_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Séparation SAKA/EUR: FAIL ($VIOLATIONS violation(s))"
+            echo "::error::🚫 $VIOLATIONS violation(s) de séparation SAKA/EUR détectée(s)"
+            echo "separation_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 🧪 Validation Tests Philosophie SAKA
+        id: philosophy_tests
+        run: |
+          echo "🧪 Exécution Tests Philosophie SAKA"
+          echo "==================================="
+          
+          # Installer les dépendances Python si nécessaire
+          if [ -f "backend/requirements.txt" ]; then
+            echo "Installation des dépendances Python..."
+            pip install -q -r backend/requirements.txt
+          fi
+          
+          # Vérifier que le fichier de test existe
+          if [ ! -f "backend/core/tests_saka_philosophy.py" ]; then
+            echo "❌ Fichier de test introuvable: backend/core/tests_saka_philosophy.py"
+            echo "::error::🚫 Fichier de test de philosophie SAKA introuvable"
+            echo "philosophy_tests_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # Exécuter les tests de philosophie SAKA
+          cd backend
+          
+          # Configurer Django settings si nécessaire
+          export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings}
+          
+          # Exécuter pytest avec le fichier de test
+          pytest core/tests_saka_philosophy.py -v --tb=short
+          
+          EXIT_CODE=$?
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Tests Philosophie SAKA: PASS"
+            echo "philosophy_tests_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Tests Philosophie SAKA: FAIL"
+            echo "::error::🚫 Les tests de philosophie SAKA ont échoué. La constitution EGOEJO n'est pas respectée."
+            echo "philosophy_tests_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 📊 Résumé Conformité EGOEJO
+        if: always()
+        run: |
+          echo "## 🏛️ Rapport de Conformité Constitution EGOEJO" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Vérifications Effectuées :" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # État du Guardian Scan
+          if [ "${{ steps.guardian_scan.outcome }}" == "success" ]; then
+            echo "1. ✅ **Guardian Scan** : PASS - Aucune violation détectée" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "1. ❌ **Guardian Scan** : FAIL - Violations critiques détectées" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # État du Scan de Séparation
+          if [ "${{ steps.separation_scan.outcome }}" == "success" ]; then
+            echo "2. ✅ **Séparation SAKA/EUR** : PASS - Étanchéité respectée" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "2. ❌ **Séparation SAKA/EUR** : FAIL - Violations de séparation détectées" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # État des Tests de Philosophie
+          if [ "${{ steps.philosophy_tests.outcome }}" == "success" ]; then
+            echo "3. ✅ **Tests Philosophie SAKA** : PASS - Tous les tests passent" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "3. ❌ **Tests Philosophie SAKA** : FAIL - Tests échoués" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Constitution EGOEJO :" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Structure Relationnelle (SAKA)** : Souveraine, Prioritaire" >> $GITHUB_STEP_SUMMARY
+          echo "- **Structure Instrumentale (EUR)** : Subordonnée, Dormante par défaut" >> $GITHUB_STEP_SUMMARY
+          echo "- **Règle Absolue** : Aucune conversion SAKA ↔ EUR" >> $GITHUB_STEP_SUMMARY
+          echo "- **Règle Absolue** : Aucun rendement financier sur SAKA" >> $GITHUB_STEP_SUMMARY
+          echo "- **Règle Absolue** : Étanchéité stricte SAKA/EUR (aucun fichier ne peut contenir les deux)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Déterminer le statut final
+          if [ "${{ steps.guardian_scan.outcome }}" == "success" ] && \
+             [ "${{ steps.separation_scan.outcome }}" == "success" ] && \
+             [ "${{ steps.philosophy_tests.outcome }}" == "success" ]; then
+            echo "### ✅ **STATUT FINAL : COMPATIBLE EGOEJO**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Cette PR respecte la constitution EGOEJO. Le déploiement est autorisé." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ **STATUT FINAL : NON COMPATIBLE EGOEJO**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚫 **DÉPLOIEMENT INTERDIT** - Cette PR viole la constitution EGOEJO." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Consultez les erreurs ci-dessus et corrigez les violations avant de continuer." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📖 Documentation : [Constitution EGOEJO](docs/architecture/CONSTITUTION_EGOEJO.md)" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: 🚫 Bloquer Déploiement si Non Conforme
+        if: failure()
+        run: |
+          echo "::error::🔴 NON COMPATIBLE EGOEJO"
+          echo "::error::🚫 DÉPLOIEMENT INTERDIT - Violations de la Constitution EGOEJO détectées"
+          echo "::error::Consultez docs/architecture/CONSTITUTION_EGOEJO.md pour plus d'informations"
+          echo ""
+          echo "Les étapes suivantes ont échoué :"
+          echo "  - Guardian Scan: ${{ steps.guardian_scan.outcome }}"
+          echo "  - Séparation SAKA/EUR: ${{ steps.separation_scan.outcome }}"
+          echo "  - Tests Philosophie SAKA: ${{ steps.philosophy_tests.outcome }}"
+          exit 1

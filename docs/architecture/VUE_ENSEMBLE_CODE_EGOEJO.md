@@ -1,5 +1,11 @@
 # 📦 Vue d'Ensemble du Code EGOEJO
 
+[![EGOEJO Compliant](https://github.com/YOUR_OWNER/YOUR_REPO/actions/workflows/egoejo-guardian.yml/badge.svg)](https://github.com/YOUR_OWNER/YOUR_REPO/actions/workflows/egoejo-guardian.yml)
+
+> **Ce badge atteste du respect des règles EGOEJO. Il n'atteste ni d'un rendement financier, ni d'une performance économique.**
+
+[Documentation du badge](../compliance/EGOEJO_COMPLIANT.md)
+
 **Version** : 2.1 (Hybride V1.6 + V2.0)  
 **Date** : 2025-01-16  
 **Statut** : Production Ready ✅  

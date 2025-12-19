@@ -1,0 +1,209 @@
+name: 🏛️ EGOEJO Guardian - PR Bot & Auditeur
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main, develop]
+
+jobs:
+  guardian-check:
+    runs-on: ubuntu-latest
+    name: 🛡️ Gardien de la Constitution EGOEJO
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Nécessaire pour git diff
+      
+      - name: 🚫 Vérifier Absence de Conversion SAKA ↔ EUR
+        id: check_conversion
+        run: |
+          echo "🔍 Recherche de violations : Conversion SAKA ↔ EUR"
+          
+          VIOLATIONS=0
+          
+          # Patterns interdits pour conversion SAKA → EUR
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(convert.*saka.*eur|saka.*to.*eur|eur.*to.*saka|saka.*exchange.*rate|saka.*price|saka.*value.*eur|saka.*worth.*eur)" -- "*.py" "*.js" "*.jsx" "*.ts" "*.tsx"; then
+            echo "❌ VIOLATION CRITIQUE : Conversion SAKA ↔ EUR détectée"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Aucune conversion SAKA ↔ EUR n'est autorisée. La structure relationnelle (SAKA) et la structure instrumentale (EUR) sont strictement séparées."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          # Patterns interdits pour rendement financier sur SAKA
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(saka.*roi|saka.*yield|saka.*interest|saka.*dividend|saka.*return.*investment|saka.*profit)" -- "*.py" "*.js" "*.jsx" "*.ts" "*.tsx"; then
+            echo "❌ VIOLATION CRITIQUE : Rendement financier sur SAKA détecté"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Le SAKA ne peut pas générer de rendement financier. C'est une unité d'engagement non monétaire."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          # Patterns interdits pour équivalence monétaire SAKA
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(saka.*\*.*rate.*eur|saka.*\*.*[\d.]+.*eur|saka.*equivalent.*eur|saka.*monetary)" -- "*.py" "*.js" "*.jsx" "*.ts" "*.tsx"; then
+            echo "❌ VIOLATION CRITIQUE : Équivalence monétaire SAKA détectée"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Le SAKA ne peut pas avoir d'équivalent monétaire. SAKA et EUR sont strictement séparés."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          if [ $VIOLATIONS -eq 0 ]; then
+            echo "✅ Aucune violation de conversion SAKA ↔ EUR détectée"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::🚫 $VIOLATIONS violation(s) de la Constitution EGOEJO détectée(s)"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 🚫 Vérifier Absence de Mécanismes de Rendement Financier
+        id: check_financial_return
+        run: |
+          echo "🔍 Recherche de violations : Rendement financier sur SAKA"
+          
+          VIOLATIONS=0
+          
+          # Vérifier les fonctions qui pourraient calculer un rendement
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(def.*calculate.*saka.*return|def.*get.*saka.*roi|def.*saka.*yield|def.*saka.*profit)" -- "*.py"; then
+            echo "❌ VIOLATION CRITIQUE : Fonction de rendement financier SAKA détectée"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Aucune fonction ne peut calculer un rendement financier sur le SAKA."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          # Vérifier les calculs de taux d'intérêt ou dividendes
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(saka.*interest.*rate|saka.*dividend.*rate|saka.*compounding)" -- "*.py" "*.js" "*.jsx"; then
+            echo "❌ VIOLATION CRITIQUE : Calcul de taux d'intérêt/dividendes SAKA détecté"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Le SAKA ne peut pas générer d'intérêts ou de dividendes."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          if [ $VIOLATIONS -eq 0 ]; then
+            echo "✅ Aucune violation de rendement financier détectée"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::🚫 $VIOLATIONS violation(s) de la Constitution EGOEJO détectée(s)"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 🚫 Vérifier Priorité Structure Relationnelle (SAKA)
+        id: check_saka_priority
+        run: |
+          echo "🔍 Vérification : Priorité de la structure relationnelle (SAKA)"
+          
+          VIOLATIONS=0
+          
+          # Vérifier qu'aucun code ne désactive SAKA en faveur d'EUR
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(disable.*saka|saka.*disabled|if.*eur.*then.*disable.*saka)" -- "*.py" "*.js" "*.jsx"; then
+            echo "❌ VIOLATION CRITIQUE : Désactivation SAKA détectée"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : La structure relationnelle (SAKA) est PRIORITAIRE. Elle ne peut pas être désactivée."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          # Vérifier qu'aucun code ne subordonne SAKA à EUR
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(if.*eur.*then.*saka|saka.*depends.*on.*eur|eur.*required.*for.*saka)" -- "*.py" "*.js" "*.jsx"; then
+            echo "❌ VIOLATION CRITIQUE : Subordination SAKA à EUR détectée"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : SAKA ne peut pas dépendre d'EUR. La structure relationnelle est souveraine."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          # Vérifier que les feature flags SAKA ne sont pas désactivés
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(ENABLE_SAKA.*=.*False|SAKA_COMPOST_ENABLED.*=.*False|SAKA_SILO_REDIS_ENABLED.*=.*False)" -- "*.py"; then
+            echo "❌ VIOLATION CRITIQUE : Feature flags SAKA désactivés"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Les feature flags SAKA ne peuvent pas être désactivés. SAKA est la structure prioritaire."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          if [ $VIOLATIONS -eq 0 ]; then
+            echo "✅ Priorité de la structure relationnelle (SAKA) respectée"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::🚫 $VIOLATIONS violation(s) de la Constitution EGOEJO détectée(s)"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 🚫 Vérifier Anti-Accumulation SAKA
+        id: check_anti_accumulation
+        run: |
+          echo "🔍 Vérification : Anti-accumulation SAKA"
+          
+          VIOLATIONS=0
+          
+          # Vérifier qu'aucun code ne permet l'accumulation infinie
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(saka.*accumulate.*infinite|saka.*no.*limit|saka.*unlimited|disable.*compost|skip.*compost)" -- "*.py" "*.js" "*.jsx"; then
+            echo "❌ VIOLATION CRITIQUE : Accumulation infinie SAKA détectée"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : L'accumulation SAKA est interdite. Le cycle compostage est obligatoire."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          # Vérifier qu'aucun code ne désactive le compostage
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(compost.*disabled|compost.*skip|bypass.*compost|remove.*compost)" -- "*.py"; then
+            echo "❌ VIOLATION CRITIQUE : Désactivation compostage détectée"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Le compostage SAKA est NON NÉGOCIABLE. Il ne peut pas être désactivé."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          if [ $VIOLATIONS -eq 0 ]; then
+            echo "✅ Anti-accumulation SAKA respectée"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::🚫 $VIOLATIONS violation(s) de la Constitution EGOEJO détectée(s)"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 🚫 Vérifier Cycle SAKA Incompressible
+        id: check_saka_cycle
+        run: |
+          echo "🔍 Vérification : Cycle SAKA incompressible"
+          
+          VIOLATIONS=0
+          
+          # Vérifier qu'aucun code ne contourne le cycle SAKA
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(skip.*saka.*cycle|bypass.*saka.*cycle|shortcut.*saka.*cycle)" -- "*.py" "*.js" "*.jsx"; then
+            echo "❌ VIOLATION CRITIQUE : Contournement cycle SAKA détecté"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Le cycle SAKA (Récolte → Usage → Compost → Silo → Redistribution) est NON NÉGOCIABLE."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          # Vérifier que le Silo est toujours alimenté après compostage
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(compost.*without.*silo|compost.*skip.*silo)" -- "*.py"; then
+            echo "❌ VIOLATION CRITIQUE : Compostage sans Silo détecté"
+            echo "::error::🚫 VIOLATION CONSTITUTION EGOEJO : Le SAKA composté DOIT retourner au Silo Commun."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          fi
+          
+          if [ $VIOLATIONS -eq 0 ]; then
+            echo "✅ Cycle SAKA incompressible respecté"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::🚫 $VIOLATIONS violation(s) de la Constitution EGOEJO détectée(s)"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 📊 Résumé des Vérifications
+        if: always()
+        run: |
+          echo "## 🏛️ Rapport Guardian EGOEJO" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Vérifications Effectuées :" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. ✅ Absence de conversion SAKA ↔ EUR" >> $GITHUB_STEP_SUMMARY
+          echo "2. ✅ Absence de mécanismes de rendement financier" >> $GITHUB_STEP_SUMMARY
+          echo "3. ✅ Priorité de la structure relationnelle (SAKA)" >> $GITHUB_STEP_SUMMARY
+          echo "4. ✅ Anti-accumulation SAKA" >> $GITHUB_STEP_SUMMARY
+          echo "5. ✅ Cycle SAKA incompressible" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Constitution EGOEJO :" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Structure Relationnelle (SAKA)** : Souveraine, Prioritaire" >> $GITHUB_STEP_SUMMARY
+          echo "- **Structure Instrumentale (EUR)** : Subordonnée, Dormante par défaut" >> $GITHUB_STEP_SUMMARY
+          echo "- **Règle Absolue** : Aucune conversion SAKA ↔ EUR" >> $GITHUB_STEP_SUMMARY
+          echo "- **Règle Absolue** : Aucun rendement financier sur SAKA" >> $GITHUB_STEP_SUMMARY
+      
+      - name: 🚫 Bloquer PR si Violations Détectées
+        if: failure()
+        run: |
+          echo "::error::🚫 PR BLOQUÉ : Violations de la Constitution EGOEJO détectées"
+          echo "::error::Consultez docs/architecture/CONSTITUTION_EGOEJO.md pour plus d'informations"
+          exit 1
+

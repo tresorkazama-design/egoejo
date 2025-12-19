@@ -442,10 +442,6 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', '1') == '1'
 
-# Email pour les notifications et alertes
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@egoejo.org')
-NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')  # Email pour recevoir les alertes de monitoring SAKA
-
 # ====================================================================
 # SÉCURITÉ DEV / PROD
 # ====================================================================

@@ -1,0 +1,207 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://egoejo.org/schemas/egoejo-compliant.json",
+  "title": "EGOEJO Compliant Project Declaration",
+  "description": "Schema pour déclarer la conformité d'un projet avec la Constitution EGOEJO",
+  "type": "object",
+  "required": [
+    "version",
+    "project_name",
+    "project_url",
+    "constitution_version",
+    "saka_structure",
+    "separation_rules"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Version du schéma EGOEJO Compliant (ex: '1.0.0')",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0"]
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Nom du projet déclarant sa conformité",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "project_url": {
+      "type": "string",
+      "description": "URL principale du projet",
+      "format": "uri"
+    },
+    "repository_url": {
+      "type": "string",
+      "description": "URL du dépôt source (GitHub, GitLab, etc.)",
+      "format": "uri"
+    },
+    "constitution_version": {
+      "type": "string",
+      "description": "Version de la Constitution EGOEJO adoptée",
+      "pattern": "^\\d+\\.\\d+$",
+      "examples": ["1.0", "2.0"]
+    },
+    "saka_structure": {
+      "type": "object",
+      "description": "Déclaration de la structure relationnelle SAKA",
+      "required": [
+        "enabled",
+        "compost_enabled",
+        "compost_inactivity_days",
+        "compost_rate",
+        "compost_min_balance",
+        "silo_redistribution_enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Le protocole SAKA est activé"
+        },
+        "compost_enabled": {
+          "type": "boolean",
+          "description": "Le compostage automatique est activé"
+        },
+        "compost_inactivity_days": {
+          "type": "integer",
+          "description": "Nombre de jours d'inactivité avant éligibilité au compostage",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "compost_rate": {
+          "type": "number",
+          "description": "Taux de dépréciation (ex: 0.1 = 10%)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "compost_min_balance": {
+          "type": "integer",
+          "description": "Solde minimum requis pour compostage",
+          "minimum": 0
+        },
+        "compost_min_amount": {
+          "type": "integer",
+          "description": "Montant minimum composté par cycle",
+          "minimum": 0
+        },
+        "silo_redistribution_enabled": {
+          "type": "boolean",
+          "description": "La redistribution depuis le Silo Commun est activée"
+        },
+        "silo_redistribution_rate": {
+          "type": "number",
+          "description": "Taux de redistribution depuis le Silo (ex: 0.1 = 10%)",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "separation_rules": {
+      "type": "object",
+      "description": "Règles de séparation entre structure relationnelle et instrumentale",
+      "required": [
+        "strict_separation",
+        "no_conversion",
+        "no_financial_return",
+        "no_monetary_display"
+      ],
+      "properties": {
+        "strict_separation": {
+          "type": "boolean",
+          "description": "Séparation stricte entre SAKA et EUR (ou équivalent monétaire)"
+        },
+        "no_conversion": {
+          "type": "boolean",
+          "description": "Aucune conversion SAKA ↔ EUR autorisée"
+        },
+        "no_financial_return": {
+          "type": "boolean",
+          "description": "Aucun rendement financier sur SAKA autorisé"
+        },
+        "no_monetary_display": {
+          "type": "boolean",
+          "description": "Aucun affichage monétaire du SAKA autorisé"
+        },
+        "relational_structure_priority": {
+          "type": "boolean",
+          "description": "La structure relationnelle (SAKA) est prioritaire sur la structure instrumentale"
+        }
+      }
+    },
+    "code_locations": {
+      "type": "object",
+      "description": "Emplacements du code SAKA dans le projet",
+      "properties": {
+        "saka_models": {
+          "type": "array",
+          "description": "Chemins vers les modèles SAKA",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["backend/core/models/saka.py"]]
+        },
+        "saka_services": {
+          "type": "array",
+          "description": "Chemins vers les services SAKA",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["backend/core/services/saka.py"]]
+        },
+        "saka_tests": {
+          "type": "array",
+          "description": "Chemins vers les tests SAKA",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["backend/core/tests_saka_philosophy.py"]]
+        },
+        "monetary_models": {
+          "type": "array",
+          "description": "Chemins vers les modèles monétaires (EUR ou équivalent)",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["backend/finance/models.py"]]
+        }
+      }
+    },
+    "compliance_checks": {
+      "type": "object",
+      "description": "Vérifications de conformité déclarées",
+      "properties": {
+        "automated_tests": {
+          "type": "boolean",
+          "description": "Tests automatisés de conformité présents"
+        },
+        "ci_cd_integration": {
+          "type": "boolean",
+          "description": "Intégration CI/CD pour vérification automatique"
+        },
+        "guardian_script": {
+          "type": "boolean",
+          "description": "Script Guardian (ou équivalent) présent"
+        },
+        "legal_clauses": {
+          "type": "boolean",
+          "description": "Clauses juridiques de protection présentes"
+        }
+      }
+    },
+    "badge_url": {
+      "type": "string",
+      "description": "URL du badge EGOEJO Compliant",
+      "format": "uri"
+    },
+    "last_validated": {
+      "type": "string",
+      "description": "Date de dernière validation (ISO 8601)",
+      "format": "date-time"
+    },
+    "validator_version": {
+      "type": "string",
+      "description": "Version du validateur utilisé",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    }
+  }
+}
+

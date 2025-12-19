@@ -1,0 +1,203 @@
+# Configuration du Guardian EGOEJO
+# Bot d'analyse des Pull Requests pour garantir la conformité philosophique
+
+# ======================
+# DOUBLE STRUCTURE ÉCONOMIQUE
+# ======================
+double_structure:
+  # Structure relationnelle (SAKA) - PRIORITAIRE
+  saka:
+    priority: "PRIORITAIRE"
+    description: "Structure relationnelle - Engagement, don, circulation, cycles"
+    cycle: ["Récolte", "Usage", "Compost", "Silo", "Redistribution"]
+    anti_accumulation: true
+    files:
+      - "backend/core/services/saka.py"
+      - "backend/core/models/saka.py"
+      - "backend/core/api/saka_views.py"
+      - "backend/core/tasks.py"  # Tâches Celery SAKA
+      - "frontend/**/saka*"
+      - "frontend/**/Saka*"
+  
+  # Structure instrumentale (EUR) - DORMANTE
+  eur:
+    priority: "DORMANTE"
+    description: "Structure instrumentale - Finance, wallets, escrow, investissement"
+    feature_flag: "ENABLE_INVESTMENT_FEATURES"
+    files:
+      - "backend/finance/**"
+      - "backend/investment/**"
+      - "frontend/**/finance*"
+      - "frontend/**/Finance*"
+      - "frontend/**/investment*"
+      - "frontend/**/Investment*"
+
+# ======================
+# RÈGLES ABSOLUES
+# ======================
+absolute_rules:
+  # Règle 1 : Aucune conversion SAKA ↔ EUR
+  no_conversion:
+    description: "Aucune conversion SAKA ↔ EUR"
+    severity: "CRITICAL"
+    patterns:
+      - pattern: "saka.*eur|eur.*saka"
+        case_sensitive: false
+        description: "Conversion explicite SAKA ↔ EUR"
+      - pattern: "convert.*saka|saka.*convert"
+        case_sensitive: false
+        description: "Fonction de conversion SAKA"
+      - pattern: "saka.*price|price.*saka"
+        case_sensitive: false
+        description: "Prix ou valeur monétaire du SAKA"
+      - pattern: "saka.*exchange|exchange.*saka"
+        case_sensitive: false
+        description: "Échange SAKA ↔ EUR"
+      - pattern: "saka.*rate|rate.*saka"
+        case_sensitive: false
+        description: "Taux de change SAKA"
+      - pattern: "saka.*value.*eur|eur.*value.*saka"
+        case_sensitive: false
+        description: "Valeur EUR du SAKA"
+  
+  # Règle 2 : Aucun rendement financier basé sur SAKA
+  no_financial_return:
+    description: "Aucun rendement financier basé sur SAKA"
+    severity: "CRITICAL"
+    patterns:
+      - pattern: "saka.*interest|interest.*saka"
+        case_sensitive: false
+        description: "Intérêt sur SAKA"
+      - pattern: "saka.*dividend|dividend.*saka"
+        case_sensitive: false
+        description: "Dividende basé sur SAKA"
+      - pattern: "saka.*yield|yield.*saka"
+        case_sensitive: false
+        description: "Rendement SAKA"
+      - pattern: "saka.*profit|profit.*saka"
+        case_sensitive: false
+        description: "Profit basé sur SAKA"
+      - pattern: "saka.*return|return.*saka"
+        case_sensitive: false
+        description: "Retour sur investissement SAKA"
+  
+  # Règle 3 : Aucun affichage monétaire du SAKA
+  no_monetary_display:
+    description: "Aucun affichage monétaire du SAKA"
+    severity: "HIGH"
+    patterns:
+      - pattern: "saka.*€|€.*saka"
+        case_sensitive: false
+        description: "Affichage SAKA en euros"
+      - pattern: "saka.*euro|euro.*saka"
+        case_sensitive: false
+        description: "Affichage SAKA en euros"
+      - pattern: "saka.*currency|currency.*saka"
+        case_sensitive: false
+        description: "SAKA comme monnaie convertible"
+      - pattern: "format.*saka.*money|money.*format.*saka"
+        case_sensitive: false
+        description: "Formatage SAKA comme monnaie"
+  
+  # Règle 4 : Le cycle SAKA est non négociable
+  saka_cycle_mandatory:
+    description: "Le cycle SAKA est non négociable"
+    severity: "CRITICAL"
+    required_components:
+      - "Récolte (harvest)"
+      - "Usage (spend)"
+      - "Compost (compost)"
+      - "Silo (silo)"
+      - "Redistribution (redistribution)"
+    forbidden_patterns:
+      - pattern: "disable.*compost|compost.*disable"
+        case_sensitive: false
+        description: "Désactivation du compostage"
+      - pattern: "skip.*compost|compost.*skip"
+        case_sensitive: false
+        description: "Contournement du compostage"
+      - pattern: "bypass.*compost|compost.*bypass"
+        case_sensitive: false
+        description: "Bypass du compostage"
+      - pattern: "remove.*compost|compost.*remove"
+        case_sensitive: false
+        description: "Suppression du compostage"
+  
+  # Règle 5 : En cas de conflit : SAKA > EUR
+  saka_priority:
+    description: "En cas de conflit : SAKA > EUR"
+    severity: "HIGH"
+    patterns:
+      - pattern: "if.*eur.*saka|if.*saka.*eur"
+        case_sensitive: false
+        description: "Logique conditionnelle qui privilégie EUR sur SAKA"
+      - pattern: "eur.*priority|priority.*eur"
+        case_sensitive: false
+        description: "Priorité donnée à EUR"
+      - pattern: "saka.*disabled.*eur|eur.*enabled.*saka"
+        case_sensitive: false
+        description: "SAKA désactivé au profit d'EUR"
+
+# ======================
+# RÈGLES DE TEST
+# ======================
+test_rules:
+  # Les changements SAKA doivent avoir des tests associés
+  saka_changes_require_tests:
+    description: "Les changements SAKA doivent avoir des tests associés"
+    severity: "HIGH"
+    saka_files_patterns:
+      - "backend/core/services/saka.py"
+      - "backend/core/models/saka.py"
+      - "backend/core/api/saka_views.py"
+    required_test_files:
+      - "backend/core/tests_saka*.py"
+      - "backend/core/tests_saka_philosophy.py"
+    min_test_coverage: 0.8  # 80% de couverture minimum pour les changements SAKA
+
+# ======================
+# RÈGLES DE FEATURE FLAGS
+# ======================
+feature_flags:
+  # Les features EUR doivent être protégées par feature flags
+  eur_requires_feature_flag:
+    description: "Les features EUR doivent être protégées par feature flags"
+    severity: "HIGH"
+    required_flag: "ENABLE_INVESTMENT_FEATURES"
+    eur_files:
+      - "backend/finance/**"
+      - "backend/investment/**"
+    check_patterns:
+      - pattern: "if.*ENABLE_INVESTMENT_FEATURES|ENABLE_INVESTMENT_FEATURES.*if"
+        case_sensitive: false
+        description: "Vérification du feature flag pour EUR"
+
+# ======================
+# VERDICTS
+# ======================
+verdicts:
+  compatible:
+    label: "🟢 COMPATIBLE EGOEJO"
+    description: "La PR respecte toutes les règles de la constitution EGOEJO"
+    action: "APPROVE"
+  
+  compatible_under_conditions:
+    label: "🟡 COMPATIBLE SOUS CONDITIONS"
+    description: "La PR est compatible mais nécessite des ajustements ou clarifications"
+    action: "REQUEST_CHANGES"
+    conditions:
+      - "Tests manquants pour changements SAKA"
+      - "Documentation manquante"
+      - "Feature flags non vérifiés"
+  
+  non_compatible:
+    label: "🔴 NON COMPATIBLE EGOEJO"
+    description: "La PR viole les règles absolues de la constitution EGOEJO"
+    action: "BLOCK"
+    violations:
+      - "Conversion SAKA ↔ EUR"
+      - "Rendement financier basé sur SAKA"
+      - "Suppression ou contournement du compostage"
+      - "Optimisation au détriment du commun"
+      - "Priorité donnée à EUR sur SAKA"
+

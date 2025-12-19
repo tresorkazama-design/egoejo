@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "project_name": "EGOEJO",
+  "project_url": "https://egoejo.org",
+  "repository_url": "https://github.com/egoejo/egoejo",
+  "constitution_version": "1.0",
+  "saka_structure": {
+    "enabled": true,
+    "compost_enabled": true,
+    "compost_inactivity_days": 90,
+    "compost_rate": 0.1,
+    "compost_min_balance": 50,
+    "compost_min_amount": 10,
+    "silo_redistribution_enabled": true,
+    "silo_redistribution_rate": 0.1
+  },
+  "separation_rules": {
+    "strict_separation": true,
+    "no_conversion": true,
+    "no_financial_return": true,
+    "no_monetary_display": true,
+    "relational_structure_priority": true
+  },
+  "code_locations": {
+    "saka_models": [
+      "backend/core/models/saka.py"
+    ],
+    "saka_services": [
+      "backend/core/services/saka.py"
+    ],
+    "saka_tests": [
+      "backend/core/tests_saka_philosophy.py",
+      "backend/tests/compliance/test_saka_eur_etancheite.py",
+      "backend/tests/compliance/test_saka_compost_depreciation_effective.py",
+      "backend/tests/compliance/test_saka_redistribution_silo_vide.py"
+    ],
+    "monetary_models": [
+      "backend/finance/models.py"
+    ]
+  },
+  "compliance_checks": {
+    "automated_tests": true,
+    "ci_cd_integration": true,
+    "guardian_script": true,
+    "legal_clauses": true
+  },
+  "last_validated": "2025-12-19T00:00:00Z",
+  "validator_version": "1.0.0"
+}
+
