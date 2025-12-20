@@ -14,7 +14,7 @@ VIOLATION EMPÊCHÉE :
 - Redistribution qui peut être désactivée
 """
 import pytest
-from django.test import override_settings
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
@@ -30,8 +30,7 @@ User = get_user_model()
     SAKA_SILO_REDIS_RATE=0.1,  # 10% du Silo redistribué
     SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY=1,
 )
-@pytest.mark.django_db
-class TestSakaRedistributionSiloVide:
+class TestSakaRedistributionSiloVide(TestCase):
     """
     Tests pour garantir que la redistribution vide effectivement le Silo.
     
@@ -262,7 +261,7 @@ class TestSakaRedistributionSiloVide:
         Ce test protège la règle : "Redistribution obligatoire - Le Silo se vide vers le commun"
         
         Vérifie que :
-        - Si SAKA_SILO_REDIS_ENABLED=False, la redistribution retourne un message d'erreur
+        - Si SAKA_SILO_REDIS_ENABLED=False, la redistribution retourne un message de désactivation
         - Mais le test vérifie que cette désactivation est une VIOLATION en production
         """
         # Créer le Silo avec du SAKA

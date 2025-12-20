@@ -37,6 +37,9 @@ def broadcast_to_group(group_name: str, event_type: str, payload: Dict[str, Any]
 def log_action(actor, action: str, target_type: str, target_id: Optional[Any] = None, metadata: Optional[Dict[str, Any]] = None) -> None:
     """
     Persist l'action dans le journal d'audit sans casser la requête en cas d'échec.
+    
+    OPTIMISATION LOGGING : Si l'Audit Log échoue, on ne bloque pas l'utilisateur,
+    MAIS on alerte l'admin avec un log ERROR complet.
     """
     try:
         AuditLog.objects.create(
@@ -46,8 +49,15 @@ def log_action(actor, action: str, target_type: str, target_id: Optional[Any] = 
             target_id=str(target_id or ""),
             metadata=metadata or {},
         )
-    except Exception:  # noqa: BLE001
-        logger.exception("Impossible d'enregistrer l'action %s (%s)", action, target_type)
+    except Exception as e:
+        # Erreur lors de l'enregistrement de l'audit - ON LOG ERROR AVEC TRACE COMPLÈTE
+        # Ne pas bloquer la requête, mais alerter l'admin
+        logger.error(
+            f"Impossible d'enregistrer l'action {action} ({target_type}) - "
+            f"target_id={target_id}, actor={getattr(actor, 'id', 'anonymous')}, "
+            f"metadata={metadata} - Error: {e}",
+            exc_info=True
+        )
 
 
 def build_voter_hash(request, poll: Poll) -> str:

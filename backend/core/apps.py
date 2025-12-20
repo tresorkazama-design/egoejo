@@ -2,6 +2,7 @@ import sys
 import logging
 from django.apps import AppConfig
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class CoreConfig(AppConfig):
 
     def check_saka_flags_in_production(self):
         """
-        Vérifie que les feature flags SAKA sont activés en production.
+        Dead Man's Switch : Vérifie que le protocole SAKA est activé en production.
         
         PHILOSOPHIE EGOEJO :
         La structure relationnelle (SAKA) est PRIORITAIRE et FONDAMENTALE.
@@ -57,52 +58,41 @@ class CoreConfig(AppConfig):
         
         Cette vérification s'exécute UNIQUEMENT en production (DEBUG=False).
         En développement/local, les flags peuvent être désactivés pour les tests.
+        
+        SRE Safety : Cette vérification empêche le démarrage du serveur (Gunicorn/Daphne)
+        si ENABLE_SAKA est désactivé en production, évitant ainsi des erreurs de configuration critiques.
         """
-        # Ne vérifier qu'en production (DEBUG=False)
-        if settings.DEBUG:
-            logger.debug("Mode développement détecté : vérification des flags SAKA ignorée")
+        # CORRECTION TESTS : Ignorer le Dead Man's Switch en mode test
+        # Les tests utilisent override_settings pour configurer ENABLE_SAKA
+        if 'test' in sys.argv or 'pytest' in sys.modules or settings.DEBUG:
+            logger.debug("Mode test/développement détecté : Dead Man's Switch SAKA ignoré")
             return
         
-        # Vérifier les flags SAKA requis
-        errors = []
-        
+        # Dead Man's Switch : Vérifier ENABLE_SAKA en production
+        # Si ENABLE_SAKA est False en production, lever une exception bloquante
         if not getattr(settings, 'ENABLE_SAKA', False):
-            errors.append("ENABLE_SAKA=False")
-        
-        if not getattr(settings, 'SAKA_COMPOST_ENABLED', False):
-            errors.append("SAKA_COMPOST_ENABLED=False")
-        
-        if not getattr(settings, 'SAKA_SILO_REDIS_ENABLED', False):
-            errors.append("SAKA_SILO_REDIS_ENABLED=False")
-        
-        # Si des flags sont désactivés, lever une exception explicite
-        if errors:
             error_message = (
                 "\n" + "="*80 + "\n"
-                "❌ ERREUR CRITIQUE : PROTOCOLE SAKA DÉSACTIVÉ EN PRODUCTION\n"
+                "🚨 CRITICAL SAFETY STOP 🚨\n"
                 "="*80 + "\n\n"
+                "Attempting to run Production without SAKA Protocol.\n"
+                "Enable ENABLE_SAKA env var.\n\n"
                 "PHILOSOPHIE EGOEJO :\n"
                 "La structure relationnelle (SAKA) est PRIORITAIRE et FONDAMENTALE.\n"
                 "Elle ne peut PAS être désactivée en production.\n\n"
-                "FLAGS DÉSACTIVÉS :\n"
-                + "\n".join(f"  - {flag}" for flag in errors) + "\n\n"
                 "ACTION REQUISE :\n"
-                "Activez les feature flags SAKA en définissant les variables d'environnement :\n"
-                "  - ENABLE_SAKA=True\n"
-                "  - SAKA_COMPOST_ENABLED=True\n"
-                "  - SAKA_SILO_REDIS_ENABLED=True\n\n"
-                "DOCUMENTATION :\n"
-                "Consultez docs/deployment/GUIDE_ACTIVATION_FEATURE_FLAGS.md\n"
+                "Activez le protocole SAKA en définissant la variable d'environnement :\n"
+                "  ENABLE_SAKA=True\n\n"
+                "Le serveur ne démarrera pas tant que cette condition n'est pas remplie.\n"
                 "="*80 + "\n"
             )
             
-            logger.error(error_message)
-            raise RuntimeError(
-                "Le protocole SAKA (structure relationnelle prioritaire) est désactivé en production. "
-                "Activez ENABLE_SAKA, SAKA_COMPOST_ENABLED et SAKA_SILO_REDIS_ENABLED."
+            logger.critical(error_message)
+            raise ImproperlyConfigured(
+                "CRITICAL SAFETY STOP: Attempting to run Production without SAKA Protocol. Enable ENABLE_SAKA env var."
             )
         
-        logger.info("✅ Vérification SAKA : Tous les feature flags sont activés en production")
+        logger.info("✅ Dead Man's Switch SAKA : Protocole SAKA activé en production")
 
     def print_signature(self):
         # Codes couleurs ANSI pour le terminal

@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.db.models import Count
 from core.models.communities import Community
 
 
@@ -33,7 +34,12 @@ def community_list_view(request):
             ...
         ]
     """
-    communities = Community.objects.filter(is_active=True).prefetch_related('members', 'projects')
+    # ÉRADICATION N+1 : Utiliser annotate(Count(...)) au lieu de .count() dans la boucle
+    # Cela génère un COUNT SQL directement dans la requête principale
+    communities = Community.objects.filter(is_active=True).annotate(
+        members_count=Count('members', distinct=True),
+        projects_count=Count('projects', distinct=True)
+    )
     
     data = []
     for community in communities:
@@ -44,8 +50,8 @@ def community_list_view(request):
             "description": community.description,
             "is_active": community.is_active,
             "created_at": community.created_at.isoformat() if community.created_at else None,
-            "members_count": community.members.count(),
-            "projects_count": community.projects.count(),
+            "members_count": community.members_count,  # ✅ Utilise l'annotation au lieu de .count()
+            "projects_count": community.projects_count,  # ✅ Utilise l'annotation au lieu de .count()
         })
     
     return Response(data)
@@ -82,15 +88,28 @@ def community_detail_view(request, slug):
             ]
         }
     """
-    community = get_object_or_404(Community, slug=slug, is_active=True)
+    # ÉRADICATION N+1 : Utiliser annotate(Count(...)) au lieu de .count() après get_object_or_404
+    community = Community.objects.filter(slug=slug, is_active=True).annotate(
+        members_count=Count('members', distinct=True),
+        projects_count=Count('projects', distinct=True)
+    ).first()
     
-    # Récupérer les projets associés (limité aux IDs et titres pour V1)
-    projects_data = []
-    for project in community.projects.all()[:20]:  # Limiter à 20 projets pour V1
-        projects_data.append({
-            "id": project.id,
-            "titre": project.titre,
-        })
+    if not community:
+        return Response(
+            {"detail": "Communauté non trouvée"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # OPTIMISATION MÉMOIRE : QuerySet lazy avec LIMIT en SQL
+    # Au lieu de charger tous les projets puis couper, on fait le LIMIT directement en SQL
+    projects_qs = community.projects.select_related(
+        'community'  # Précharger la communauté (déjà chargée, mais pour cohérence)
+    )[:20]  # LIMIT 20 en SQL, pas en Python
+    
+    # OPTIMISATION MÉMOIRE : Utiliser values() pour ne charger que les champs nécessaires
+    projects_data = list(
+        projects_qs.values('id', 'titre')
+    )
     
     data = {
         "id": community.id,
@@ -100,8 +119,8 @@ def community_detail_view(request, slug):
         "is_active": community.is_active,
         "created_at": community.created_at.isoformat() if community.created_at else None,
         "updated_at": community.updated_at.isoformat() if community.updated_at else None,
-        "members_count": community.members.count(),
-        "projects_count": community.projects.count(),
+        "members_count": community.members_count,  # ✅ Utilise l'annotation au lieu de .count()
+        "projects_count": community.projects_count,  # ✅ Utilise l'annotation au lieu de .count()
         "projects": projects_data,
     }
     

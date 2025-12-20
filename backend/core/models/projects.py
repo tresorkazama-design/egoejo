@@ -134,6 +134,13 @@ class Projet(models.Model):
         default=0,
         help_text="Nombre de membres ayant boosté ce projet avec SAKA - Phase 2"
     )
+    
+    # ========== IMPACT ORACLES (Architecture pour données externes) ==========
+    active_oracles = models.JSONField(
+        blank=True,
+        default=list,
+        help_text="Liste des identifiants d'oracles d'impact actifs pour ce projet (ex: ['co2_avoided', 'social_impact']). Préparation de la tuyauterie pour ingérer des données externes vérifiées."
+    )
 
     # Utiliser le QuerySet personnalisé
     objects = ProjetQuerySet.as_manager()

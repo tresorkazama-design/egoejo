@@ -8,12 +8,16 @@ from rest_framework import status
 from django.conf import settings
 from django.db.models import Sum, Count, Q, F
 from decimal import Decimal
+import logging
 
 from core.models.impact import ImpactDashboard
 from core.models.fundraising import Contribution
 from core.models.intents import Intent
 from finance.models import UserWallet, WalletPocket, WalletTransaction
+from finance.services import _to_decimal
 from core.services.saka import get_saka_balance
+
+logger = logging.getLogger(__name__)
 
 
 class ImpactDashboardView(APIView):
@@ -35,12 +39,29 @@ class ImpactDashboardView(APIView):
             from core.tasks import update_impact_dashboard_metrics
             # Mettre à jour en arrière-plan (non-bloquant)
             update_impact_dashboard_metrics.delay(user.id)
-        except Exception:
-            # Fallback sur calcul synchrone si Celery non disponible
+        except ImportError:
+            # Module core.tasks non disponible - OK, on continue avec calcul synchrone
+            logger.warning(
+                f"Module core.tasks non disponible - calcul synchrone pour user {user.id}"
+            )
             if created:
                 dashboard.update_metrics()
             else:
                 # Mettre à jour si les métriques sont anciennes (plus de 1 heure)
+                from django.utils import timezone
+                from datetime import timedelta
+                if timezone.now() - dashboard.last_updated > timedelta(hours=1):
+                    dashboard.update_metrics()
+        except Exception as e:
+            # Erreur inattendue - ON LOG CRITIQUE ET ON CONTINUE
+            logger.critical(
+                f"Erreur critique lors du lancement de la tâche de mise à jour dashboard pour user {user.id}: {e}",
+                exc_info=True
+            )
+            # Fallback sur calcul synchrone pour ne pas bloquer l'utilisateur
+            if created:
+                dashboard.update_metrics()
+            else:
                 from django.utils import timezone
                 from datetime import timedelta
                 if timezone.now() - dashboard.last_updated > timedelta(hours=1):
@@ -84,32 +105,66 @@ class GlobalAssetsView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        user = request.user
+    def _get_or_create_wallet(self, user):
+        """
+        Récupère ou crée le wallet utilisateur.
         
-        # 1. Cash Balance (solde principal du wallet)
-        wallet, _ = UserWallet.objects.get_or_create(user=user)
-        # Convertir en Decimal si ce n'est pas déjà le cas
-        if isinstance(wallet.balance, Decimal):
-            cash_balance = str(wallet.balance.quantize(Decimal('0.01')))
-        else:
-            cash_balance = str(Decimal(str(wallet.balance)).quantize(Decimal('0.01')))
+        Args:
+            user: Utilisateur
         
-        # 2. Pockets (sous-comptes)
+        Returns:
+            UserWallet
+        """
+        return UserWallet.objects.get_or_create(user=user)[0]
+
+    def _get_cash_balance(self, wallet):
+        """
+        Récupère le solde principal du wallet (formaté en string).
+        
+        OPTIMISATION MÉMOIRE : Utilise le helper _to_decimal centralisé.
+        
+        Args:
+            wallet: UserWallet
+        
+        Returns:
+            str: Solde formaté avec 2 décimales
+        """
+        return str(_to_decimal(wallet.balance))
+
+    def _get_pockets(self, wallet):
+        """
+        Récupère la liste des poches (sous-comptes) du wallet.
+        
+        Args:
+            wallet: UserWallet
+        
+        Returns:
+            list: Liste des poches avec id, name, type, amount
+        """
         pockets = WalletPocket.objects.filter(wallet=wallet).values(
             'id', 'name', 'pocket_type', 'current_amount'
         )
-        pockets_list = [
+        return [
             {
                 'id': p['id'],
                 'name': p['name'],
                 'type': p['pocket_type'],
-                'amount': str(Decimal(str(p['current_amount'])).quantize(Decimal('0.01')))
+                'amount': str(_to_decimal(p['current_amount']))
             }
             for p in pockets
         ]
+
+    def _get_donations(self, user, wallet):
+        """
+        Calcule le total des dons et les métriques d'impact.
         
-        # 3. Donations (agrégations ORM - pas de boucles Python)
+        Args:
+            user: Utilisateur
+            wallet: UserWallet
+        
+        Returns:
+            dict: {'total_amount': Decimal, 'metrics_count': int}
+        """
         # Total des dons via WalletTransaction (PLEDGE_DONATION)
         donations_total = WalletTransaction.objects.filter(
             wallet=wallet,
@@ -125,18 +180,34 @@ class GlobalAssetsView(APIView):
         ).aggregate(
             total=Sum('montant')
         )
-        contributions_total = Decimal(str(contributions_agg['total'] or 0)).quantize(Decimal('0.01'))
+        contributions_total = _to_decimal(contributions_agg['total'] or 0)
         
         # Total combiné (arrondi précis)
         total_donations = (donations_total + contributions_total).quantize(Decimal('0.01'))
         
-        # Métriques d'impact (compteur d'unités d'impact)
-        # Exemple : nombre de projets soutenus, nombre de cagnottes
+        # OPTIMISATION SQL : Utiliser aggregate avec Count distinct au lieu de values().distinct().count()
+        # Évite le scan complet de table et génère un COUNT(DISTINCT ...) en SQL
         metrics_count = Contribution.objects.filter(
             user=user
-        ).values('cagnotte__projet').distinct().count()
+        ).aggregate(
+            count=Count('cagnotte__projet', distinct=True)
+        )['count'] or 0
         
-        # 4. Equity Portfolio (V2.0 - seulement si feature activée)
+        return {
+            'total_amount': total_donations,
+            'metrics_count': metrics_count
+        }
+
+    def _get_equity_portfolio(self, user):
+        """
+        Récupère le portefeuille d'actions (V2.0 - seulement si feature activée).
+        
+        Args:
+            user: Utilisateur
+        
+        Returns:
+            dict: {'is_active': bool, 'positions': list, 'valuation': Decimal}
+        """
         is_equity_active = settings.ENABLE_INVESTMENT_FEATURES
         equity_positions = []
         equity_valuation = Decimal('0')
@@ -145,10 +216,14 @@ class GlobalAssetsView(APIView):
             try:
                 from investment.models import ShareholderRegister
                 
-                # Récupérer les positions avec agrégations ORM
+                # OPTIMISATION SQL : Récupérer les positions avec agrégations ORM et prefetch_related
+                # pour éviter N+1 queries si on accède aux relations du projet plus tard
                 positions = ShareholderRegister.objects.filter(
                     investor=user
-                ).select_related('project').annotate(
+                ).select_related(
+                    'project',
+                    'project__community'  # Précharger la communauté si nécessaire
+                ).annotate(
                     project_title=F('project__titre'),
                     project_id=F('project__id')
                 ).values(
@@ -159,49 +234,98 @@ class GlobalAssetsView(APIView):
                 )
                 
                 for pos in positions:
+                    amount_invested = _to_decimal(pos['amount_invested'])
                     equity_positions.append({
                         'project_id': pos['project_id'],
                         'project_title': pos['project_title'],
                         'shares': pos['number_of_shares'],
-                        'valuation': str(Decimal(str(pos['amount_invested'])).quantize(Decimal('0.01')))
+                        'valuation': str(amount_invested)
                     })
-                    equity_valuation += Decimal(str(pos['amount_invested']))
+                    equity_valuation += amount_invested
                 
                 equity_valuation = equity_valuation.quantize(Decimal('0.01'))
             except ImportError:
                 # Module investment non disponible
                 pass
         
-        # 5. Social Dividend (valeur estimée symbolique)
-        # Exemple : conversion de l'impact en euros (approximation)
-        # Basé sur les métriques d'impact (arbres plantés, heures de formation, etc.)
-        # Pour l'instant, calcul simple basé sur les dons
-        social_dividend_value = (total_donations * Decimal('0.1')).quantize(Decimal('0.01'))  # 10% symbolique
+        return {
+            'is_active': is_equity_active,
+            'positions': equity_positions,
+            'valuation': equity_valuation
+        }
+
+    def _get_social_dividend(self, total_donations):
+        """
+        Calcule la valeur estimée du dividende social (symbolique).
         
-        # 6. SAKA (Protocole SAKA - Monnaie interne d'engagement)
-        # Vérifier si SAKA est activé avant d'exposer les données
+        Args:
+            total_donations: Total des dons (Decimal)
+        
+        Returns:
+            Decimal: Valeur estimée du dividende social
+        """
+        # Conversion de l'impact en euros (approximation)
+        # Basé sur les métriques d'impact (arbres plantés, heures de formation, etc.)
+        # Pour l'instant, calcul simple basé sur les dons (10% symbolique)
+        return (total_donations * Decimal('0.1')).quantize(Decimal('0.01'))
+
+    def _get_saka_data(self, user):
+        """
+        Récupère les données SAKA (Protocole SAKA - Monnaie interne d'engagement).
+        
+        Args:
+            user: Utilisateur
+        
+        Returns:
+            dict: Données SAKA (balance, total_harvested, total_planted, total_composted)
+        """
         if getattr(settings, 'ENABLE_SAKA', False):
-            saka_data = get_saka_balance(user)
+            return get_saka_balance(user)
         else:
             # Retourner des zéros si SAKA est désactivé
-            saka_data = {
+            return {
                 'balance': 0,
                 'total_harvested': 0,
                 'total_planted': 0,
                 'total_composted': 0
             }
+
+    def get(self, request):
+        """
+        REFACTORING "Divide & Conquer" : Découpée en sous-méthodes atomiques pour améliorer la lisibilité.
+        """
+        user = request.user
+        
+        # 1. Cash Balance (solde principal du wallet)
+        wallet = self._get_or_create_wallet(user)
+        cash_balance = self._get_cash_balance(wallet)
+        
+        # 2. Pockets (sous-comptes)
+        pockets_list = self._get_pockets(wallet)
+        
+        # 3. Donations (agrégations ORM - pas de boucles Python)
+        donations_data = self._get_donations(user, wallet)
+        
+        # 4. Equity Portfolio (V2.0 - seulement si feature activée)
+        equity_data = self._get_equity_portfolio(user)
+        
+        # 5. Social Dividend (valeur estimée symbolique)
+        social_dividend_value = self._get_social_dividend(donations_data['total_amount'])
+        
+        # 6. SAKA (Protocole SAKA - Monnaie interne d'engagement)
+        saka_data = self._get_saka_data(user)
         
         return Response({
             'cash_balance': cash_balance,
             'pockets': pockets_list,
             'donations': {
-                'total_amount': str(total_donations),
-                'metrics_count': metrics_count
+                'total_amount': str(donations_data['total_amount']),
+                'metrics_count': donations_data['metrics_count']
             },
             'equity_portfolio': {
-                'is_active': is_equity_active,
-                'positions': equity_positions,
-                'valuation': str(equity_valuation) if is_equity_active else "0.00"
+                'is_active': equity_data['is_active'],
+                'positions': equity_data['positions'],
+                'valuation': str(equity_data['valuation']) if equity_data['is_active'] else "0.00"
             },
             'social_dividend': {
                 'estimated_value': str(social_dividend_value)

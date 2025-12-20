@@ -21,6 +21,43 @@ from core.models.saka import SakaWallet, SakaTransaction, SakaSilo, SakaCompostL
 
 logger = logging.getLogger(__name__)
 
+# OPTIMISATION CPU : Helper functions pour lire les settings (compatible avec override_settings dans les tests)
+# Ces fonctions lisent les settings à chaque appel, mais sont optimisées pour la production
+def _get_saka_compost_enabled():
+    """Helper pour lire SAKA_COMPOST_ENABLED (compatible avec override_settings)"""
+    return getattr(settings, "SAKA_COMPOST_ENABLED", False)
+
+def _get_saka_compost_inactivity_days():
+    """Helper pour lire SAKA_COMPOST_INACTIVITY_DAYS (compatible avec override_settings)"""
+    return getattr(settings, "SAKA_COMPOST_INACTIVITY_DAYS", 90)
+
+def _read_compost_rate():
+    """Helper pour lire SAKA_COMPOST_RATE (compatible avec override_settings)"""
+    return float(getattr(settings, "SAKA_COMPOST_RATE", 0.1))
+
+def _get_saka_compost_min_balance():
+    """Helper pour lire SAKA_COMPOST_MIN_BALANCE (compatible avec override_settings)"""
+    return getattr(settings, "SAKA_COMPOST_MIN_BALANCE", 50)
+
+def _get_saka_compost_min_amount():
+    """Helper pour lire SAKA_COMPOST_MIN_AMOUNT (compatible avec override_settings)"""
+    return getattr(settings, "SAKA_COMPOST_MIN_AMOUNT", 10)
+
+def _get_saka_silo_redis_enabled():
+    """Helper pour lire SAKA_SILO_REDIS_ENABLED (compatible avec override_settings)"""
+    return getattr(settings, "SAKA_SILO_REDIS_ENABLED", False)
+
+def _read_silo_redis_rate():
+    """Helper pour lire SAKA_SILO_REDIS_RATE (compatible avec override_settings)"""
+    return float(getattr(settings, "SAKA_SILO_REDIS_RATE", 0.05))
+
+def _get_saka_silo_redis_min_wallet_activity():
+    """Helper pour lire SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY (compatible avec override_settings)"""
+    return int(getattr(settings, "SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY", 1))
+
+# Cache pour ENABLE_SAKA (rarement changé dans les tests)
+_ENABLE_SAKA_CACHED = getattr(settings, 'ENABLE_SAKA', False)
+
 
 class SakaReason(Enum):
     """Raisons de récolte/dépense SAKA"""
@@ -52,12 +89,18 @@ SAKA_DAILY_LIMITS = {
 
 def is_saka_enabled():
     """Vérifie si le protocole SAKA est activé"""
-    return getattr(settings, 'ENABLE_SAKA', False)
+    # OPTIMISATION CPU : Utiliser la valeur cachée au niveau du module
+    return _ENABLE_SAKA_CACHED
 
 
+@transaction.atomic
 def get_or_create_wallet(user):
     """
     Récupère ou crée le portefeuille SAKA d'un utilisateur.
+    
+    OPTIMISATION CONCURRENCE :
+    - Utilise select_for_update() pour éviter la création de doublons sous forte charge
+    - Gestion deadlocks avec retry
     
     Args:
         user: Utilisateur Django
@@ -68,16 +111,45 @@ def get_or_create_wallet(user):
     if not is_saka_enabled():
         return None
     
-    wallet, created = SakaWallet.objects.get_or_create(
-        user=user,
-        defaults={
-            'balance': 0,
-            'total_harvested': 0,
-            'total_planted': 0,
-            'total_composted': 0,
-        }
-    )
-    return wallet
+    # OPTIMISATION CONCURRENCE : Retry logic pour gérer les deadlocks
+    from django.db.utils import OperationalError
+    import time
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    MAX_RETRIES = 3
+    RETRY_BASE_DELAY = 0.1
+    
+    for attempt in range(MAX_RETRIES):
+        try:
+            # OPTIMISATION CONCURRENCE : select_for_update() pour éviter race condition
+            wallet, created = SakaWallet.objects.select_for_update().get_or_create(
+                user=user,
+                defaults={
+                    'balance': 0,
+                    'total_harvested': 0,
+                    'total_planted': 0,
+                    'total_composted': 0,
+                }
+            )
+            return wallet
+        except OperationalError as e:
+            error_str = str(e).lower()
+            if ('deadlock' in error_str or 'lock' in error_str) and attempt < MAX_RETRIES - 1:
+                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning(
+                    f"Deadlock/lock timeout sur get_or_create_wallet(user={user.id}) "
+                    f"(tentative {attempt + 1}/{MAX_RETRIES}) - Retry dans {delay}s"
+                )
+                time.sleep(delay)
+                continue
+            else:
+                logger.critical(
+                    f"Échec définitif de get_or_create_wallet(user={user.id}) après {MAX_RETRIES} tentatives - "
+                    f"Error: {e}",
+                    exc_info=True
+                )
+                raise
 
 
 @transaction.atomic
@@ -117,15 +189,21 @@ def harvest_saka(
     if amount <= 0:
         return None
     
-    # Récupérer ou créer le portefeuille avec select_for_update pour éviter les race conditions
-    wallet = get_or_create_wallet(user)
-    if not wallet:
-        return None
+    # CORRECTION RACE CONDITION : Verrouiller le wallet DIRECTEMENT avec get_or_create
+    # Évite la race condition où deux requêtes créent le wallet simultanément
+    # et où la vérification de limite se fait avant le verrouillage
+    wallet, created = SakaWallet.objects.select_for_update().get_or_create(
+        user=user,
+        defaults={
+            'balance': 0,
+            'total_harvested': 0,
+            'total_planted': 0,
+            'total_composted': 0,
+        }
+    )
     
-    # Verrouiller le wallet pour éviter les race conditions
-    wallet = SakaWallet.objects.select_for_update().get(id=wallet.id)
-    
-    # Anti-farming : vérifier la limite quotidienne
+    # Anti-farming : vérifier la limite quotidienne APRÈS verrouillage
+    # (dans la même transaction pour éviter double crédit)
     daily_limit = SAKA_DAILY_LIMITS.get(reason, 0)
     if daily_limit > 0:
         today = date.today()
@@ -315,7 +393,8 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
             "skipped": str (optionnel)  # Raison si désactivé
         }
     """
-    if not getattr(settings, "SAKA_COMPOST_ENABLED", False):
+    # CORRECTION COMPLIANCE : Utiliser helper functions pour compatibilité avec override_settings
+    if not _get_saka_compost_enabled():
         return {
             "cycles": 0,
             "wallets_affected": 0,
@@ -323,10 +402,11 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
             "skipped": "disabled"
         }
     
-    inactivity_days = getattr(settings, "SAKA_COMPOST_INACTIVITY_DAYS", 90)
-    rate = float(getattr(settings, "SAKA_COMPOST_RATE", 0.1))
-    min_balance = getattr(settings, "SAKA_COMPOST_MIN_BALANCE", 50)
-    min_amount = getattr(settings, "SAKA_COMPOST_MIN_AMOUNT", 10)
+    # CORRECTION COMPLIANCE : Utiliser helper functions pour compatibilité avec override_settings
+    inactivity_days = _get_saka_compost_inactivity_days()
+    rate = _read_compost_rate()
+    min_balance = _get_saka_compost_min_balance()
+    min_amount = _get_saka_compost_min_amount()
     
     # Récupérer le cycle actif (si disponible)
     active_cycle = None
@@ -349,14 +429,21 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
     
     cutoff = timezone.now() - timedelta(days=inactivity_days)
     
-    # Sélectionner les wallets inactifs avec balance suffisante
-    qs = SakaWallet.objects.select_for_update().filter(
-        last_activity_date__lt=cutoff,
+    # OPTIMISATION : Sélectionner les wallets inactifs SANS select_for_update() sur le QuerySet principal
+    # (évite le verrouillage massif qui peut causer des deadlocks)
+    # On utilisera bulk_update() qui est atomique sans verrouillage lourd
+    # CORRECTION COMPLIANCE : Inclure les wallets avec last_activity_date=None (jamais d'activité = éligible)
+    from django.db.models import Q
+    qs = SakaWallet.objects.filter(
+        Q(last_activity_date__isnull=True) | Q(last_activity_date__lt=cutoff),
         balance__gte=min_balance,
     )
     
     total_composted = 0
     affected = 0
+    
+    # OPTIMISATION : Chunking pour éviter les timeouts (500 wallets par lot)
+    BATCH_SIZE = 500
     
     with transaction.atomic():
         # Récupérer ou créer le Silo Commun (singleton)
@@ -369,45 +456,83 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
             }
         )
         
-        for wallet in qs:
-            # Calcul du montant à composter
-            raw_amount = wallet.balance * rate
-            amount = int(floor(raw_amount))
+        # OPTIMISATION : Traiter par chunks pour éviter les timeouts
+        offset = 0
+        while True:
+            # Récupérer un chunk de wallets (seulement les champs nécessaires)
+            chunk = list(qs[offset:offset + BATCH_SIZE].only('id', 'balance', 'total_composted', 'user_id'))
             
-            if amount < min_amount:
-                continue
+            if not chunk:
+                break
             
-            if dry_run:
-                total_composted += amount
-                affected += 1
-                continue
+            # Préparer les mises à jour et transactions en batch
+            wallets_to_update = []
+            transactions_to_create = []
+            chunk_composted = 0
+            chunk_affected = 0
             
-            # Mise à jour du wallet
-            wallet.balance -= amount
-            wallet.total_composted += amount
-            wallet.last_activity_date = timezone.now()  # Réinitialiser la date d'activité
-            wallet.save(update_fields=["balance", "total_composted", "last_activity_date"])
+            for wallet in chunk:
+                # Calcul du montant à composter
+                raw_amount = wallet.balance * rate
+                amount = int(floor(raw_amount))
+                
+                if amount < min_amount:
+                    continue
+                
+                if dry_run:
+                    chunk_composted += amount
+                    chunk_affected += 1
+                    continue
+                
+                # OPTIMISATION : Préparer la mise à jour en batch
+                wallet.balance -= amount
+                wallet.total_composted += amount
+                wallet.last_activity_date = timezone.now()
+                wallets_to_update.append(wallet)
+                
+                # OPTIMISATION : Préparer la transaction en batch
+                transactions_to_create.append(
+                    SakaTransaction(
+                        user_id=wallet.user_id,  # Utiliser user_id directement (plus efficace)
+                        direction='SPEND',
+                        amount=amount,
+                        reason='compost',
+                        metadata={
+                            "source": "compost_cycle",
+                            "cutoff": cutoff.isoformat(),
+                            "rate": rate,
+                        },
+                    )
+                )
+                
+                chunk_composted += amount
+                chunk_affected += 1
             
-            # Créer la transaction SAKA
-            SakaTransaction.objects.create(
-                user=wallet.user,
-                direction='SPEND',
-                amount=amount,
-                reason='compost',
-                metadata={
-                    "source": "compost_cycle",
-                    "cutoff": cutoff.isoformat(),
-                    "rate": rate,
-                },
-            )
+            # OPTIMISATION : Bulk update des wallets (1 requête au lieu de N)
+            if wallets_to_update:
+                SakaWallet.objects.bulk_update(
+                    wallets_to_update,
+                    ['balance', 'total_composted', 'last_activity_date'],
+                    batch_size=BATCH_SIZE
+                )
             
-            # Mise à jour du silo
-            silo.total_balance += amount
-            silo.total_composted += amount
-            total_composted += amount
-            affected += 1
+            # OPTIMISATION : Bulk create des transactions (1 requête au lieu de N)
+            if transactions_to_create:
+                SakaTransaction.objects.bulk_create(
+                    transactions_to_create,
+                    batch_size=BATCH_SIZE
+                )
+            
+            # Accumuler les montants pour mise à jour finale du silo
+            total_composted += chunk_composted
+            affected += chunk_affected
+            
+            offset += BATCH_SIZE
         
-        if not dry_run and affected > 0:
+        # Mise à jour finale du silo (une seule fois, après tous les chunks)
+        if not dry_run and total_composted > 0:
+            silo.total_balance += total_composted
+            silo.total_composted += total_composted
             silo.total_cycles += 1
             silo.last_compost_at = timezone.now()
             silo.save(update_fields=[
@@ -454,7 +579,8 @@ def get_user_compost_preview(user) -> Dict:
             "days_until_eligible": int (optionnel),  # Jours restants avant éligibilité
         }
     """
-    if not getattr(settings, "SAKA_COMPOST_ENABLED", False):
+    # CORRECTION COMPLIANCE : Utiliser helper functions pour compatibilité avec override_settings
+    if not _get_saka_compost_enabled():
         return {"eligible": False, "amount": 0}
     
     try:
@@ -462,10 +588,11 @@ def get_user_compost_preview(user) -> Dict:
     except SakaWallet.DoesNotExist:
         return {"eligible": False, "amount": 0}
     
-    inactivity_days = getattr(settings, "SAKA_COMPOST_INACTIVITY_DAYS", 90)
-    rate = float(getattr(settings, "SAKA_COMPOST_RATE", 0.1))
-    min_balance = getattr(settings, "SAKA_COMPOST_MIN_BALANCE", 50)
-    min_amount = getattr(settings, "SAKA_COMPOST_MIN_AMOUNT", 10)
+    # CORRECTION COMPLIANCE : Utiliser helper functions pour compatibilité avec override_settings
+    inactivity_days = _get_saka_compost_inactivity_days()
+    rate = _read_compost_rate()
+    min_balance = _get_saka_compost_min_balance()
+    min_amount = _get_saka_compost_min_amount()
     
     if wallet.balance < min_balance:
         return {"eligible": False, "amount": 0}
@@ -513,7 +640,8 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
       "reason": str (si ok=False)
     }
     """
-    if not getattr(settings, "SAKA_SILO_REDIS_ENABLED", False):
+    # CORRECTION COMPLIANCE : Utiliser helper functions pour compatibilité avec override_settings
+    if not _get_saka_silo_redis_enabled():
         return {
             "ok": False,
             "reason": "redistribution_disabled",
@@ -521,21 +649,23 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
     
     from math import floor
     
+    # CORRECTION COMPLIANCE : Utiliser helper functions pour compatibilité avec override_settings
     if rate is None:
-        rate = float(getattr(settings, "SAKA_SILO_REDIS_RATE", 0.05))
+        rate = _read_silo_redis_rate()
     
-    min_activity = int(getattr(settings, "SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY", 1))
+    min_activity = _get_saka_silo_redis_min_wallet_activity()
     
     try:
         with transaction.atomic():
-            # Verrouiller le Silo pour éviter les races
-            silo = SakaSilo.objects.select_for_update().first()
-            
-            if not silo:
-                return {
-                    "ok": False,
-                    "reason": "no_silo",
+            # Verrouiller le Silo pour éviter les races (utiliser id=1 pour singleton)
+            silo, _ = SakaSilo.objects.select_for_update().get_or_create(
+                id=1,
+                defaults={
+                    'total_balance': 0,
+                    'total_composted': 0,
+                    'total_cycles': 0,
                 }
+            )
             
             total_before = silo.total_balance or 0
             if total_before <= 0 or rate <= 0:
@@ -553,12 +683,10 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
                     "total_before": total_before,
                 }
             
-            # Wallets éligibles : ont déjà récolté au moins min_activity grains
-            eligible_qs = (
-                SakaWallet.objects
-                .select_for_update()
-                .filter(total_harvested__gte=min_activity)
-            )
+            # OPTIMISATION : Wallets éligibles SANS select_for_update() sur le QuerySet principal
+            # (évite le verrouillage massif qui peut causer des deadlocks)
+            # On utilisera F() expressions qui sont atomiques sans verrouillage lourd
+            eligible_qs = SakaWallet.objects.filter(total_harvested__gte=min_activity)
             eligible_count = eligible_qs.count()
             if eligible_count == 0:
                 return {
@@ -579,41 +707,72 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
                     "eligible_wallets": eligible_count,
                 }
             
-            # Mise à jour des wallets avec F() expressions (atomique via update())
-            wallet_ids = list(eligible_qs.values_list('id', flat=True))
-            SakaWallet.objects.filter(id__in=wallet_ids).update(
-                balance=F('balance') + per_wallet,
-                total_harvested=F('total_harvested') + per_wallet,
-                last_activity_date=timezone.now()
-            )
+            # OPTIMISATION : Chunking pour éviter OOM (1000 wallets par lot)
+            # Charger seulement les IDs et user_id (pas tous les objets en mémoire)
+            BATCH_SIZE = 1000
+            offset = 0
+            total_redistributed = 0
+            chunks_processed = 0
             
-            # Créer les transactions SAKA pour audit
-            transactions_to_create = []
-            for wallet in eligible_qs:
-                transactions_to_create.append(
+            while True:
+                # OPTIMISATION : Charger seulement les IDs et user_id (évite OOM)
+                chunk_data = list(
+                    eligible_qs[offset:offset + BATCH_SIZE]
+                    .values_list('id', 'user_id')
+                )
+                
+                if not chunk_data:
+                    break
+                
+                chunk_wallet_ids = [row[0] for row in chunk_data]
+                chunk_user_ids = {row[0]: row[1] for row in chunk_data}  # Dict pour lookup rapide
+                
+                # OPTIMISATION : Mise à jour des wallets avec F() expressions (atomique, pas de verrouillage)
+                # F() expressions sont atomiques au niveau DB, pas besoin de select_for_update()
+                SakaWallet.objects.filter(id__in=chunk_wallet_ids).update(
+                    balance=F('balance') + per_wallet,
+                    total_harvested=F('total_harvested') + per_wallet,
+                    last_activity_date=timezone.now()
+                )
+                
+                # OPTIMISATION : Créer les transactions SAKA en batch
+                transactions_to_create = [
                     SakaTransaction(
-                        user=wallet.user,
-                        direction='EARN',  # Utiliser string, pas SakaTransaction.EARN
+                        user_id=chunk_user_ids[wallet_id],  # Utiliser user_id directement
+                        direction='EARN',
                         amount=per_wallet,
                         reason='silo_redistribution',
                         metadata={}
                     )
+                    for wallet_id in chunk_wallet_ids
+                ]
+                
+                # OPTIMISATION : Bulk create des transactions (1 requête par chunk)
+                SakaTransaction.objects.bulk_create(
+                    transactions_to_create,
+                    batch_size=BATCH_SIZE
                 )
+                
+                total_redistributed += per_wallet * len(chunk_wallet_ids)
+                chunks_processed += 1
+                offset += BATCH_SIZE
             
-            # Créer toutes les transactions en bulk
-            SakaTransaction.objects.bulk_create(transactions_to_create)
+            # Utiliser le montant réel redistribué calculé pendant le chunking
+            actual_redistributed = total_redistributed
             
-            # Mise à jour du Silo avec F() expressions (atomique via update())
-            actual_redistributed = per_wallet * eligible_count
+            # OPTIMISATION : Mise à jour du Silo avec F() expressions (atomique via update())
+            # Utiliser total_redistributed calculé pendant le chunking (plus précis)
             SakaSilo.objects.filter(id=silo.id).update(
-                total_balance=F('total_balance') - actual_redistributed
+                total_balance=F('total_balance') - total_redistributed
             )
+            actual_redistributed = total_redistributed
             
             logger.info(
                 f"Redistribution SAKA Silo : {actual_redistributed} grains "
                 f"distribués à {eligible_count} wallets "
                 f"({per_wallet} grains chacun). "
-                f"Silo : {total_before} → {total_before - actual_redistributed}"
+                f"Silo : {total_before} → {total_before - actual_redistributed} "
+                f"(chunks: {chunks_processed})"
             )
         
         # Rechargement en dehors du bloc transaction pour renvoyer les valeurs réelles
@@ -622,7 +781,7 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
             "ok": True,
             "total_before": total_before,
             "total_after": silo.total_balance,
-            "redistributed": per_wallet * eligible_count,
+            "redistributed": actual_redistributed,
             "per_wallet": per_wallet,
             "eligible_wallets": eligible_count,
         }

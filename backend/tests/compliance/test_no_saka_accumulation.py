@@ -78,14 +78,14 @@ class TestNoSakaAccumulation:
         # Vérifier qu'une transaction a été créée
         transaction = SakaTransaction.objects.filter(
             user=user,
-            transaction_type='HARVEST'
+            direction='EARN'
         ).first()
         
         assert transaction is not None, (
             "VIOLATION DU MANIFESTE EGOEJO : Aucune transaction HARVEST créée. "
             "Toute récolte SAKA doit être tracée."
         )
-        assert transaction.reason == SakaReason.CONTENT_READ, (
+        assert transaction.reason == SakaReason.CONTENT_READ.value, (
             "VIOLATION DU MANIFESTE EGOEJO : La transaction n'a pas de raison valide. "
             "Toute récolte SAKA doit avoir une raison (SakaReason)."
         )
@@ -115,7 +115,7 @@ class TestNoSakaAccumulation:
         # (Ceci est une vérification de design, pas de runtime)
         
         # La seule façon légitime d'augmenter le solde est via harvest_saka
-        harvest_result = harvest_saka(user, SakaReason.PROJECT_BOOST, amount=50)
+        harvest_result = harvest_saka(user, SakaReason.CONTENT_READ, amount=50)
         
         wallet.refresh_from_db()
         new_balance = wallet.balance
@@ -132,7 +132,7 @@ class TestNoSakaAccumulation:
         # Vérifier qu'aucune autre méthode n'a été utilisée pour créditer
         transactions = SakaTransaction.objects.filter(
             user=user,
-            transaction_type='HARVEST'
+            direction='EARN'
         )
         
         assert transactions.count() == 1, (
@@ -200,8 +200,9 @@ class TestNoSakaAccumulation:
         )
         
         # Vérifier qu'un log de compost a été créé
+        # SakaCompostLog est lié à SakaCycle, pas directement au wallet
         compost_logs = SakaCompostLog.objects.filter(
-            wallet=wallet
+            wallets_affected__gt=0
         )
         
         # Note : Le log peut ne pas être créé si le wallet n'était pas éligible au compost
@@ -311,8 +312,8 @@ class TestNoSakaAccumulation:
         # (le comportement exact dépend de la logique anti-farming)
         transactions = SakaTransaction.objects.filter(
             user=user,
-            transaction_type='HARVEST',
-            reason=SakaReason.CONTENT_READ
+            direction='EARN',
+            reason=SakaReason.CONTENT_READ.value
         )
         
         # Note : Le nombre exact de transactions acceptées dépend de la logique anti-farming

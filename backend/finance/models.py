@@ -62,7 +62,8 @@ class WalletTransaction(models.Model):
     )
     transaction_type = models.CharField(
         max_length=20,
-        choices=TYPES
+        choices=TYPES,
+        db_index=True  # OPTIMISATION DB : Index pour filtres fréquents
     )
     related_project = models.ForeignKey(
         'core.Projet',
@@ -77,6 +78,7 @@ class WalletTransaction(models.Model):
         unique=True,
         null=True,
         blank=True,
+        db_index=True,  # OPTIMISATION DB : Index pour recherche rapide (déjà unique, mais db_index=True pour performance)
         help_text="Clé unique pour éviter de rejouer la même transaction (dédoublonnage)"
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -121,7 +123,8 @@ class EscrowContract(models.Model):
     status = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
-        default='LOCKED'
+        default='LOCKED',
+        db_index=True  # OPTIMISATION DB : Index pour filtres fréquents (LOCKED, RELEASED, etc.)
     )
     pledge_transaction = models.OneToOneField(
         WalletTransaction,

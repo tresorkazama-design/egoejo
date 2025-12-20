@@ -83,7 +83,7 @@ class TestBankDormant:
         escrow_count = EscrowContract.objects.filter(
             user=user,
             project=project,
-            pledge_type='EQUITY'
+            pledge_transaction__transaction_type='PLEDGE_EQUITY'
         ).count()
         assert escrow_count == 0, (
             f"VIOLATION DU MANIFESTE EGOEJO : Un escrow EQUITY a été créé alors que ENABLE_INVESTMENT_FEATURES=False. "
@@ -276,7 +276,7 @@ class TestBankDormant:
         escrow_count = EscrowContract.objects.filter(
             user=user,
             project=project,
-            pledge_type='DONATION'
+            pledge_transaction__transaction_type='PLEDGE_DONATION'
         ).count()
         assert escrow_count == 1, (
             f"VIOLATION DU MANIFESTE EGOEJO : Un escrow DONATION n'a pas été créé. "

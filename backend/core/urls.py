@@ -33,6 +33,7 @@ from core.api.search_views import ProjetSearchView
 from core.api.semantic_search_views import SemanticSearchView, SemanticSuggestionsView
 from core.api.mycelium_views import MyceliumDataView, MyceliumReduceView
 from core.api.config_views import FeaturesConfigView  # Feature flags V1.6/V2.0
+from core.api.oracle_views import ProjectOraclesView, AvailableOraclesView  # Oracles d'impact
 from investment.views import ShareholderRegisterViewSet  # V2.0 dormant (protégé par permission)
 from core.api import saka_views  # Phase 3 SAKA : Compostage & Silo Commun
 from core.api import communities_views  # Communautés (subsidiarité)
@@ -108,9 +109,13 @@ urlpatterns = [
     path("projets/", ProjetListCreate.as_view(), name="projet-list-create"),
     path("projets/<int:pk>/", ProjetRetrieveUpdateDestroy.as_view(), name="projet-detail"),  # Détail, mise à jour, suppression
     path("projets/<int:pk>/boost/", boost_project, name="projet-boost"),  # Phase 2 : Sorgho-boosting SAKA
+    path("projets/<int:pk>/oracles/", ProjectOraclesView.as_view(), name="projet-oracles"),  # Oracles d'impact
     path("projets/search/", ProjetSearchView.as_view(), name="projet-search"),
     path("projets/semantic-search/", SemanticSearchView.as_view(), name="semantic-search"),
     path("projets/semantic-suggestions/", SemanticSuggestionsView.as_view(), name="semantic-suggestions"),
+    
+    # --- ORACLES D'IMPACT ---
+    path("oracles/available/", AvailableOraclesView.as_view(), name="oracles-available"),  # Liste des oracles disponibles
     
     # --- MYCÉLIUM NUMÉRIQUE (3D) --- ⭐ NOUVEAU v1.5.0
     path("mycelium/data/", MyceliumDataView.as_view(), name="mycelium-data"),

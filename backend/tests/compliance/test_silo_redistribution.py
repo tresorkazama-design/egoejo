@@ -130,17 +130,25 @@ class TestSiloRedistribution:
             harvest_saka(user, SakaReason.CONTENT_READ, amount=50)
             users.append(user)
         
-        # Alimenter le Silo
-        silo, _ = SakaSilo.objects.get_or_create()
+        # Alimenter le Silo (utiliser id=1 pour cohérence avec le service)
+        silo, _ = SakaSilo.objects.get_or_create(
+            id=1,
+            defaults={
+                'total_balance': 0,
+                'total_composted': 0,
+                'total_cycles': 0,
+            }
+        )
         silo.total_balance = 1000
         silo.save()
         
         initial_silo_balance = silo.total_balance
         
-        # Récupérer les soldes initiaux des wallets
+        # Récupérer les soldes initiaux des wallets APRÈS la récolte
         initial_balances = {}
         for user in users:
             wallet = user.saka_wallet
+            wallet.refresh_from_db()  # S'assurer d'avoir le solde à jour
             initial_balances[user.id] = wallet.balance
         
         # Exécuter la redistribution (5% du Silo = 50 grains, répartis entre 4 wallets = 12.5 grains chacun)
@@ -204,17 +212,25 @@ class TestSiloRedistribution:
             harvest_saka(user, SakaReason.CONTENT_READ, amount=50)
             users.append(user)
         
-        # Alimenter le Silo
-        silo, _ = SakaSilo.objects.get_or_create()
+        # Alimenter le Silo (utiliser id=1 pour cohérence avec le service)
+        silo, _ = SakaSilo.objects.get_or_create(
+            id=1,
+            defaults={
+                'total_balance': 0,
+                'total_composted': 0,
+                'total_cycles': 0,
+            }
+        )
         silo.total_balance = 1000
         silo.save()
         
         initial_silo_balance = silo.total_balance
         
-        # Récupérer les soldes initiaux
+        # Récupérer les soldes initiaux APRÈS la récolte
         initial_balances = {}
         for user in users:
             wallet = user.saka_wallet
+            wallet.refresh_from_db()  # S'assurer d'avoir le solde à jour
             initial_balances[user.id] = wallet.balance
         
         # Exécuter la redistribution
@@ -280,8 +296,15 @@ class TestSiloRedistribution:
             harvest_saka(user, SakaReason.CONTENT_READ, amount=100)
             users.append(user)
         
-        # Alimenter le Silo
-        silo, _ = SakaSilo.objects.get_or_create()
+        # Alimenter le Silo (utiliser id=1 pour cohérence avec le service)
+        silo, _ = SakaSilo.objects.get_or_create(
+            id=1,
+            defaults={
+                'total_balance': 0,
+                'total_composted': 0,
+                'total_cycles': 0,
+            }
+        )
         silo.total_balance = 1000
         silo.save()
         

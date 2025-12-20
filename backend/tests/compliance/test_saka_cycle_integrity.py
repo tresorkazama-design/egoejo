@@ -19,6 +19,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
+from django.test import override_settings
 
 from core.models.saka import SakaWallet, SakaTransaction, SakaSilo, SakaCompostLog
 from core.services.saka import (
@@ -41,6 +42,17 @@ class TestSakaCycleIntegrity:
     """
     
     @pytest.mark.django_db
+    @override_settings(
+        ENABLE_SAKA=True,
+        SAKA_COMPOST_ENABLED=True,
+        SAKA_COMPOST_INACTIVITY_DAYS=90,
+        SAKA_COMPOST_RATE=0.1,
+        SAKA_COMPOST_MIN_BALANCE=50,
+        SAKA_COMPOST_MIN_AMOUNT=10,
+        SAKA_SILO_REDIS_ENABLED=True,
+        SAKA_SILO_REDIS_RATE=0.1,
+        SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY=1,
+    )
     def test_cycle_complet_recolte_plantation_compost_silo_redistribution(self):
         """
         VIOLATION DU MANIFESTE EGOEJO si :
@@ -80,7 +92,7 @@ class TestSakaCycleIntegrity:
         # Vérifier qu'une transaction HARVEST a été créée
         harvest_transaction = SakaTransaction.objects.filter(
             user=user,
-            transaction_type='HARVEST'
+            direction='EARN'
         ).first()
         assert harvest_transaction is not None, (
             "VIOLATION DU MANIFESTE EGOEJO : Aucune transaction HARVEST créée. "
@@ -107,7 +119,7 @@ class TestSakaCycleIntegrity:
         # Vérifier qu'une transaction SPEND a été créée
         spend_transaction = SakaTransaction.objects.filter(
             user=user,
-            transaction_type='SPEND'
+            direction='SPEND'
         ).first()
         assert spend_transaction is not None, (
             "VIOLATION DU MANIFESTE EGOEJO : Aucune transaction SPEND créée. "
@@ -115,9 +127,22 @@ class TestSakaCycleIntegrity:
         )
         
         # ÉTAPE 3 : COMPOST
-        # Récupérer le Silo
-        silo, _ = SakaSilo.objects.get_or_create()
+        # Récupérer le Silo (utiliser id=1 pour cohérence avec le service)
+        silo, _ = SakaSilo.objects.get_or_create(
+            id=1,
+            defaults={
+                'total_balance': 0,
+                'total_composted': 0,
+                'total_cycles': 0,
+            }
+        )
         initial_silo_balance = silo.total_balance
+        
+        # S'assurer que le wallet est éligible au compost (inactif et solde suffisant)
+        wallet.refresh_from_db()
+        wallet.last_activity_date = timezone.now() - timedelta(days=120)  # Inactif depuis 120 jours
+        wallet.balance = 100  # Solde suffisant (min_balance = 50)
+        wallet.save()
         
         # Exécuter le cycle de compostage
         compost_result = run_saka_compost_cycle(dry_run=False, source="test")
@@ -136,6 +161,8 @@ class TestSakaCycleIntegrity:
         
         # ÉTAPE 4 : SILO (vérification)
         # Le Silo doit contenir le SAKA composté
+        # Rafraîchir le Silo depuis la base de données
+        silo.refresh_from_db()
         assert silo.total_balance > 0, (
             f"VIOLATION DU MANIFESTE EGOEJO : Le Silo est vide. "
             f"Solde Silo : {silo.total_balance}. "
@@ -240,6 +267,17 @@ class TestSakaCycleIntegrity:
         )
     
     @pytest.mark.django_db
+    @override_settings(
+        ENABLE_SAKA=True,
+        SAKA_COMPOST_ENABLED=True,
+        SAKA_COMPOST_INACTIVITY_DAYS=90,
+        SAKA_COMPOST_RATE=0.1,
+        SAKA_COMPOST_MIN_BALANCE=50,
+        SAKA_COMPOST_MIN_AMOUNT=10,
+        SAKA_SILO_REDIS_ENABLED=True,
+        SAKA_SILO_REDIS_RATE=0.1,
+        SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY=1,
+    )
     def test_si_etape_manque_test_fail(self):
         """
         VIOLATION DU MANIFESTE EGOEJO si :
@@ -282,7 +320,20 @@ class TestSakaCycleIntegrity:
         )
         
         # ÉTAPE 3 : COMPOST (obligatoire)
-        silo, _ = SakaSilo.objects.get_or_create()
+        # S'assurer que le wallet est éligible au compost
+        wallet.refresh_from_db()
+        wallet.last_activity_date = timezone.now() - timedelta(days=120)  # Inactif depuis 120 jours
+        wallet.balance = 100  # Solde suffisant (min_balance = 50)
+        wallet.save()
+        
+        silo, _ = SakaSilo.objects.get_or_create(
+            id=1,
+            defaults={
+                'total_balance': 0,
+                'total_composted': 0,
+                'total_cycles': 0,
+            }
+        )
         initial_silo_balance = silo.total_balance
         
         compost_result = run_saka_compost_cycle(dry_run=False, source="test")

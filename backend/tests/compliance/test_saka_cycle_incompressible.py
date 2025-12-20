@@ -237,15 +237,22 @@ class TestSakaCycleIncompressible:
         
         # Vérifier que le wallet a été débité
         wallet.refresh_from_db()
-        assert wallet.balance < 70, (
-            "VIOLATION CONSTITUTION EGOEJO : Le wallet inactif DOIT être débité après compostage.\n"
-            "Le compostage est une étape obligatoire du cycle SAKA."
+        # Le wallet avait 100 grains, après compost (10% = 10 grains), il devrait avoir 90 grains
+        assert wallet.balance < 100, (
+            f"VIOLATION CONSTITUTION EGOEJO : Le wallet inactif DOIT être débité après compostage.\n"
+            f"Solde avant compost : 100, Solde après compost : {wallet.balance}.\n"
+            f"Le compostage est une étape obligatoire du cycle SAKA."
+        )
+        assert wallet.balance == 90, (
+            f"VIOLATION CONSTITUTION EGOEJO : Le wallet n'a pas été correctement débité après compostage.\n"
+            f"Solde attendu : 90 (100 - 10%), Solde actuel : {wallet.balance}.\n"
+            f"Le compostage doit prélever 10% du solde."
         )
         
         # Vérifier qu'un log de compostage a été créé
         compost_logs = SakaCompostLog.objects.filter(
             total_composted__gt=0
-        ).order_by('-created_at')
+        ).order_by('-started_at')
         assert compost_logs.exists(), (
             "VIOLATION CONSTITUTION EGOEJO : Un log de compostage DOIT être créé.\n"
             "La traçabilité du cycle SAKA est obligatoire."

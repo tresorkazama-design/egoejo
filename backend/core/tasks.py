@@ -4,6 +4,7 @@ Tâches asynchrones Celery pour traitement en arrière-plan
 from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db.utils import OperationalError, DatabaseError
 import os
 import resend
 from PIL import Image
@@ -12,12 +13,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# PROTECTION RETRY : Constantes pour gestion des retries
+MAX_RETRIES_TASKS = 3
+RETRY_ONLY_TEMPORARY_ERRORS = True  # Ne retry que les erreurs temporaires
+
 
 @shared_task(bind=True, max_retries=3)
 def notify_project_success_task(self, project_id):
     """
     Tâche Celery pour notifier les donateurs/investisseurs du succès d'un projet.
     CORRECTION 4 : Asynchronisme pour éviter timeout lors de la clôture.
+    
+    OPTIMISATION N+1 : Batch processing au lieu d'une task par email.
     
     Args:
         project_id: ID du projet qui a réussi
@@ -26,36 +33,129 @@ def notify_project_success_task(self, project_id):
         from core.models import Projet
         from finance.models import EscrowContract
         
+        # OPTIMISATION N+1 : Limite stricte pour éviter explosion de tasks
+        MAX_ESCROWS_PER_NOTIFICATION = 1000
+        EMAIL_BATCH_SIZE = 50
+        
         project = Projet.objects.get(id=project_id)
         
-        # Récupérer tous les escrows libérés pour ce projet
-        escrows = EscrowContract.objects.filter(
+        # Récupérer tous les escrows libérés pour ce projet (avec limite)
+        escrows_qs = EscrowContract.objects.filter(
             project=project,
             status='RELEASED'
         ).select_related('user')
         
-        # Envoyer un email à chaque donateur/investisseur
+        total_escrows_count = escrows_qs.count()
+        
+        if total_escrows_count > MAX_ESCROWS_PER_NOTIFICATION:
+            logger.warning(
+                f"Projet {project_id} a {total_escrows_count} escrows (> {MAX_ESCROWS_PER_NOTIFICATION}), "
+                f"traitement limité à {MAX_ESCROWS_PER_NOTIFICATION}"
+            )
+        
+        escrows = list(escrows_qs[:MAX_ESCROWS_PER_NOTIFICATION])
+        
+        # OPTIMISATION N+1 : Préparer les emails en batch au lieu d'une task par email
+        emails_to_send = []
         for escrow in escrows:
             if escrow.user and escrow.user.email:
-                subject = f"🎉 Le projet '{project.titre}' a réussi !"
-                html_content = f"""
-                <h1>Félicitations !</h1>
-                <p>Le projet <strong>{project.titre}</strong> a atteint son objectif.</p>
-                <p>Votre contribution de <strong>{escrow.amount} €</strong> a été libérée.</p>
-                <p>Merci pour votre soutien !</p>
-                """
-                send_email_task.delay(
-                    to_email=escrow.user.email,
-                    subject=subject,
-                    html_content=html_content
-                )
+                emails_to_send.append({
+                    'to_email': escrow.user.email,
+                    'subject': f"🎉 Le projet '{project.titre}' a réussi !",
+                    'html_content': f"""
+                    <h1>Félicitations !</h1>
+                    <p>Le projet <strong>{project.titre}</strong> a atteint son objectif.</p>
+                    <p>Votre contribution de <strong>{escrow.amount} €</strong> a été libérée.</p>
+                    <p>Merci pour votre soutien !</p>
+                    """
+                })
         
-        logger.info(f"Notifications envoyées pour le projet {project_id} ({escrows.count()} contributeurs)")
-        return {'success': True, 'notified_count': escrows.count()}
+        # OPTIMISATION N+1 : Envoyer par batch au lieu d'une task par email
+        notified_count = 0
+        for i in range(0, len(emails_to_send), EMAIL_BATCH_SIZE):
+            batch = emails_to_send[i:i + EMAIL_BATCH_SIZE]
+            send_batch_email_task.delay(batch)
+            notified_count += len(batch)
+        
+        logger.info(f"Notifications batchées pour le projet {project_id} ({notified_count}/{total_escrows_count} contributeurs)")
+        return {'success': True, 'notified_count': notified_count, 'total_escrows': total_escrows_count}
     
+    except (OperationalError, DatabaseError) as exc:
+        # PROTECTION RETRY : Erreur temporaire DB (lock timeout, connexion) - retry
+        logger.warning(f"Erreur temporaire DB notification projet {project_id}: {exc}")
+        if self.request.retries < MAX_RETRIES_TASKS:
+            raise self.retry(exc=exc, countdown=60)
+        else:
+            logger.error(f"Nombre maximum de retries atteint pour notification projet {project_id}")
+            raise
     except Exception as exc:
-        logger.error(f"Erreur notification projet {project_id}: {exc}")
-        raise self.retry(exc=exc, countdown=60)  # Réessayer après 60 secondes
+        # PROTECTION RETRY : Erreur logique/permanente - ne pas retry, logger en ERROR
+        logger.error(f"Erreur permanente notification projet {project_id}: {exc}", exc_info=True)
+        # Ne pas retry sur erreurs logiques (projet introuvable, données invalides, etc.)
+        raise
+
+
+@shared_task(bind=True, max_retries=3)
+def send_batch_email_task(self, emails_batch):
+    """
+    Envoie un batch d'emails de manière asynchrone via Resend.
+    
+    OPTIMISATION N+1 : Traite plusieurs emails en une seule task au lieu d'une task par email.
+    
+    Args:
+        emails_batch: Liste de dictionnaires avec 'to_email', 'subject', 'html_content', 'text_content' (optionnel)
+    
+    Returns:
+        dict: Résultat de l'envoi avec succès/échecs
+    """
+    try:
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.warning("RESEND_API_KEY non configuré, emails non envoyés")
+            return {'success': False, 'error': 'RESEND_API_KEY not configured', 'sent': 0, 'failed': len(emails_batch)}
+        
+        resend.api_key = resend_api_key
+        from_email = os.environ.get('NOTIFY_EMAIL', 'noreply@egoejo.org')
+        
+        sent_count = 0
+        failed_count = 0
+        
+        # Envoyer chaque email du batch
+        for email_data in emails_batch:
+            try:
+                params = {
+                    "from": from_email,
+                    "to": [email_data['to_email']],
+                    "subject": email_data['subject'],
+                    "html": email_data['html_content'],
+                }
+                
+                if email_data.get('text_content'):
+                    params["text"] = email_data['text_content']
+                
+                email = resend.Emails.send(params)
+                sent_count += 1
+                logger.debug(f"Email envoyé avec succès à {email_data['to_email']}: {email.get('id')}")
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"Erreur envoi email à {email_data['to_email']}: {e}", exc_info=True)
+        
+        logger.info(f"Batch email terminé: {sent_count} envoyés, {failed_count} échoués sur {len(emails_batch)}")
+        return {'success': True, 'sent': sent_count, 'failed': failed_count, 'total': len(emails_batch)}
+    
+    except (ConnectionError, TimeoutError) as exc:
+        # PROTECTION RETRY : Erreur temporaire réseau - retry
+        logger.warning(f"Erreur temporaire réseau lors de l'envoi du batch d'emails: {exc}")
+        if self.request.retries < MAX_RETRIES_TASKS:
+            raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        else:
+            logger.error(f"Nombre maximum de retries atteint pour batch emails")
+            raise
+    except Exception as exc:
+        # PROTECTION RETRY : Erreur logique/permanente (API key invalide, format invalide) - ne pas retry
+        logger.error(f"Erreur permanente lors de l'envoi du batch d'emails: {exc}", exc_info=True)
+        # Ne pas retry sur erreurs logiques (API key manquante, format invalide, etc.)
+        raise
 
 
 @shared_task(bind=True, max_retries=3)
@@ -95,10 +195,19 @@ def send_email_task(self, to_email, subject, html_content, text_content=None):
         logger.info(f"Email envoyé avec succès à {to_email}: {email.get('id')}")
         return {'success': True, 'email_id': email.get('id')}
     
+    except (ConnectionError, TimeoutError) as exc:
+        # PROTECTION RETRY : Erreur temporaire réseau - retry
+        logger.warning(f"Erreur temporaire réseau envoi email à {to_email}: {exc}")
+        if self.request.retries < MAX_RETRIES_TASKS:
+            raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        else:
+            logger.error(f"Nombre maximum de retries atteint pour email à {to_email}")
+            raise
     except Exception as exc:
-        logger.error(f"Erreur envoi email à {to_email}: {exc}")
-        # Retry avec backoff exponentiel
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        # PROTECTION RETRY : Erreur logique/permanente (API key invalide, email invalide) - ne pas retry
+        logger.error(f"Erreur permanente envoi email à {to_email}: {exc}", exc_info=True)
+        # Ne pas retry sur erreurs logiques (API key manquante, email invalide, etc.)
+        raise
 
 
 @shared_task(bind=True, name='core.tasks.saka_run_compost_cycle')

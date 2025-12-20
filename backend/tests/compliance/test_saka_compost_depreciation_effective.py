@@ -14,7 +14,7 @@ VIOLATION EMPÊCHÉE :
 - Accumulation infinie malgré compostage
 """
 import pytest
-from django.test import override_settings
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
@@ -33,8 +33,7 @@ User = get_user_model()
     SAKA_COMPOST_MIN_BALANCE=50,
     SAKA_COMPOST_MIN_AMOUNT=10,
 )
-@pytest.mark.django_db
-class TestSakaCompostDepreciationEffective:
+class TestSakaCompostDepreciationEffective(TestCase):
     """
     Tests pour garantir que le compostage est EFFECTIF (dépréciation réelle).
     

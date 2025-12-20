@@ -518,3 +518,14 @@ SAKA_SILO_REDIS_ENABLED = os.environ.get('SAKA_SILO_REDIS_ENABLED', 'False').low
 SAKA_SILO_REDIS_RATE = float(os.environ.get('SAKA_SILO_REDIS_RATE', '0.05'))  # 5% du Silo redistribué par cycle
 SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY = int(os.environ.get('SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY', '1'))  # Min total_harvested pour être éligible
 
+# ==============================================
+# IMPACT ORACLES (Architecture pour données externes)
+# ==============================================
+# Configuration des oracles d'impact (APIs externes pour enrichir P3/P4)
+IMPACT_ORACLES = {
+    'CO2_API_ENDPOINT': os.environ.get('IMPACT_ORACLES_CO2_API_ENDPOINT', ''),
+    'CO2_API_KEY': os.environ.get('IMPACT_ORACLES_CO2_API_KEY', ''),
+    'SOCIAL_API_ENDPOINT': os.environ.get('IMPACT_ORACLES_SOCIAL_API_ENDPOINT', ''),
+    'SOCIAL_API_KEY': os.environ.get('IMPACT_ORACLES_SOCIAL_API_KEY', ''),
+}
+

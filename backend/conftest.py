@@ -12,3 +12,12 @@ os.environ['DISABLE_THROTTLE_FOR_TESTS'] = '1'
 if 'ADMIN_TOKEN' not in os.environ:
     os.environ['ADMIN_TOKEN'] = 'test-admin-token-123'
 
+# Activer les feature flags SAKA pour les tests
+# PHILOSOPHIE EGOEJO : Les flags SAKA doivent être activés pour les tests de conformité
+os.environ['ENABLE_SAKA'] = 'True'
+os.environ['SAKA_COMPOST_ENABLED'] = 'True'
+os.environ['SAKA_SILO_REDIS_ENABLED'] = 'True'
+
+# Forcer DEBUG=True pour les tests (évite le blocage production)
+os.environ['DEBUG'] = '1'
+
