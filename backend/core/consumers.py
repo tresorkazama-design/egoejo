@@ -27,6 +27,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive_json(self, content, **kwargs):
         message_type = content.get('type')
+        
+        # Gestion du heartbeat ping/pong
+        if message_type == 'ping':
+            await self.send_json({'type': 'pong'})
+            return
+        
         if message_type == 'typing':
             await self.channel_layer.group_send(
                 self.group_name,

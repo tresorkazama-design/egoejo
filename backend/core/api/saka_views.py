@@ -411,6 +411,15 @@ def saka_transactions_view(request):
         paginator = SakaTransactionPagination()
         return paginator.get_paginated_response([])
     
+    # Validation des paramètres de pagination
+    try:
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 50))
+        if page < 1 or page_size < 1 or page_size > 200:
+            return Response({"error": "Invalid pagination params"}, status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({"error": "Invalid pagination params"}, status=status.HTTP_400_BAD_REQUEST)
+    
     # Construire le queryset de base
     queryset = SakaTransaction.objects.filter(user=request.user).order_by("-created_at")
     
@@ -423,32 +432,17 @@ def saka_transactions_view(request):
     paginator = SakaTransactionPagination()
     page = paginator.paginate_queryset(queryset, request)
     
-    if page is not None:
-        # Sérialiser les transactions
-        results = []
-        for tx in page:
-            results.append({
-                "id": tx.id,
-                "amount": tx.amount,
-                "direction": tx.direction,  # "EARN" ou "SPEND"
-                "reason": tx.reason,
-                "metadata": tx.metadata or {},
-                "created_at": tx.created_at.isoformat(),
-            })
-        
-        return paginator.get_paginated_response(results)
-    
-    # Si pas de pagination (ne devrait pas arriver avec notre config)
+    # Sérialiser les transactions
     results = []
-    for tx in queryset[:50]:  # Limite de sécurité
+    for tx in page:
         results.append({
             "id": tx.id,
             "amount": tx.amount,
-            "direction": tx.direction,
+            "direction": tx.direction,  # "EARN" ou "SPEND"
             "reason": tx.reason,
             "metadata": tx.metadata or {},
             "created_at": tx.created_at.isoformat(),
         })
     
-    return Response({"results": results})
+    return paginator.get_paginated_response(results)
 
