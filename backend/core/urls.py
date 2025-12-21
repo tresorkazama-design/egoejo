@@ -127,8 +127,9 @@ urlpatterns = [
            # --- SAKA PROTOCOL - PHASE 3 : COMPOSTAGE & SILO COMMUN 🌾 ---
            path("saka/silo/", saka_views.saka_silo_view, name="saka-silo"),
            path("saka/silo/redistribute/", saka_views.saka_silo_redistribute, name="saka-silo-redistribute"),  # Admin uniquement - Redistribution Silo (V1 simple)
-           path("saka/compost-preview/", saka_views.saka_compost_preview_view, name="saka-compost-preview"),
-           path("saka/compost-trigger/", saka_views.saka_compost_trigger_view, name="saka-compost-trigger"),  # Admin uniquement
+          path("saka/compost-preview/", saka_views.saka_compost_preview_view, name="saka-compost-preview"),
+          path("saka/transactions/", saka_views.saka_transactions_view, name="saka-transactions"),  # Historique des transactions SAKA
+          path("saka/compost-trigger/", saka_views.saka_compost_trigger_view, name="saka-compost-trigger"),  # Admin uniquement
            path("saka/compost-run/", saka_views.saka_compost_run_view, name="saka-compost-run"),  # Admin uniquement - Dry-run depuis frontend
            path("saka/stats/", saka_views.saka_stats_view, name="saka-stats"),  # Admin uniquement - Monitoring & KPIs
           path("saka/compost-logs/", saka_views.saka_compost_logs_view, name="saka-compost-logs"),  # Admin uniquement - Audit logs

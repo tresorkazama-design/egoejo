@@ -7,8 +7,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
-from core.models.saka import SakaSilo, SakaCompostLog, SakaCycle
+from core.models.saka import SakaSilo, SakaCompostLog, SakaCycle, SakaTransaction
 from core.services.saka import get_user_compost_preview, run_saka_compost_cycle
 from core.services.saka_stats import (
     get_saka_global_stats,
@@ -63,12 +64,34 @@ def saka_compost_preview_view(request):
     
     Retourne une estimation de la quantité de SAKA qui serait compostée
     pour l'utilisateur courant s'il restait inactif jusqu'au prochain cycle.
+    
+    Inclut également la configuration du compostage pour le frontend.
     """
     if not getattr(settings, "SAKA_COMPOST_ENABLED", False):
         return Response({"enabled": False})
     
     preview = get_user_compost_preview(request.user)
-    return Response({"enabled": True, **preview})
+    
+    # Ajouter la configuration du compostage pour le frontend
+    from core.services.saka import (
+        _get_saka_compost_inactivity_days,
+        _read_compost_rate,
+        _get_saka_compost_min_balance,
+        _get_saka_compost_min_amount,
+    )
+    
+    config = {
+        "inactivity_days": _get_saka_compost_inactivity_days(),
+        "rate": _read_compost_rate(),
+        "min_balance": _get_saka_compost_min_balance(),
+        "min_amount": _get_saka_compost_min_amount(),
+    }
+    
+    return Response({
+        "enabled": True,
+        **preview,
+        "config": config,
+    })
 
 
 @api_view(["POST"])
@@ -359,4 +382,73 @@ def saka_redistribute_view(request):
             {"ok": False, "reason": f"error: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+class SakaTransactionPagination(PageNumberPagination):
+    """
+    Pagination standard DRF pour les transactions SAKA.
+    """
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def saka_transactions_view(request):
+    """
+    GET /api/saka/transactions/
+    
+    Retourne l'historique des transactions SAKA de l'utilisateur authentifié.
+    Trié par date décroissante (plus récentes en premier).
+    
+    Query params (optionnels):
+    - page: Numéro de page (défaut: 1)
+    - page_size: Nombre de transactions par page (défaut: 50, max: 200)
+    - direction: Filtrer par type ('EARN' ou 'SPEND')
+    """
+    if not getattr(settings, "ENABLE_SAKA", False):
+        paginator = SakaTransactionPagination()
+        return paginator.get_paginated_response([])
+    
+    # Construire le queryset de base
+    queryset = SakaTransaction.objects.filter(user=request.user).order_by("-created_at")
+    
+    # Filtre par direction (EARN/SPEND)
+    direction = request.query_params.get("direction", "").upper()
+    if direction in ["EARN", "SPEND"]:
+        queryset = queryset.filter(direction=direction)
+    
+    # Pagination standard DRF
+    paginator = SakaTransactionPagination()
+    page = paginator.paginate_queryset(queryset, request)
+    
+    if page is not None:
+        # Sérialiser les transactions
+        results = []
+        for tx in page:
+            results.append({
+                "id": tx.id,
+                "amount": tx.amount,
+                "direction": tx.direction,  # "EARN" ou "SPEND"
+                "reason": tx.reason,
+                "metadata": tx.metadata or {},
+                "created_at": tx.created_at.isoformat(),
+            })
+        
+        return paginator.get_paginated_response(results)
+    
+    # Si pas de pagination (ne devrait pas arriver avec notre config)
+    results = []
+    for tx in queryset[:50]:  # Limite de sécurité
+        results.append({
+            "id": tx.id,
+            "amount": tx.amount,
+            "direction": tx.direction,
+            "reason": tx.reason,
+            "metadata": tx.metadata or {},
+            "created_at": tx.created_at.isoformat(),
+        })
+    
+    return Response({"results": results})
 
