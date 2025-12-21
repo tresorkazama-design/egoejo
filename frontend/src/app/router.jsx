@@ -5,6 +5,22 @@ import { Loader } from '../components/Loader';
 import ErrorBoundary from '../components/ErrorBoundary';
 import PageViewTracker from '../components/PageViewTracker';
 
+// Prefetch des pages critiques au chargement initial (idle time)
+if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+  requestIdleCallback(() => {
+    // Prefetch /projets et /vision en arrière-plan
+    const prefetchPage = (path) => {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = path;
+      document.head.appendChild(link);
+    };
+    
+    prefetchPage('/projets');
+    prefetchPage('/vision');
+  }, { timeout: 2000 });
+}
+
 // Lazy loading des pages pour améliorer les performances
 const Home = lazy(() => import('./pages/Home'));
 const Univers = lazy(() => import('./pages/Univers'));
@@ -29,6 +45,7 @@ const Podcast = lazy(() => import('./pages/Podcast'));
 const SakaSilo = lazy(() => import('./pages/SakaSilo')); // Phase 3 SAKA : Compostage & Silo Commun
 const SakaMonitor = lazy(() => import('./pages/SakaMonitor')); // SAKA Monitoring & KPIs (Admin)
 const SakaSeasons = lazy(() => import('./pages/SakaSeasons')); // Saisons SAKA (Cycles)
+const SakaHistory = lazy(() => import('./pages/SakaHistory')); // Historique des transactions SAKA
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Composant wrapper pour le lazy loading
@@ -138,6 +155,10 @@ export const appRouter = createBrowserRouter([
       {
         path: 'saka/saisons',
         element: <LazyPage><SakaSeasons /></LazyPage>
+      },
+      {
+        path: 'saka/history',
+        element: <LazyPage><SakaHistory /></LazyPage>
       },
       {
         path: 'admin/saka-monitor',

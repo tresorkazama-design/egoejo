@@ -16,7 +16,13 @@ import { Loader } from '../../components/Loader';
 import { useSakaSilo, useSakaCompostPreview } from '../../hooks/useSaka';
 import FourPStrip from '../../components/dashboard/FourPStrip';
 import SakaSeasonBadge from '../../components/saka/SakaSeasonBadge';
+import SeasonProgress from '../../components/saka/SeasonProgress';
+import CompostPreview from '../../components/saka/CompostPreview';
 import UserImpact4P from '../../components/dashboard/UserImpact4P';
+import EmptyState from '../../components/ui/EmptyState';
+import { Skeleton, SkeletonCard, SkeletonText } from '../../components/ui/Skeleton';
+import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import { logger } from '../../utils/logger';
 
 const COLORS = {
   cash: '#10b981', // Vert
@@ -54,7 +60,7 @@ export default function Dashboard() {
       setAssets(data);
       setError(null);
     } catch (err) {
-      console.error('Erreur chargement patrimoine:', err);
+      logger.error('Erreur chargement patrimoine:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -74,7 +80,7 @@ export default function Dashboard() {
       await loadAssets();
       setTransferModal(null);
     } catch (err) {
-      console.error('Erreur transfert:', err);
+      logger.error('Erreur transfert:', err);
       alert(err.message || 'Erreur lors du transfert');
     }
   };
@@ -100,8 +106,23 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="dashboard-page" style={{ padding: '2rem', textAlign: 'center' }}>
-        <Loader message="Chargement de votre patrimoine..." />
+      <div className="dashboard-page" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
+        <Skeleton width="40%" height="2.5rem" style={{ marginBottom: '2rem' }} />
+        
+        {/* Skeleton pour FourPStrip */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ padding: '1.5rem', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+              <Skeleton width="60%" height="0.875rem" style={{ marginBottom: '0.75rem' }} />
+              <Skeleton width="80%" height="1.75rem" style={{ marginBottom: '0.5rem' }} />
+              <Skeleton width="100%" height="0.75rem" />
+            </div>
+          ))}
+        </div>
+
+        {/* Skeleton pour sections */}
+        <SkeletonCard withImage={false} textLines={4} style={{ marginBottom: '2rem' }} />
+        <SkeletonCard withImage={false} textLines={3} />
       </div>
     );
   }
@@ -116,6 +137,11 @@ export default function Dashboard() {
   }
 
   if (!assets) return null;
+
+  // Vérifier si l'utilisateur est nouveau (pas de SAKA, pas de liquidités, pas d'activité)
+  const isNewUser = !assets.saka || (assets.saka.balance === 0 && assets.saka.total_harvested === 0) &&
+    (!assets.cash_balance || parseFloat(assets.cash_balance) === 0) &&
+    (!assets.donations || parseFloat(assets.donations.total_amount || '0') === 0);
 
   // Préparer les données pour le graphique camembert
   const chartData = [
@@ -181,7 +207,41 @@ export default function Dashboard() {
         description="Visualisez votre patrimoine : liquidités, pockets, dons, investissements et dividende social"
       />
       <div className="dashboard-page" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          items={[
+            { label: 'Accueil', to: '/' },
+            { label: 'Patrimoine Vivant' },
+          ]}
+        />
+        
         <h1 style={{ marginBottom: '2rem', fontSize: '2.5rem' }}>Patrimoine Vivant</h1>
+
+        {/* Empty State pour nouveaux utilisateurs */}
+        {isNewUser && (
+          <EmptyState
+            title="Bienvenue !"
+            message="Voici comment commencer votre parcours dans la communauté EGOEJO :"
+            icon="🌱"
+            actions={[
+              {
+                label: 'Lire un contenu (+10 SAKA)',
+                to: '/contenus',
+                icon: '📚',
+              },
+              {
+                label: 'Voter dans un sondage (+5 SAKA)',
+                to: '/votes',
+                icon: '🗳️',
+              },
+              {
+                label: 'Explorer les projets',
+                to: '/projets',
+                icon: '🌾',
+              },
+            ]}
+          />
+        )}
 
         {/* Bandeau 4P / Triple capital */}
         <FourPStrip
@@ -195,29 +255,40 @@ export default function Dashboard() {
           <div
             style={{
               padding: '1rem 1.5rem',
-              backgroundColor: '#fef3c7',
-              border: '1px solid #fbbf24',
+              backgroundColor: '#f0fdf4',
+              border: '2px solid #84cc16',
               borderRadius: 'var(--radius)',
               marginBottom: '2rem',
             }}
           >
-            <h3 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1rem', fontWeight: '600', color: '#92400e' }}>
-              🌾 Vos grains vont bientôt retourner à la terre
+            <h3 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1rem', fontWeight: '600', color: '#166534' }}>
+              🌱 Contribution à l'écosystème
             </h3>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: '#78350f' }}>
-              Si vous restez inactif, environ <strong>{compost.amount} SAKA</strong> seront compostés lors du prochain cycle pour nourrir le Silo Commun.
+            <p style={{ margin: 0, fontSize: '0.875rem', color: '#15803d' }}>
+              Si vous restez inactif, environ <strong>{compost.amount} grains</strong> contribueront au Silo Commun lors du prochain cycle.
               {compost.days_until_eligible !== undefined && compost.days_until_eligible > 0 && (
                 <> Il vous reste environ <strong>{compost.days_until_eligible} jour{compost.days_until_eligible > 1 ? 's' : ''}</strong> avant l'éligibilité.</>
               )}
-              {' '}Vous pouvez encore les planter dans des votes ou des projets si vous le souhaitez.
+              {' '}Ils seront redistribués aux membres actifs de la communauté. Vous pouvez encore les planter dans des votes ou des projets si vous le souhaitez.
             </p>
           </div>
+        )}
+
+        {/* Visualisation du Compostage */}
+        {compost?.enabled && (
+          <CompostPreview compost={compost} sakaBalance={assets.saka?.balance ?? 0} />
         )}
 
         {/* Section Capital Vivant (SAKA) */}
         {assets.saka && (
           <section style={{ marginBottom: '3rem' }}>
             <h2 style={{ marginBottom: '1.5rem', fontSize: '1.8rem' }}>Capital Vivant (SAKA)</h2>
+            
+            {/* Progression de Saison */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <SeasonProgress balance={assets.saka.balance ?? 0} />
+            </div>
+
             <div
               style={{
                 padding: '2rem',
@@ -248,30 +319,47 @@ export default function Dashboard() {
                   )}
                   {assets.saka.total_composted > 0 && (
                     <p style={{ fontSize: '0.75rem', color: 'var(--muted)', margin: '0.25rem 0' }}>
-                      Grains compostés : {assets.saka.total_composted}
+                      Grains régénérés : {assets.saka.total_composted}
                     </p>
                   )}
                 </div>
               )}
-              <Link
-                to="/saka/saisons"
-                style={{
-                  display: 'inline-block',
-                  marginTop: '1rem',
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: 'transparent',
-                  color: 'var(--accent)',
-                  border: '1px solid var(--accent)',
-                  borderRadius: 'var(--radius)',
-                  textDecoration: 'none',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                }}
-              >
-                Saisons SAKA 🌾
-              </Link>
-            </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <Link
+                  to="/saka/history"
+                  style={{
+                    display: 'inline-block',
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: 'transparent',
+                    color: 'var(--accent)',
+                    border: '1px solid var(--accent)',
+                    borderRadius: 'var(--radius)',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Historique SAKA 📜
+                </Link>
+                <Link
+                  to="/saka/saisons"
+                  style={{
+                    display: 'inline-block',
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: 'transparent',
+                    color: 'var(--accent)',
+                    border: '1px solid var(--accent)',
+                    borderRadius: 'var(--radius)',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Saisons SAKA 🌾
+                </Link>
+              </div>
           </section>
         )}
 
@@ -310,11 +398,11 @@ export default function Dashboard() {
                 {silo.total_balance ?? 0} <span style={{ fontSize: '1.5rem', fontWeight: 'normal' }}>SAKA</span>
               </div>
               <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
-                Grains compostés à ce jour : {silo.total_composted ?? 0}
+                Grains régénérés à ce jour : {silo.total_composted ?? 0}
               </p>
               {silo.last_compost_at && (
                 <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
-                  Dernier cycle : {formatDate(silo.last_compost_at)}
+                  Dernière régénération : {formatDate(silo.last_compost_at)}
                 </p>
               )}
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>

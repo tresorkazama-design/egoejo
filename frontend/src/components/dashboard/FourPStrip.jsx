@@ -3,6 +3,7 @@
  * Affiche les 3 dimensions du capital : financier, vivant (SAKA), impact social/écologique
  */
 import { formatMoney } from '../../utils/money';
+import Tooltip from '../ui/Tooltip';
 
 /**
  * @param {Object} props
@@ -77,19 +78,65 @@ export default function FourPStrip({ financial, saka, impact }) {
         }}
         className="four-p-card saka"
       >
-        <h3
-          style={{
-            margin: 0,
-            marginBottom: '0.75rem',
-            fontSize: '0.875rem',
-            fontWeight: '600',
-            color: 'var(--muted)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}
-        >
-          Capital vivant (SAKA)
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              color: 'var(--muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Capital vivant (SAKA)
+          </h3>
+          <Tooltip
+            content={
+              <div style={{ padding: '0.25rem 0' }}>
+                <p style={{ margin: 0, marginBottom: '0.5rem', fontWeight: '600' }}>
+                  Les SAKA sont des grains d'engagement.
+                </p>
+                <p style={{ margin: 0, marginBottom: '0.5rem' }}>
+                  Gagnez-en en lisant des contenus (+10 SAKA) et en participant aux votes (+5 SAKA).
+                </p>
+                <p style={{ margin: 0 }}>
+                  Utilisez-les pour voter avec intensité et booster des projets.
+                </p>
+              </div>
+            }
+            position="top"
+            delay={300}
+          >
+            <button
+              type="button"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--muted)',
+                cursor: 'help',
+                fontSize: '0.875rem',
+                padding: '0.25rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                width: '1.25rem',
+                height: '1.25rem',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--muted)';
+              }}
+              aria-label="En savoir plus sur les SAKA"
+            >
+              ?
+            </button>
+          </Tooltip>
+        </div>
         <div
           style={{
             fontSize: '1.75rem',

@@ -7,6 +7,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../utils/i18n';
 import SEO from '../../components/SEO';
 import { useSEO } from '../../hooks/useSEO';
+import { Skeleton, SkeletonCard } from '../../components/ui/Skeleton';
+import Breadcrumbs from '../../components/ui/Breadcrumbs';
 
 const getTypeLabels = (lang) => ({
   podcast: t("contenus.type_podcast", lang),
@@ -52,7 +54,18 @@ export const Contenus = () => {
     return (
       <div className="page page--citations" data-testid="contenus-page">
         <SEO {...seoProps} />
-        <Loader fullScreen message={t("contenus.loading", language)} />
+        <section className="citations-hero">
+          <Skeleton width="200px" height="1rem" style={{ marginBottom: '1rem' }} />
+          <Skeleton width="60%" height="2.5rem" style={{ marginBottom: '1rem' }} />
+          <Skeleton width="80%" height="1.25rem" />
+        </section>
+        <section className="citation-group" style={{ padding: '2rem' }}>
+          <div style={{ display: 'grid', gap: '2rem' }}>
+            {[1, 2, 3].map((i) => (
+              <SkeletonCard key={i} withImage={true} textLines={3} />
+            ))}
+          </div>
+        </section>
       </div>
     );
   }
@@ -60,6 +73,17 @@ export const Contenus = () => {
   return (
     <div className="page page--citations" data-testid="contenus-page">
       <SEO {...seoProps} />
+      
+      {/* Breadcrumbs */}
+      <div style={{ padding: '2rem 2rem 0', maxWidth: '1400px', margin: '0 auto' }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Accueil', to: '/' },
+            { label: t("contenus.title", language) || 'Contenus' },
+          ]}
+        />
+      </div>
+
       <section className="citations-hero" aria-labelledby="contenus-title" role="region" aria-label={t("contenus.title", language)}>
         <div className="citations-hero__badge" role="text" aria-label={t("contenus.badge", language)}>{t("contenus.badge", language)}</div>
         <h1 id="contenus-title" className="citations-hero__title">{t("contenus.title", language)}</h1>

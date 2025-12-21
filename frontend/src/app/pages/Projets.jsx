@@ -11,6 +11,9 @@ import { useGlobalAssets } from '../../hooks/useGlobalAssets';
 import { useNotificationContext } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Impact4PCard from '../../components/projects/Impact4PCard';
+import EmptyState from '../../components/ui/EmptyState';
+import { Skeleton, SkeletonCard } from '../../components/ui/Skeleton';
+import Breadcrumbs from '../../components/ui/Breadcrumbs';
 
 export const Projets = React.memo(() => {
   const { language } = useLanguage();
@@ -131,7 +134,18 @@ export const Projets = React.memo(() => {
     return (
       <div className="page page--citations" data-testid="projets-page">
         <SEO {...seoProps} />
-        <Loader fullScreen message={t("common.loading", language)} />
+        <section className="citations-hero">
+          <Skeleton width="200px" height="1rem" style={{ marginBottom: '1rem' }} />
+          <Skeleton width="60%" height="2.5rem" style={{ marginBottom: '1rem' }} />
+          <Skeleton width="80%" height="1.25rem" />
+        </section>
+        <section className="citation-group" style={{ padding: '2rem' }}>
+          <div style={{ display: 'grid', gap: '2rem' }}>
+            {[1, 2, 3].map((i) => (
+              <SkeletonCard key={i} withImage={true} textLines={3} />
+            ))}
+          </div>
+        </section>
       </div>
     );
   }
@@ -139,6 +153,17 @@ export const Projets = React.memo(() => {
   return (
     <div className="page page--citations" data-testid="projets-page">
       <SEO {...seoProps} />
+      
+      {/* Breadcrumbs */}
+      <div style={{ padding: '2rem 2rem 0', maxWidth: '1400px', margin: '0 auto' }}>
+        <Breadcrumbs
+          items={[
+            { label: 'Accueil', to: '/' },
+            { label: t("projets.title", language) || 'Projets' },
+          ]}
+        />
+      </div>
+
       <section className="citations-hero" aria-labelledby="projets-title" role="region" aria-label={t("projets.title", language)}>
         <div className="citations-hero__badge" role="text" aria-label={t("projets.badge", language)}>{t("projets.badge", language)}</div>
         <h1 id="projets-title" className="citations-hero__title">{t("projets.title", language)}</h1>
@@ -174,15 +199,23 @@ export const Projets = React.memo(() => {
           </div>
         </section>
       ) : projets.length === 0 ? (
-        <section className="citation-group" aria-labelledby="no-projets-title">
-          <header className="citation-group__header">
-            <span className="citation-group__tag">{t("projets.info_tag", language)}</span>
-            <h2 id="no-projets-title" className="citation-group__title">{t("projets.no_projets", language)}</h2>
-            <p className="citation-group__description" aria-labelledby="no-projets-title">
-              {t("projets.no_projets_desc", language)}
-            </p>
-          </header>
-        </section>
+        <EmptyState
+          title="Aucun projet pour le moment"
+          message="Les projets de la communauté apparaîtront ici. Revenez bientôt pour découvrir de nouvelles initiatives !"
+          icon="🌾"
+          actions={[
+            {
+              label: 'Explorer les contenus',
+              to: '/contenus',
+              icon: '📚',
+            },
+            {
+              label: 'Revenir à l\'accueil',
+              to: '/',
+              icon: '🏠',
+            },
+          ]}
+        />
       ) : (
         <div className="citations-grid" role="list" aria-label={t("projets.list", language) || "Liste des projets"}>
           {projets.map((projet) => (

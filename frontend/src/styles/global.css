@@ -1,4 +1,5 @@
 ﻿@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import '../design-tokens/tokens.css';
 
 :root {
   color-scheme: dark;
@@ -159,7 +160,7 @@ section.hero *:not(.glass):not(.surface):not(.btn):not(.btn-primary):not(.btn-gh
   height: 100%;
   background: transparent;
   position: relative;
-  z-index: 1; /* Au-dessus du body::before */
+  z-index: var(--z-content); /* Au-dessus du body::before */
 }
 
 body {
@@ -209,6 +210,37 @@ body::before {
   }
 }
 
+/* Animation shimmer pour les barres de progression (CompostPreview, SeasonProgress) */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Responsive Design - SakaHistory */
+/* Vue Desktop : Tableau visible, Cards cachées */
+@media (min-width: 768px) {
+  .saka-history-desktop {
+    display: block !important;
+  }
+  .saka-history-mobile {
+    display: none !important;
+  }
+}
+
+/* Vue Mobile : Cards visibles, Tableau caché */
+@media (max-width: 767px) {
+  .saka-history-desktop {
+    display: none !important;
+  }
+  .saka-history-mobile {
+    display: grid !important;
+  }
+}
+
 a {
   color: inherit;
 }
@@ -222,13 +254,13 @@ a {
   padding: clamp(64px, 10vw, 120px) 0;
   position: relative;
   background: transparent;
-  z-index: 1; /* Au-dessus du body::before */
+  z-index: var(--z-content); /* Au-dessus du body::before */
 }
 
 .home-page {
   background: transparent;
   position: relative;
-  z-index: 1; /* Au-dessus du body::before */
+  z-index: var(--z-content); /* Au-dessus du body::before */
 }
 
 
@@ -396,14 +428,14 @@ a {
   display: flex;
   flex-direction: column;
   position: relative;
-  z-index: 1; /* Au-dessus du body::before */
+  z-index: var(--z-content); /* Au-dessus du body::before */
   background: transparent;
 }
 
 .layout-header {
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: var(--z-nav);
   background: rgba(6, 10, 12, 0.7);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
@@ -701,7 +733,7 @@ a {
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(0, 245, 160, 0.08) inset;
-  z-index: 50;
+  z-index: var(--z-overlay);
   animation: dropdownFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   max-height: calc(100vh - 200px);
   overflow-y: auto;
@@ -727,7 +759,7 @@ a {
 }
 
 /* S'assurer que le menu reste dans l'écran sur les écrans moyens */
-@media (max-width: 1024px) {
+@media (max-width: var(--breakpoint-lg)) {
   .layout-nav__dropdown-menu {
     right: 0;
     min-width: 260px;
@@ -736,7 +768,7 @@ a {
 }
 
 /* Sur les petits écrans, ajuster pour rester dans le container */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .layout-nav__dropdown {
     width: 100%;
   }
@@ -821,7 +853,7 @@ a {
   flex: 1 1 auto;
   background: transparent;
   position: relative;
-  z-index: 1; /* Au-dessus du body::before */
+  z-index: var(--z-content); /* Au-dessus du body::before */
 }
 
 .layout-footer {
@@ -1129,7 +1161,7 @@ a {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .layout-nav__toggle {
     display: inline-flex;
   }
@@ -1239,7 +1271,7 @@ a {
   background-color: transparent !important;
   grid-template-columns: 1fr;
   grid-template-rows: auto;
-  z-index: 1; /* Au-dessus du body::before */
+  z-index: var(--z-content); /* Au-dessus du body::before */
 }
 
 /* Forcer le fond transparent pour tous les enfants de .hero */
@@ -1268,7 +1300,7 @@ section.hero section {
   background: transparent !important;
   background-color: transparent !important;
   position: relative;
-  z-index: 1; /* Au-dessus du body::before */
+  z-index: var(--z-content); /* Au-dessus du body::before */
 }
 
 /* Forcer le fond transparent pour tous les enfants de section--dark */
@@ -1373,7 +1405,7 @@ div[style*="inset: 0"] {
 
 .hero__content {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-content);
   display: grid;
   gap: clamp(24px, 5vw, 36px);
   max-width: 720px;
@@ -1470,7 +1502,7 @@ ease;
   color: var(--accent);
 }
 
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .hero__actions {
     flex-direction: column;
     align-items: stretch;
@@ -1497,7 +1529,7 @@ ease;
 .menu-cube-container {
   position: relative;
   display: inline-block;
-  z-index: 50;
+  z-index: var(--z-overlay);
 }
 
 .menu-cube-button {
@@ -1514,7 +1546,7 @@ ease;
   transition: all 0.2s ease;
   position: relative;
   overflow: visible;
-  z-index: 101;
+  z-index: var(--z-modal);
 }
 
 .menu-cube-button.is-open {
@@ -1574,7 +1606,7 @@ ease;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 102;
+  z-index: var(--z-modal);
   transition: all 0.2s ease;
 }
 
@@ -1688,7 +1720,7 @@ ease;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(0, 245, 160, 0.08) inset;
-  z-index: 50;
+  z-index: var(--z-overlay);
   animation: dropdownFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
@@ -1739,7 +1771,7 @@ ease;
 }
 
 /* Responsive pour le sélecteur de langue */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .language-selector__toggle {
     padding: 10px 16px;
     font-size: 0.9rem;
@@ -1803,7 +1835,7 @@ html[dir="rtl"] .layout-footer__nav {
 }
 
 /* Responsive pour le menu cube */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .menu-cube-button {
     width: 60px;
     height: 60px;
@@ -1850,7 +1882,7 @@ html[dir="rtl"] .layout-footer__nav {
   width: 100%;
   height: 2px;
   background: rgba(0, 245, 160, 0.1);
-  z-index: 100;
+  z-index: var(--z-modal);
   pointer-events: none;
 }
 
@@ -1880,7 +1912,7 @@ html[dir="rtl"] .layout-footer__nav {
 /* Profondeur de champ - Flou subtil sur éléments en arrière-plan */
 .layout-content {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-content);
 }
 
 /* Élévation progressive au scroll */
@@ -2076,7 +2108,7 @@ button:focus-visible {
 }
 
 /* Responsive - Désactiver certains effets sur mobile */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .cursor-spotlight {
     opacity: 0.3;
   }
@@ -2182,7 +2214,7 @@ button:focus-visible {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .notification-container {
     top: 70px;
     right: 12px;
@@ -2556,7 +2588,7 @@ button:focus-visible {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .chat-container {
     padding: 12px;
     gap: 12px;
