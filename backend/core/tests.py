@@ -17,11 +17,32 @@ from .models import (
 )
 import json
 import os
+import secrets
 
 # Ensure base URL for email links to avoid 301 redirects in tests
 os.environ.setdefault("APP_BASE_URL", "http://testserver")
 # Désactiver le throttling pour les tests
 os.environ['DISABLE_THROTTLE_FOR_TESTS'] = '1'
+
+
+def get_test_admin_token():
+    """
+    Récupère le token admin pour les tests de manière sécurisée.
+    
+    SECURITE : Le token est généré par conftest.py via secrets.token_urlsafe().
+    Si le token n'existe pas dans l'environnement (cas rare), on en génère un
+    uniquement pour cette session de test.
+    
+    Returns:
+        str: Token admin pour les tests
+    """
+    token = os.environ.get('ADMIN_TOKEN')
+    if not token:
+        # Fallback uniquement en mode test : générer un token temporaire
+        # Ce cas ne devrait jamais arriver si conftest.py est correctement chargé
+        token = secrets.token_urlsafe(32)
+        os.environ['ADMIN_TOKEN'] = token
+    return token
 
 
 def _handle_redirect(client, method, url, **kwargs):
@@ -83,11 +104,11 @@ class IntentTestCase(TestCase):
     
     def setUp(self):
         self.client = Client()
-        # Définir le token admin pour les tests
-        # IMPORTANT: Le token doit être défini AVANT toute importation de modules qui l'utilisent
-        # Le token est maintenant défini dans conftest.py pour tous les tests
-        # Mais on s'assure qu'il est bien défini ici aussi
-        os.environ['ADMIN_TOKEN'] = 'test-admin-token-123'
+        # SECURITE : Le token admin est généré de manière sécurisée dans conftest.py
+        # On s'assure qu'il est bien défini dans l'environnement pour ce test
+        # Le token est généré via secrets.token_urlsafe() et n'est jamais hardcodé
+        test_token = get_test_admin_token()
+        os.environ['ADMIN_TOKEN'] = test_token
         os.environ['RESEND_API_KEY'] = ''  # Désactiver l'envoi d'emails en test
         
         # Forcer le rechargement du module common pour que require_admin_token utilise le nouveau token
@@ -131,7 +152,8 @@ class IntentTestCase(TestCase):
         response = self.client.post(
             '/api/intents/rejoindre/',
             data=json.dumps(data),
-            content_type='application/json'
+            content_type='application/json',
+            follow=True
         )
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.content)
@@ -154,7 +176,8 @@ class IntentTestCase(TestCase):
         response = self.client.post(
             '/api/intents/rejoindre/',
             data=json.dumps(data),
-            content_type='application/json'
+            content_type='application/json',
+            follow=True
         )
         self.assertEqual(response.status_code, 400)
         response_data = json.loads(response.content)
@@ -171,7 +194,8 @@ class IntentTestCase(TestCase):
         response = self.client.post(
             '/api/intents/rejoindre/',
             data=json.dumps(data),
-            content_type='application/json'
+            content_type='application/json',
+            follow=True
         )
         self.assertEqual(response.status_code, 400)
         response_data = json.loads(response.content)
@@ -189,7 +213,8 @@ class IntentTestCase(TestCase):
         response = self.client.post(
             '/api/intents/rejoindre/',
             data=json.dumps(data),
-            content_type='application/json'
+            content_type='application/json',
+            follow=True
         )
         self.assertEqual(response.status_code, 413)
         response_data = json.loads(response.content)
@@ -220,7 +245,7 @@ class IntentTestCase(TestCase):
     
     def test_admin_data_without_token(self):
         """Test l'accès aux données admin sans token"""
-        response = self.client.get('/api/intents/admin/')
+        response = self.client.get('/api/intents/admin/', follow=True)
         self.assertEqual(response.status_code, 401)
         response_data = json.loads(response.content)
         self.assertFalse(response_data['ok'])
@@ -230,7 +255,8 @@ class IntentTestCase(TestCase):
         # Ne pas authentifier l'utilisateur pour ce test (token invalide)
         response = self.client.get(
             '/api/intents/admin/',
-            HTTP_AUTHORIZATION='Bearer invalid-token'
+            HTTP_AUTHORIZATION='Bearer invalid-token',
+            follow=True
         )
         # Accepter 401 ou 403
         self.assertIn(response.status_code, [401, 403])
@@ -263,7 +289,8 @@ class IntentTestCase(TestCase):
         
         response = self.client.get(
             '/api/intents/admin/',
-            HTTP_AUTHORIZATION='Bearer test-admin-token-123'
+            HTTP_AUTHORIZATION=f'Bearer {get_test_admin_token()}',
+            follow=True
         )
         # Debug: afficher la réponse si échec
         if response.status_code != 200:
@@ -305,7 +332,8 @@ class IntentTestCase(TestCase):
         # Filtrer par profil
         response = self.client.get(
             '/api/intents/admin/?profil=je-decouvre',
-            HTTP_AUTHORIZATION='Bearer test-admin-token-123'
+            HTTP_AUTHORIZATION=f'Bearer {get_test_admin_token()}',
+            follow=True
         )
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.content)
@@ -341,7 +369,8 @@ class IntentTestCase(TestCase):
         # Rechercher par nom
         response = self.client.get(
             '/api/intents/admin/?q=John',
-            HTTP_AUTHORIZATION='Bearer test-admin-token-123'
+            HTTP_AUTHORIZATION=f'Bearer {get_test_admin_token()}',
+            follow=True
         )
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.content)
@@ -356,7 +385,7 @@ class IntentTestCase(TestCase):
             email='test@example.com',
             profil='je-decouvre'
         )
-        response = self.client.delete(f'/api/intents/{intent.id}/delete/')
+        response = self.client.delete(f'/api/intents/{intent.id}/delete/', follow=True)
         self.assertEqual(response.status_code, 401)
         
         # Vérifier que l'intent n'a pas été supprimé
@@ -370,7 +399,8 @@ class IntentTestCase(TestCase):
         
         response = self.client.delete(
             f'/api/intents/{self.base_intent.id}/delete/',
-            HTTP_AUTHORIZATION='Bearer test-admin-token-123'
+            HTTP_AUTHORIZATION=f'Bearer {get_test_admin_token()}',
+            follow=True
         )
         # Accepter 200 ou 405 (si la route n'existe pas)
         self.assertIn(response.status_code, [200, 405])
@@ -392,7 +422,8 @@ class IntentTestCase(TestCase):
         
         response = self.client.delete(
             '/api/intents/99999/delete/',
-            HTTP_AUTHORIZATION='Bearer test-admin-token-123'
+            HTTP_AUTHORIZATION=f'Bearer {get_test_admin_token()}',
+            follow=True
         )
         # Accepter 404 (intention non trouvée), 429 (rate limiting) ou 405 (méthode non supportée)
         self.assertIn(response.status_code, (404, 429, 405))
@@ -413,7 +444,7 @@ class IntentTestCase(TestCase):
     
     def test_export_intents_without_token(self):
         """Test l'export CSV sans token"""
-        response = self.client.get('/api/intents/export/')
+        response = self.client.get('/api/intents/export/', follow=True)
         self.assertEqual(response.status_code, 401)
     
     def test_export_intents_with_valid_token(self):
@@ -430,7 +461,8 @@ class IntentTestCase(TestCase):
         
         response = self.client.get(
             '/api/intents/export/',
-            HTTP_AUTHORIZATION='Bearer test-admin-token-123'
+            HTTP_AUTHORIZATION=f'Bearer {get_test_admin_token()}',
+            follow=True
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'text/csv; charset=utf-8')
@@ -597,7 +629,7 @@ class ProjectImpact4PTestCase(TestCase):
         update_project_4p(self.project)
         
         # Appeler l'API
-        response = self.client.get(f'/api/projets/{self.project.id}/')
+        response = self.client.get(f'/api/projets/{self.project.id}/', follow=True)
         
         # Vérifier la réponse
         self.assertEqual(response.status_code, 200)
@@ -625,7 +657,7 @@ class ProjectImpact4PTestCase(TestCase):
         # Ne pas créer de ProjectImpact4P
         
         # Appeler l'API
-        response = self.client.get(f'/api/projets/{self.project.id}/')
+        response = self.client.get(f'/api/projets/{self.project.id}/', follow=True)
         
         # Vérifier la réponse
         self.assertEqual(response.status_code, 200)
@@ -761,7 +793,7 @@ class GlobalAssetsTestCase(TestCase):
     
     def test_global_assets_endpoint(self):
         """Test l'endpoint global-assets avec agrégations ORM"""
-        response = self.client.get('/api/impact/global-assets/')
+        response = self.client.get('/api/impact/global-assets/', follow=True)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         
@@ -816,7 +848,8 @@ class MessagingVoteTestCase(TestCase):
         create_resp = self.client.post(
             '/api/polls/',
             data=json.dumps(poll_payload),
-            content_type='application/json'
+            content_type='application/json',
+            follow=True
         )
         # ModelViewSet peut retourner 200 ou 201 selon la configuration
         self.assertIn(create_resp.status_code, [200, 201])

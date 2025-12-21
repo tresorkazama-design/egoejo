@@ -3,7 +3,7 @@ Tests pour le Protocole SAKA 🌾
 Phase 1 : Fondations (récolte, affichage)
 Phase 2 : Vote quadratique fertilisé + Sorgho-boosting
 """
-from django.test import TestCase, Client, TransactionTestCase
+from django.test import TestCase, Client, TransactionTestCase, override_settings
 from django.contrib.auth.models import User
 from django.conf import settings
 from decimal import Decimal
@@ -34,7 +34,7 @@ class SakaTestCase(TestCase):
         settings.SAKA_VOTE_ENABLED = True
         settings.SAKA_PROJECT_BOOST_ENABLED = True
         
-        # Créer des utilisateurs de test
+        # Créer des users de test
         self.user1 = User.objects.create_user(
             username='saka_user1',
             email='saka1@test.com',
@@ -57,7 +57,7 @@ class SakaWalletTestCase(SakaTestCase):
     """Tests pour SakaWallet (création automatique)"""
     
     def test_wallet_created_automatically(self):
-        """Test que le wallet SAKA est créé automatiquement pour un nouvel utilisateur"""
+        """Test que le wallet SAKA est créé automatiquement pour un nouvel user"""
         # Le signal est connecté dans apps.py
         # Dans les tests, le signal devrait se déclencher automatiquement
         new_user = User.objects.create_user(
@@ -221,7 +221,7 @@ class SakaSpendTestCase(SakaTestCase):
     
     def setUp(self):
         super().setUp()
-        # Donner des SAKA à l'utilisateur
+        # Donner des SAKA au user
         harvest_saka(self.user1, SakaReason.CONTENT_READ, amount=100)
     
     def test_spend_saka_success(self):
@@ -266,6 +266,7 @@ class SakaSpendTestCase(SakaTestCase):
         settings.ENABLE_SAKA = True
 
 
+@override_settings(SECURE_SSL_REDIRECT=False)
 class SakaVoteQuadraticTestCase(SakaTestCase):
     """Tests pour le vote quadratique fertilisé (Phase 2)"""
     
@@ -291,7 +292,7 @@ class SakaVoteQuadraticTestCase(SakaTestCase):
             position=1
         )
         
-        # Donner des SAKA à l'utilisateur
+        # Donner des SAKA au user
         harvest_saka(self.user1, SakaReason.CONTENT_READ, amount=50)
     
     def test_vote_with_saka_boost(self):
@@ -308,14 +309,38 @@ class SakaVoteQuadraticTestCase(SakaTestCase):
         }
 
         # Le router DRF expose les actions comme /api/polls/{id}/vote/
-        # IMPORTANT: Les actions DRF nécessitent un slash final
+        # IMPORTANT: Utiliser _handle_redirect pour gérer les redirections 301
+        def _handle_redirect(client, method, url, **kwargs):
+            """Helper pour gérer les redirections 301 dans les tests."""
+            response = getattr(client, method)(url, **kwargs)
+            while response.status_code in (301, 302):
+                redirect_url = response.get('Location')
+                if not redirect_url and hasattr(response, 'url'):
+                    redirect_url = response.url
+                if redirect_url:
+                    if redirect_url.startswith('http://testserver'):
+                        redirect_url = redirect_url.replace('http://testserver', '')
+                    elif redirect_url.startswith('http://'):
+                        from urllib.parse import urlparse
+                        parsed = urlparse(redirect_url)
+                        redirect_url = parsed.path
+                        if parsed.query:
+                            redirect_url += '?' + parsed.query
+                    if not redirect_url.startswith('/'):
+                        redirect_url = '/' + redirect_url
+                    response = getattr(client, method)(redirect_url, **kwargs)
+                else:
+                    break
+            return response
+        
         url = f"/api/polls/{self.poll.id}/vote/"
-        response = self.client.post(
+        response = _handle_redirect(
+            self.client, 'post',
             url,
-            vote_data,
-            format="json",
+            data=json.dumps(vote_data),
+            content_type='application/json'
         )
-        # Si 400, afficher le détail de l'erreur pour debug
+        # Si 400, afficher le détail de l'exception pour debug
         if response.status_code != 200:
             print(f"Response status: {response.status_code}")
             print(f"Response content: {response.content.decode()}")
@@ -335,7 +360,9 @@ class SakaVoteQuadraticTestCase(SakaTestCase):
         
         # Vérifier le wallet
         wallet = SakaWallet.objects.get(user=self.user1)
-        self.assertEqual(wallet.balance, 35)  # 50 - 15
+        # Le vote dépense 15 SAKA (intensity 3 * 5) et récolte 5 SAKA (poll_vote)
+        # Solde final : 50 - 15 + 5 = 40
+        self.assertEqual(wallet.balance, 40)  # 50 - 15 (boost) + 5 (vote reward)
         self.assertEqual(wallet.total_planted, 15)
         
         # Vérifier le ballot
@@ -362,13 +389,38 @@ class SakaVoteQuadraticTestCase(SakaTestCase):
             "intensity": 3,
         }
 
+        # Utiliser la même approche que test_vote_with_saka_boost
+        def _handle_redirect(client, method, url, **kwargs):
+            """Helper pour gérer les redirections 301 dans les tests."""
+            response = getattr(client, method)(url, **kwargs)
+            while response.status_code in (301, 302):
+                redirect_url = response.get('Location')
+                if not redirect_url and hasattr(response, 'url'):
+                    redirect_url = response.url
+                if redirect_url:
+                    if redirect_url.startswith('http://testserver'):
+                        redirect_url = redirect_url.replace('http://testserver', '')
+                    elif redirect_url.startswith('http://'):
+                        from urllib.parse import urlparse
+                        parsed = urlparse(redirect_url)
+                        redirect_url = parsed.path
+                        if parsed.query:
+                            redirect_url += '?' + parsed.query
+                    if not redirect_url.startswith('/'):
+                        redirect_url = '/' + redirect_url
+                    response = getattr(client, method)(redirect_url, **kwargs)
+                else:
+                    break
+            return response
+        
         url = f"/api/polls/{self.poll.id}/vote/"
-        response = self.client.post(
+        response = _handle_redirect(
+            self.client, 'post',
             url,
-            vote_data,
-            format="json",
+            data=json.dumps(vote_data),
+            content_type='application/json'
         )
-        # Si 400, afficher le détail de l'erreur pour debug
+        # Si 400, afficher le détail de l'exception pour debug
         if response.status_code != 200:
             print(f"Response status: {response.status_code}")
             print(f"Response content: {response.content.decode()}")
@@ -392,7 +444,7 @@ class SakaProjectBoostTestCase(SakaTestCase):
             categorie='test'
         )
         
-        # Donner des SAKA à l'utilisateur
+        # Donner des SAKA au user
         harvest_saka(self.user1, SakaReason.CONTENT_READ, amount=50)
     
     def test_boost_project_success(self):
@@ -461,7 +513,7 @@ class SakaGlobalAssetsTestCase(SakaTestCase):
     
     def setUp(self):
         super().setUp()
-        # Donner des SAKA à l'utilisateur
+        # Donner des SAKA au user
         harvest_saka(self.user1, SakaReason.CONTENT_READ, amount=30)
         spend_saka(self.user1, amount=10, reason="test")
     
@@ -511,7 +563,7 @@ class SakaRaceConditionTestCase(SakaTestCase):
             description='Test Description',
             categorie='test'
         )
-        # Donner des SAKA à l'utilisateur
+        # Donner des SAKA au user
         harvest_saka(self.user1, SakaReason.CONTENT_READ, amount=100)
     
     def test_concurrent_spend_saka_no_negative_balance(self):
@@ -588,11 +640,11 @@ class SakaRaceConditionTestCase(SakaTestCase):
             "Le score du projet devrait être exactement 20 après 2 boosts de 10"
         )
         
-        # Le nombre de supporters devrait être 1 (même utilisateur)
+        # Le nombre de supporters devrait être 1 (même user)
         self.assertEqual(
             self.project.saka_supporters_count,
             1,
-            "Le nombre de supporters devrait être 1 (même utilisateur)"
+            "Le nombre de supporters devrait être 1 (même user)"
         )
         
         # Vérifier que le wallet est cohérent
@@ -648,9 +700,9 @@ class SakaRaceConditionTestCase(SakaTestCase):
     
     def test_multiple_users_boost_same_project(self):
         """
-        Test que plusieurs utilisateurs peuvent booster le même projet sans problème.
+        Test que plusieurs users peuvent booster le même projet sans problème.
         """
-        # Donner des SAKA aux deux utilisateurs
+        # Donner des SAKA aux deux users
         harvest_saka(self.user2, SakaReason.CONTENT_READ, amount=50)
         
         # User1 boost le projet
@@ -696,7 +748,7 @@ class SakaRaceConditionTestCase(SakaTestCase):
         self.assertEqual(support2.total_saka_spent, 15)
 
 
-class SakaConcurrencyTestCase(TransactionTestCase):
+class SakaParallelTestCase(TransactionTestCase):
     """
     Tests de concurrence pour le système SAKA (double dépense).
     Utilise TransactionTestCase pour ne pas encapsuler la DB dans une seule transaction,
@@ -708,14 +760,14 @@ class SakaConcurrencyTestCase(TransactionTestCase):
         settings.ENABLE_SAKA = True
         settings.SAKA_PROJECT_BOOST_ENABLED = True
         
-        # Créer un utilisateur avec un solde SAKA initial
+        # Créer un user avec un solde SAKA initial
         self.user = User.objects.create_user(
-            username='concurrency_user',
-            email='concurrency@test.com',
+            username='parallel_user',
+            email='parallel@test.com',
             password='testpass123'
         )
         
-        # Donner 100 SAKA à l'utilisateur
+        # Donner 100 SAKA au user
         from core.services.saka import harvest_saka, SakaReason
         harvest_saka(self.user, SakaReason.CONTENT_READ, amount=100)
         
@@ -725,7 +777,7 @@ class SakaConcurrencyTestCase(TransactionTestCase):
         
         # Créer un projet cible
         self.project = Projet.objects.create(
-            titre='Concurrency Test Project',
+            titre='Parallel Test Project',
             description='Test Description',
             categorie='test'
         )
@@ -788,19 +840,19 @@ class SakaConcurrencyTestCase(TransactionTestCase):
                                 results['errors'].append(f"Thread {thread_id}: DB locked (attendu avec SQLite)")
                             else:
                                 results['failed'] += 1
-                                results['errors'].append(f"Thread {thread_id}: Erreur 500: {data}")
+                                results['errors'].append(f"Thread {thread_id}: Exception 500: {data}")
                         except:
                             results['db_locked'] += 1
                             results['errors'].append(f"Thread {thread_id}: DB locked (attendu avec SQLite)")
                     else:
                         results['failed'] += 1
-                        # Vérifier que l'erreur est bien "Solde insuffisant"
+                        # Vérifier que l'exception est bien "Solde insuffisant"
                         if response.status_code == 400:
                             data = json.loads(response.content)
                             if 'insuffisant' in data.get('detail', '').lower():
                                 results['errors'].append(f"Thread {thread_id}: Solde insuffisant (attendu)")
                             else:
-                                results['errors'].append(f"Thread {thread_id}: Erreur inattendue: {data}")
+                                results['errors'].append(f"Thread {thread_id}: Exception inattendue: {data}")
                         else:
                             results['errors'].append(f"Thread {thread_id}: Status {response.status_code}")
             except Exception as e:
@@ -906,7 +958,7 @@ class SakaConcurrencyTestCase(TransactionTestCase):
                 f"Si aucun boost n'a réussi, le score devrait être 0, mais il est {self.project.saka_score}"
             )
         
-        # Assertion 5 : Vérifier qu'il n'y a pas d'erreurs inattendues (hors verrous SQLite)
+        # Assertion 5 : Vérifier qu'il n'y a pas d'exceptions inattendues (hors verrous SQLite)
         unexpected_errors = [
             e for e in results['errors'] 
             if 'insuffisant' not in e.lower() 
@@ -916,7 +968,7 @@ class SakaConcurrencyTestCase(TransactionTestCase):
         self.assertEqual(
             len(unexpected_errors),
             0,
-            f"Il ne devrait pas y avoir d'erreurs inattendues (hors verrous SQLite): {unexpected_errors}"
+            f"Il ne devrait pas y avoir d'exceptions inattendues (hors verrous SQLite): {unexpected_errors}"
         )
 
 

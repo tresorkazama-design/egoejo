@@ -147,7 +147,8 @@ class TestSiloRedistribution:
         # Récupérer les soldes initiaux des wallets APRÈS la récolte
         initial_balances = {}
         for user in users:
-            wallet = user.saka_wallet
+            # S'assurer que le wallet existe (créé par harvest_saka)
+            wallet, _ = SakaWallet.objects.get_or_create(user=user)
             wallet.refresh_from_db()  # S'assurer d'avoir le solde à jour
             initial_balances[user.id] = wallet.balance
         
@@ -169,7 +170,7 @@ class TestSiloRedistribution:
         
         # Vérifier que tous les wallets ont reçu la même part
         for user in users:
-            wallet = user.saka_wallet
+            wallet, _ = SakaWallet.objects.get_or_create(user=user)
             wallet.refresh_from_db()
             expected_balance = initial_balances[user.id] + per_wallet
             assert wallet.balance == expected_balance, (
@@ -229,7 +230,7 @@ class TestSiloRedistribution:
         # Récupérer les soldes initiaux APRÈS la récolte
         initial_balances = {}
         for user in users:
-            wallet = user.saka_wallet
+            wallet, _ = SakaWallet.objects.get_or_create(user=user)
             wallet.refresh_from_db()  # S'assurer d'avoir le solde à jour
             initial_balances[user.id] = wallet.balance
         
@@ -253,7 +254,7 @@ class TestSiloRedistribution:
         
         # Vérifier qu'aucun wallet n'a reçu plus que sa part
         for user in users:
-            wallet = user.saka_wallet
+            wallet, _ = SakaWallet.objects.get_or_create(user=user)
             wallet.refresh_from_db()
             received = wallet.balance - initial_balances[user.id]
             assert received == per_wallet, (
