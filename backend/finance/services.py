@@ -2,6 +2,7 @@
 Services financiers unifiés pour V1.6 (Dons) et V2.0 (Investissement dormant).
 Corrections critiques : Race condition, arrondis, idempotence, asynchronisme.
 HARDENING SÉCURITÉ BANCAIRE (OWASP) : Validation stricte, logging, limites.
+OPTIMISATION RÉSILIENCE : Utilisation de tenacity pour retries intelligents.
 """
 from django.db import transaction
 from django.db.models import F
@@ -11,7 +12,15 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal, ROUND_HALF_UP
 import uuid
 import logging
-import time
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_none,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+    after_log,
+)
 from .models import UserWallet, WalletTransaction, EscrowContract, WalletPocket
 
 logger = logging.getLogger(__name__)
@@ -32,9 +41,9 @@ except ImportError:
     ShareholderRegister = None
     logger.warning("Module investment.models non disponible - fonctionnalité EQUITY désactivée")
 
-# ÉRADICATION CRASHS : Retry logic pour opérations DB avec backoff exponentiel
+# ÉRADICATION CRASHS : Configuration retry pour opérations DB
+# OPTIMISATION RÉSILIENCE : Utilisation de tenacity (pas de sleep avec verrous DB)
 MAX_RETRIES = 3
-RETRY_BASE_DELAY = 0.1  # 100ms
 
 # OPTIMISATION BAS NIVEAU : Cache des settings au niveau module (chargés une seule fois)
 # Évite les accès répétés aux settings et les conversions répétées
@@ -83,17 +92,34 @@ def _to_decimal(value, quantize=True):
         raise ValueError(f"Type non supporté pour conversion Decimal: {type(value)}")
 
 
-def _retry_db_operation(operation, operation_name="DB operation", max_retries=MAX_RETRIES, base_delay=RETRY_BASE_DELAY):
+def _is_lock_error(exception):
     """
-    Retry logic pour opérations DB avec backoff exponentiel.
+    Vérifie si une exception est liée à un problème de verrou DB.
     
-    Gère les OperationalError (lock timeout, deadlock) en réessayant avec un délai croissant.
+    Args:
+        exception: Exception à vérifier
+    
+    Returns:
+        bool: True si c'est un problème de lock/deadlock/timeout
+    """
+    if not isinstance(exception, OperationalError):
+        return False
+    error_str = str(exception).lower()
+    return 'lock' in error_str or 'deadlock' in error_str or 'timeout' in error_str
+
+
+def _retry_db_operation(operation, operation_name="DB operation"):
+    """
+    Retry logic pour opérations DB avec retry immédiat (non-bloquant).
+    
+    OPTIMISATION RÉSILIENCE : Utilisation de tenacity avec wait_none() pour éviter de dormir avec un verrou.
+    La base de données gère la file d'attente des verrous elle-même. Dormir avec un verrou est une hérésie.
+    
+    Gère les OperationalError (lock timeout, deadlock) en réessayant immédiatement.
     
     Args:
         operation: Fonction lambda à exécuter (ex: lambda: Model.objects.select_for_update().get(...))
-        operation_name: Nom de l'opération pour le logging
-        max_retries: Nombre maximum de tentatives
-        base_delay: Délai de base en secondes (backoff exponentiel)
+        operation_name: Nom de l'opération pour le logging (utilisé dans les logs)
     
     Returns:
         Résultat de l'opération
@@ -102,52 +128,32 @@ def _retry_db_operation(operation, operation_name="DB operation", max_retries=MA
         OperationalError: Si toutes les tentatives échouent
         Exception: Autres exceptions non liées aux locks
     """
-    last_exception = None
-    
-    for attempt in range(max_retries):
+    @retry(
+        stop=stop_after_attempt(MAX_RETRIES),
+        wait=wait_none(),  # Pas d'attente : la DB gère les verrous, on ne dort pas avec un verrou
+        retry=retry_if_exception_type(OperationalError),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        after=after_log(logger, logging.CRITICAL),
+        reraise=True,
+    )
+    def _execute_with_retry():
         try:
             return operation()
         except OperationalError as e:
-            last_exception = e
-            error_str = str(e).lower()
-            
-            # Vérifier si c'est un problème de lock (timeout, deadlock)
-            if 'lock' in error_str or 'deadlock' in error_str or 'timeout' in error_str:
-                if attempt < max_retries - 1:
-                    # Backoff exponentiel : 0.1s, 0.2s, 0.4s
-                    delay = base_delay * (2 ** attempt)
-                    logger.warning(
-                        f"Lock timeout sur {operation_name} (tentative {attempt + 1}/{max_retries}) - "
-                        f"Retry dans {delay}s - Error: {e}"
-                    )
-                    time.sleep(delay)
-                    continue
-                else:
-                    # Dernière tentative échouée
-                    logger.critical(
-                        f"Échec définitif de {operation_name} après {max_retries} tentatives - "
-                        f"Error: {e}",
-                        exc_info=True
-                    )
-                    raise
-            else:
-                # OperationalError mais pas lié aux locks - re-raise immédiatement
+            if not _is_lock_error(e):
+                # OperationalError mais pas lié aux locks - re-raise immédiatement (pas de retry)
                 logger.error(
                     f"OperationalError non lié aux locks sur {operation_name} - Error: {e}",
                     exc_info=True
                 )
                 raise
-        except Exception as e:
-            # Autres exceptions - re-raise immédiatement (pas de retry)
-            logger.error(
-                f"Exception non-OperationalError sur {operation_name} - Error: {e}",
-                exc_info=True
+            # Lock error - sera retry par tenacity
+            logger.warning(
+                f"Lock timeout sur {operation_name} - Retry immédiat - Error: {e}"
             )
             raise
     
-    # Ne devrait jamais arriver ici, mais au cas où
-    if last_exception:
-        raise last_exception
+    return _execute_with_retry()
 
 
 def _validate_pledge_request(user, project, pledge_type):
@@ -509,33 +515,31 @@ def _pledge_funds_internal(user, project, amount, pledge_type='DONATION', idempo
     return escrow
 
 
+@retry(
+    stop=stop_after_attempt(MAX_RETRIES),
+    wait=wait_none(),  # Pas d'attente : la DB gère les verrous, on ne dort pas avec un verrou
+    retry=retry_if_exception_type(OperationalError),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    after=after_log(logger, logging.CRITICAL),
+    reraise=True,
+)
+def _pledge_funds_with_retry(user, project, amount, pledge_type, idempotency_key):
+    """
+    Wrapper interne avec retry pour pledge_funds.
+    
+    OPTIMISATION RÉSILIENCE : Utilisation de tenacity avec wait_none() pour éviter de dormir avec un verrou.
+    """
+    return _pledge_funds_internal(user, project, amount, pledge_type, idempotency_key)
+
+
 @transaction.atomic
 def pledge_funds(user, project, amount, pledge_type='DONATION', idempotency_key=None):
     """
     Wrapper avec gestion deadlock pour pledge_funds.
+    
+    OPTIMISATION RÉSILIENCE : Utilisation de tenacity pour retries intelligents sans bloquer le thread.
     """
-    # OPTIMISATION CONCURRENCE : Gestion deadlocks avec retry
-    max_deadlock_retries = 3
-    for deadlock_attempt in range(max_deadlock_retries):
-        try:
-            return _pledge_funds_internal(user, project, amount, pledge_type, idempotency_key)
-        except OperationalError as e:
-            error_str = str(e).lower()
-            if 'deadlock' in error_str and deadlock_attempt < max_deadlock_retries - 1:
-                delay = RETRY_BASE_DELAY * (2 ** deadlock_attempt)
-                logger.warning(
-                    f"Deadlock détecté lors du pledge - User: {user.id}, Project: {project.id} "
-                    f"(tentative {deadlock_attempt + 1}/{max_deadlock_retries}) - Retry dans {delay}s"
-                )
-                time.sleep(delay)
-                continue
-            else:
-                logger.critical(
-                    f"Échec définitif de pledge_funds - User: {user.id}, Project: {project.id} "
-                    f"après {max_deadlock_retries} tentatives - Error: {e}",
-                    exc_info=True
-                )
-                raise
+    return _pledge_funds_with_retry(user, project, amount, pledge_type, idempotency_key)
 
 
 @transaction.atomic
@@ -689,6 +693,23 @@ def _release_escrows_batch(escrows_batch, commission_rate, stripe_fee_rate):
     return total_commission, total_fees
 
 
+@retry(
+    stop=stop_after_attempt(MAX_RETRIES),
+    wait=wait_none(),  # Pas d'attente : la DB gère les verrous, on ne dort pas avec un verrou
+    retry=retry_if_exception_type(OperationalError),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    after=after_log(logger, logging.CRITICAL),
+    reraise=True,
+)
+def _close_project_success_with_retry(project):
+    """
+    Wrapper interne avec retry pour close_project_success.
+    
+    OPTIMISATION RÉSILIENCE : Utilisation de tenacity avec wait_none() pour éviter de dormir avec un verrou.
+    """
+    return _close_project_success_internal(project)
+
+
 @transaction.atomic
 def close_project_success(project):
     """
@@ -702,36 +723,12 @@ def close_project_success(project):
     OPTIMISATION CONCURRENCE :
     - Batching des releases d'escrows (évite N+1 queries)
     - Limite sur verrous (MAX_ESCROWS_PER_BATCH)
-    - Gestion deadlocks avec retry
+    - Gestion deadlocks avec retry intelligent (tenacity)
     
     Returns:
         dict: Résumé financier (total_raised, total_commission, total_fees, net_project)
     """
-    from django.utils import timezone
-    from django.db.models import Sum
-    
-    # OPTIMISATION CONCURRENCE : Gestion deadlocks avec retry
-    max_deadlock_retries = 3
-    for deadlock_attempt in range(max_deadlock_retries):
-        try:
-            return _close_project_success_internal(project)
-        except OperationalError as e:
-            error_str = str(e).lower()
-            if 'deadlock' in error_str and deadlock_attempt < max_deadlock_retries - 1:
-                delay = RETRY_BASE_DELAY * (2 ** deadlock_attempt)
-                logger.warning(
-                    f"Deadlock détecté lors de la clôture du projet {project.id} "
-                    f"(tentative {deadlock_attempt + 1}/{max_deadlock_retries}) - Retry dans {delay}s"
-                )
-                time.sleep(delay)
-                continue
-            else:
-                logger.critical(
-                    f"Échec définitif de clôture du projet {project.id} après {max_deadlock_retries} tentatives - "
-                    f"Error: {e}",
-                    exc_info=True
-                )
-                raise
+    return _close_project_success_with_retry(project)
 
 
 def _close_project_success_internal(project):
@@ -914,6 +911,26 @@ def _transfer_to_pocket_internal(user, pocket_id, amount: Decimal) -> WalletTran
     pocket.save()
     
     return transaction
+
+
+@transaction.atomic
+def transfer_to_pocket(user, pocket_id, amount: Decimal) -> WalletTransaction:
+    """
+    Fonction publique pour transférer des fonds du wallet principal vers une pocket.
+    
+    Args:
+        user: Utilisateur propriétaire du wallet
+        pocket_id: ID de la WalletPocket cible
+        amount: Montant à transférer (Decimal, int, float ou str)
+    
+    Returns:
+        WalletTransaction créée
+    
+    Raises:
+        InsufficientBalanceError: Si solde insuffisant
+        ValidationError: Si pocket invalide ou autres erreurs
+    """
+    return _transfer_to_pocket_internal(user, pocket_id, amount)
 
 
 @transaction.atomic

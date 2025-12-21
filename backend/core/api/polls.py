@@ -56,22 +56,16 @@ class PollViewSet(viewsets.ModelViewSet):
         if options_data is None:
             return
         
-        # ÉRADICATION N+1 : Récupérer toutes les options existantes en une seule requête
-        # Utiliser prefetch_related si poll.options est déjà préchargé, sinon une seule requête
+        # ÉRADICATION N+1 : Récupérer toutes les options existantes depuis le cache préchargé
+        # OPTIMISATION DB : Utiliser les options déjà préchargées (pas de requête SQL supplémentaire)
         existing_option_ids = [opt.get("id") for opt in options_data if opt.get("id")]
         if existing_option_ids:
-            # Si poll.options est déjà préchargé (via prefetch_related), utiliser directement
-            if hasattr(poll, '_prefetched_objects_cache') and 'options' in poll._prefetched_objects_cache:
-                existing_options = {
-                    opt.id: opt 
-                    for opt in poll.options.all() if opt.id in existing_option_ids
-                }
-            else:
-                # Sinon, une seule requête avec filter
-                existing_options = {
-                    opt.id: opt 
-                    for opt in PollOption.objects.filter(poll=poll, pk__in=existing_option_ids)
-                }
+            existing_option_ids_set = set(existing_option_ids)
+            # Utiliser les options déjà préchargées (filtrage en Python, pas de requête SQL)
+            existing_options = {
+                opt.id: opt 
+                for opt in poll.options.all() if opt.id in existing_option_ids_set
+            }
         else:
             existing_options = {}
         
@@ -165,11 +159,9 @@ class PollViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def vote(self, request, pk=None):
-        # ÉRADICATION N+1 : Précharger les options avant le vote
-        poll = self.get_object()
-        # S'assurer que les options sont préchargées pour éviter les requêtes supplémentaires
-        if not hasattr(poll, '_prefetched_objects_cache') or 'options' not in poll._prefetched_objects_cache:
-            poll = Poll.objects.prefetch_related('options').get(pk=poll.pk)
+        # ÉRADICATION N+1 : Précharger les options AVANT toute opération
+        # OPTIMISATION DB : Une seule requête pour récupérer le poll avec toutes ses options
+        poll = Poll.objects.prefetch_related('options').get(pk=self.get_object().pk)
         now = timezone.now()
         if poll.status != Poll.STATUS_OPEN:
             return Response({"detail": "Ce vote est fermé."}, status=status.HTTP_400_BAD_REQUEST)
@@ -193,8 +185,13 @@ class PollViewSet(viewsets.ModelViewSet):
         if poll.voting_method == 'quadratic':
             # Vote Quadratique : points distribués avec boost SAKA (Phase 2)
             votes_data = request.data.get("votes", [])  # [{option_id: 1, points: 25, intensity: 3}, ...]
+            # HARDENING SÉCURITÉ : S'assurer que votes_data est une liste
+            if not isinstance(votes_data, list):
+                return Response({
+                    "detail": "Le champ 'votes' doit être une liste d'objets"
+                }, status=status.HTTP_400_BAD_REQUEST)
             max_points = poll.max_points or 100
-            total_points = sum(v.get('points', 0) for v in votes_data)
+            total_points = sum(v.get('points', 0) if isinstance(v, dict) else 0 for v in votes_data)
             
             if total_points > max_points:
                 return Response({
@@ -225,21 +222,13 @@ class PollViewSet(viewsets.ModelViewSet):
             # Supprimer les anciens votes
             PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).delete()
             
-            # ÉRADICATION N+1 : Récupérer toutes les options en une seule fois
-            # Utiliser prefetch_related si poll.options est déjà préchargé
-            option_ids_to_fetch = [v.get('option_id') for v in votes_data if v.get('points', 0) > 0]
-            if hasattr(poll, '_prefetched_objects_cache') and 'options' in poll._prefetched_objects_cache:
-                # Options déjà préchargées, filtrer en Python
-                options_map = {
-                    opt.id: opt 
-                    for opt in poll.options.all() if opt.id in option_ids_to_fetch
-                }
-            else:
-                # Sinon, une seule requête avec filter
-                options_map = {
-                    opt.id: opt 
-                    for opt in PollOption.objects.filter(poll=poll, pk__in=option_ids_to_fetch)
-                }
+            # ÉRADICATION N+1 : Utiliser les options déjà préchargées (filtrage en Python)
+            # OPTIMISATION DB : Pas de requête SQL supplémentaire, tout est en mémoire
+            option_ids_to_fetch = set(v.get('option_id') for v in votes_data if v.get('points', 0) > 0)
+            options_map = {
+                opt.id: opt 
+                for opt in poll.options.all() if opt.id in option_ids_to_fetch
+            }
             
             # OPTIMISATION N+1 : Préparer les ballots en mémoire, puis bulk_create
             ballots_to_create = []
@@ -275,21 +264,13 @@ class PollViewSet(viewsets.ModelViewSet):
             # Supprimer les anciens votes
             PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).delete()
             
-            # ÉRADICATION N+1 : Récupérer toutes les options en une seule fois
-            # Utiliser prefetch_related si poll.options est déjà préchargé
-            option_ids_to_fetch = [r.get('option_id') for r in rankings_data]
-            if hasattr(poll, '_prefetched_objects_cache') and 'options' in poll._prefetched_objects_cache:
-                # Options déjà préchargées, filtrer en Python
-                options_map = {
-                    opt.id: opt 
-                    for opt in poll.options.all() if opt.id in option_ids_to_fetch
-                }
-            else:
-                # Sinon, une seule requête avec filter
-                options_map = {
-                    opt.id: opt 
-                    for opt in PollOption.objects.filter(poll=poll, pk__in=option_ids_to_fetch)
-                }
+            # ÉRADICATION N+1 : Utiliser les options déjà préchargées (filtrage en Python)
+            # OPTIMISATION DB : Pas de requête SQL supplémentaire, tout est en mémoire
+            option_ids_to_fetch = set(r.get('option_id') for r in rankings_data)
+            options_map = {
+                opt.id: opt 
+                for opt in poll.options.all() if opt.id in option_ids_to_fetch
+            }
             
             # OPTIMISATION N+1 : Préparer les ballots en mémoire, puis bulk_create
             ballots_to_create = []
@@ -321,20 +302,13 @@ class PollViewSet(viewsets.ModelViewSet):
             option_ids = serializer.validated_data["options"]
             PollBallot.objects.filter(poll=poll, voter_hash=voter_hash).exclude(option_id__in=option_ids).delete()
 
-            # ÉRADICATION N+1 : Récupérer toutes les options en une seule fois
-            # Utiliser prefetch_related si poll.options est déjà préchargé
-            if hasattr(poll, '_prefetched_objects_cache') and 'options' in poll._prefetched_objects_cache:
-                # Options déjà préchargées, filtrer en Python
-                options_map = {
-                    opt.id: opt 
-                    for opt in poll.options.all() if opt.id in option_ids
-                }
-            else:
-                # Sinon, une seule requête avec filter
-                options_map = {
-                    opt.id: opt 
-                    for opt in PollOption.objects.filter(poll=poll, pk__in=option_ids)
-                }
+            # ÉRADICATION N+1 : Utiliser les options déjà préchargées (filtrage en Python)
+            # OPTIMISATION DB : Pas de requête SQL supplémentaire, tout est en mémoire
+            option_ids_set = set(option_ids)
+            options_map = {
+                opt.id: opt 
+                for opt in poll.options.all() if opt.id in option_ids_set
+            }
             
             # OPTIMISATION N+1 : Préparer les ballots en mémoire, puis bulk_create
             # Note: update_or_create n'est pas optimisable en bulk, mais on peut utiliser bulk_create

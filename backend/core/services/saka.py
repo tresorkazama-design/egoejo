@@ -4,10 +4,12 @@ Monnaie interne d'engagement (Yin) - Strictement séparée de l'Euro (Yang)
 
 Phase 1 : Fondations - Services simplifiés avec anti-farming minimal
 Phase 3 : Compostage & Silo Commun
+OPTIMISATION RÉSILIENCE : Utilisation de tenacity pour retries intelligents.
 """
 from django.db import transaction
 from django.db import connection
 from django.db.models import F, Q
+from django.db.utils import OperationalError
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -16,6 +18,14 @@ from enum import Enum
 from typing import Optional, Dict
 from math import floor
 import logging
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_none,
+    retry_if_exception_type,
+    before_sleep_log,
+    after_log,
+)
 
 from core.models.saka import SakaWallet, SakaTransaction, SakaSilo, SakaCompostLog, SakaCycle
 
@@ -55,10 +65,6 @@ def _get_saka_silo_redis_min_wallet_activity():
     """Helper pour lire SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY (compatible avec override_settings)"""
     return int(getattr(settings, "SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY", 1))
 
-# Cache pour ENABLE_SAKA (rarement changé dans les tests)
-_ENABLE_SAKA_CACHED = getattr(settings, 'ENABLE_SAKA', False)
-
-
 class SakaReason(Enum):
     """Raisons de récolte/dépense SAKA"""
     CONTENT_READ = 'content_read'
@@ -88,68 +94,63 @@ SAKA_DAILY_LIMITS = {
 
 
 def is_saka_enabled():
-    """Vérifie si le protocole SAKA est activé"""
-    # OPTIMISATION CPU : Utiliser la valeur cachée au niveau du module
-    return _ENABLE_SAKA_CACHED
+    """
+    Vérifie si le protocole SAKA est activé.
+    
+    NOTE: Lit settings à chaque appel pour être compatible avec override_settings dans les tests.
+    """
+    return getattr(settings, 'ENABLE_SAKA', False)
+
+
+MAX_RETRIES_SAKA = 3
+
+
+@retry(
+    stop=stop_after_attempt(MAX_RETRIES_SAKA),
+    wait=wait_none(),  # Pas d'attente : la DB gère les verrous, on ne dort pas avec un verrou
+    retry=retry_if_exception_type(OperationalError),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    after=after_log(logger, logging.CRITICAL),
+    reraise=True,
+)
+def _get_or_create_wallet_with_retry(user):
+    """
+    Wrapper interne avec retry pour get_or_create_wallet.
+    
+    OPTIMISATION RÉSILIENCE : Utilisation de tenacity avec wait_none() pour éviter de dormir avec un verrou.
+    """
+    # OPTIMISATION CONCURRENCE : select_for_update() pour éviter race condition
+    wallet, created = SakaWallet.objects.select_for_update().get_or_create(
+        user=user,
+        defaults={
+            'balance': 0,
+            'total_harvested': 0,
+            'total_planted': 0,
+            'total_composted': 0,
+        }
+    )
+    return wallet
 
 
 @transaction.atomic
 def get_or_create_wallet(user):
     """
-    Récupère ou crée le portefeuille SAKA d'un utilisateur.
+    Récupère ou crée le portefeuille SAKA d'un user.
     
     OPTIMISATION CONCURRENCE :
     - Utilise select_for_update() pour éviter la création de doublons sous forte charge
-    - Gestion deadlocks avec retry
+    - Gestion deadlocks avec retry intelligent (tenacity)
     
     Args:
         user: Utilisateur Django
         
     Returns:
-        SakaWallet
+        SakaWallet ou None si SAKA désactivé
     """
     if not is_saka_enabled():
         return None
     
-    # OPTIMISATION CONCURRENCE : Retry logic pour gérer les deadlocks
-    from django.db.utils import OperationalError
-    import time
-    import logging
-    
-    logger = logging.getLogger(__name__)
-    MAX_RETRIES = 3
-    RETRY_BASE_DELAY = 0.1
-    
-    for attempt in range(MAX_RETRIES):
-        try:
-            # OPTIMISATION CONCURRENCE : select_for_update() pour éviter race condition
-            wallet, created = SakaWallet.objects.select_for_update().get_or_create(
-                user=user,
-                defaults={
-                    'balance': 0,
-                    'total_harvested': 0,
-                    'total_planted': 0,
-                    'total_composted': 0,
-                }
-            )
-            return wallet
-        except OperationalError as e:
-            error_str = str(e).lower()
-            if ('deadlock' in error_str or 'lock' in error_str) and attempt < MAX_RETRIES - 1:
-                delay = RETRY_BASE_DELAY * (2 ** attempt)
-                logger.warning(
-                    f"Deadlock/lock timeout sur get_or_create_wallet(user={user.id}) "
-                    f"(tentative {attempt + 1}/{MAX_RETRIES}) - Retry dans {delay}s"
-                )
-                time.sleep(delay)
-                continue
-            else:
-                logger.critical(
-                    f"Échec définitif de get_or_create_wallet(user={user.id}) après {MAX_RETRIES} tentatives - "
-                    f"Error: {e}",
-                    exc_info=True
-                )
-                raise
+    return _get_or_create_wallet_with_retry(user)
 
 
 @transaction.atomic
@@ -164,7 +165,7 @@ def harvest_saka(
     
     Applique un anti-farming minimal :
     - Limite de récompenses par jour et par raison
-    - Ignore si utilisateur anonyme ou SAKA désactivé
+    - Ignore si user anonyme ou SAKA désactivé
     
     Args:
         user: Utilisateur qui récolte (doit être authentifié)
@@ -178,7 +179,7 @@ def harvest_saka(
     Raises:
         ValidationError: Si limite quotidienne atteinte
     """
-    # Ignorer si SAKA désactivé ou utilisateur anonyme
+    # Ignorer si SAKA désactivé ou user anonyme
     if not is_saka_enabled() or not user or user.is_anonymous:
         return None
     
@@ -290,7 +291,7 @@ def spend_saka(
     Returns:
         True si la dépense a réussi, False sinon
     """
-    # Ignorer si SAKA désactivé, utilisateur anonyme ou montant invalide
+    # Ignorer si SAKA désactivé, user anonyme ou montant invalide
     if not is_saka_enabled() or not user or user.is_anonymous or amount <= 0:
         return False
     
@@ -336,7 +337,7 @@ def spend_saka(
 
 def get_saka_balance(user) -> dict:
     """
-    Récupère le solde SAKA d'un utilisateur.
+    Récupère le solde SAKA d'un user.
     
     Args:
         user: Utilisateur Django
@@ -413,7 +414,7 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
     try:
         active_cycle = SakaCycle.objects.filter(is_active=True).first()
     except Exception:
-        # Ignorer si SakaCycle n'existe pas encore ou erreur
+        # Ignorer si SakaCycle n'existe pas encore ou exception
         pass
     
     # Créer le log d'audit au début
@@ -564,7 +565,7 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
 
 def get_user_compost_preview(user) -> Dict:
     """
-    Retourne une estimation de la quantité de SAKA qui serait compostée pour cet utilisateur
+    Retourne une estimation de la quantité de SAKA qui serait compostée pour ce user
     s'il restait inactif jusqu'au prochain cycle.
     
     Phase 3 : Compostage & Silo Commun
@@ -787,7 +788,7 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
         }
         
     except Exception as e:
-        logger.error(f"Erreur lors de la redistribution du Silo SAKA : {e}", exc_info=True)
+        logger.error(f"Exception lors de la redistribution du Silo SAKA : {e}", exc_info=True)
         return {
             "ok": False,
             "reason": f"error: {str(e)}",

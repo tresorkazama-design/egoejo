@@ -17,6 +17,7 @@ gunicorn>=21.2.0
 # Utilities
 python-dotenv>=1.0.0
 django-filter>=23.0
+tenacity>=8.2.0  # Résilience intelligente pour retries avec backoff exponentiel
 
 # Media handling
 Pillow>=10.0.0
