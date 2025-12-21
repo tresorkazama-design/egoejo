@@ -99,7 +99,8 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            // Support WebP et AVIF préférentiellement
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'images-cache',
@@ -147,7 +148,8 @@ export default defineConfig({
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
-          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+          // Support WebP et AVIF préférentiellement
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico|webp|avif/i.test(ext)) {
             return `assets/images/[name]-[hash][extname]`;
           }
           if (/woff2?|eot|ttf|otf/i.test(ext)) {

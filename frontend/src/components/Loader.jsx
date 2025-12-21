@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { t } from '../utils/i18n';
+import { zIndexLayers } from '../design-tokens';
 
 export const Loader = ({ 
   size = 'medium', 
@@ -56,7 +57,7 @@ export const Loader = ({
         alignItems: 'center', 
         justifyContent: 'center', 
         backgroundColor: 'rgba(5, 6, 7, 0.8)', 
-        zIndex: 50,
+        zIndex: zIndexLayers.overlay, // Utiliser z-index centralisé
         background: 'rgba(5, 6, 7, 0.8)'
       }}>
         {loader}

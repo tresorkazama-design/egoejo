@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchAPI } from '../utils/api';
+import { logger } from '../utils/logger';
 
 /**
  * Hook pour récupérer l'état du Silo Commun SAKA
@@ -70,7 +71,7 @@ export const useSakaCompostPreview = () => {
         const data = await fetchAPI('/api/saka/compost-preview/');
         setPreview(data);
       } catch (err) {
-        console.error('Erreur chargement preview compost SAKA:', err);
+        logger.error('Erreur chargement preview compost SAKA:', err);
         setError(err.message || 'Erreur lors du chargement de la preview');
       } finally {
         setLoading(false);
@@ -128,7 +129,7 @@ export const useSakaStats = (days = 30, limit = 10) => {
       const data = await fetchAPI(`/api/saka/stats/?${params}`);
       setStats(data);
     } catch (err) {
-      console.error('Erreur chargement stats SAKA:', err);
+      logger.error('Erreur chargement stats SAKA:', err);
       setError(err.message || 'Erreur lors du chargement des statistiques SAKA');
     } finally {
       setLoading(false);
@@ -169,7 +170,7 @@ export const useSakaCompostLogs = (limit = 20) => {
       const data = await fetchAPI(`/api/saka/compost-logs/?${params}`);
       setLogs(data);
     } catch (err) {
-      console.error('Erreur chargement logs compost SAKA:', err);
+      logger.error('Erreur chargement logs compost SAKA:', err);
       setError(err.message || 'Erreur lors du chargement des logs de compostage');
     } finally {
       setLoading(false);
@@ -210,7 +211,7 @@ export const useSakaCycles = () => {
       // L'API retourne un tableau direct, pas un objet avec results/cycles
       setCycles(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Erreur chargement cycles SAKA:', err);
+      logger.error('Erreur chargement cycles SAKA:', err);
       setError(err.message || 'Erreur lors du chargement des cycles SAKA');
     } finally {
       setLoading(false);

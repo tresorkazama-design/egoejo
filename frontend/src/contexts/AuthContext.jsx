@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { logger } from '../utils/logger';
+import { fetchAPI, handleAPIError } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -10,11 +11,6 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const logoutCallbacksRef = useRef(new Set());
-
-  // URL de l'API Backend
-  const API_BASE = import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/api` 
-    : 'http://localhost:8000/api';
 
   // Fonction pour enregistrer un callback de déconnexion (pour WebSocket, etc.)
   const onLogout = (callback) => {
@@ -33,78 +29,61 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
+  // OPTIMISATION RÉSEAU : Utiliser fetchAPI centralisé avec retry et gestion Auth automatique
   const fetchUser = async (currentToken) => {
     try {
-      const response = await fetch(`${API_BASE}/auth/me/`, {
+      // fetchAPI gère automatiquement les headers Auth et le retry
+      const userData = await fetchAPI('/auth/me/', {
         headers: {
           'Authorization': `Bearer ${currentToken}`
         }
       });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        // Si le token est invalide, on déconnecte
-        logout();
-      }
+      setUser(userData);
     } catch (error) {
       logger.error("Erreur lors de la récupération de l'utilisateur", error);
+      // Si le token est invalide ou erreur réseau après retry, on déconnecte
       logout();
     } finally {
       setLoading(false);
     }
   };
 
+  // OPTIMISATION RÉSEAU : Utiliser fetchAPI centralisé avec retry
   const login = async (username, password) => {
     try {
-      const response = await fetch(`${API_BASE}/auth/login/`, {
+      // fetchAPI gère automatiquement le retry et les headers
+      const data = await fetchAPI('/auth/login/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Erreur de connexion");
-      }
-
-      const data = await response.json();
       localStorage.setItem('token', data.access); // On stocke le token d'accès
       localStorage.setItem('refresh_token', data.refresh); // On stocke le refresh token
       setToken(data.access);
       // fetchUser sera appelé automatiquement via le useEffect
       return true;
     } catch (error) {
+      // fetchAPI gère déjà les erreurs, on les propage
       throw error;
     }
   };
 
+  // OPTIMISATION RÉSEAU : Utiliser fetchAPI centralisé avec retry
   const register = async (userData) => {
-      try {
-          const response = await fetch(`${API_BASE}/auth/register/`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(userData)
-          });
-
-          if (!response.ok) {
-              const errorData = await response.json();
-              // On essaie de formater l'erreur proprement
-              let errorMessage = "Erreur d'inscription";
-              if (typeof errorData === 'object') {
-                  errorMessage = Object.entries(errorData).map(([key, val]) => `${key}: ${val}`).join(', ');
-              }
-              throw new Error(errorMessage);
-          }
-          
-          // Inscription réussie, on peut connecter l'utilisateur directement ou le rediriger vers le login
-          return true;
-
-      } catch (error) {
-          throw error;
-      }
-  }
+    try {
+      // fetchAPI gère automatiquement le retry et les headers
+      await fetchAPI('/auth/register/', {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      });
+      
+      // Inscription réussie, on peut connecter l'utilisateur directement ou le rediriger vers le login
+      return true;
+    } catch (error) {
+      // fetchAPI gère déjà les erreurs, on les propage
+      throw error;
+    }
+  };
 
   const logout = () => {
     // Appeler tous les callbacks de déconnexion (pour fermer WebSocket, etc.)

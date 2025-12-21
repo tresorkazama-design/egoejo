@@ -49,15 +49,15 @@ export function initScrollAnimations() {
       }
     );
 
-    // Parallaxe douce au scroll (très subtile)
+    // Parallaxe immersive au scroll (amplitude augmentée pour plus de profondeur)
     gsap.to(section, {
-      y: -15,
+      y: -40, // Amplitude augmentée de -15px à -40px pour plus d'immersion
       ease: "none",
       scrollTrigger: {
         trigger: section,
         start: "top bottom",
         end: "bottom top",
-        scrub: 2,
+        scrub: 1.5, // Scrub légèrement plus rapide pour fluidité
       },
     });
   });

@@ -57,14 +57,20 @@ describe('Connexion Backend-Frontend', () => {
 
     it('devrait gérer les erreurs HTTP du backend', async () => {
       // Simuler une erreur 500 du backend
-      global.fetch.mockResolvedValueOnce({
+      // Note: fetchAPI utilise retryWithBackoff qui retry les erreurs 5xx jusqu'à 3 fois
+      // Il faut donc mocker fetch pour qu'il retourne toujours la même réponse d'erreur
+      const errorResponse = {
         ok: false,
         status: 500,
         json: async () => ({ detail: 'Internal Server Error' }),
-      });
+      };
+      
+      // Mocker fetch pour qu'il retourne toujours la même erreur (pour les 3 tentatives de retry)
+      global.fetch.mockResolvedValue(errorResponse);
 
-      await expect(fetchAPI('/health/')).rejects.toThrow('Internal Server Error');
-    });
+      // Le retry va essayer 3 fois (1s + 2s + 4s = 7s), donc on augmente le timeout
+      await expect(fetchAPI('/health/')).rejects.toThrow(/Internal Server Error/);
+    }, 10000); // Timeout de 10 secondes pour permettre les 3 tentatives de retry
   });
 
   describe('Endpoints principaux', () => {

@@ -1,13 +1,17 @@
 import { useRef, useEffect } from 'react';
-import { useLowPowerMode } from '../hooks/useLowPowerMode';
+import { useEcoMode } from '../contexts/EcoModeContext';
+import { getSobrietyFeature } from '../design-tokens';
 
 export default function CardTilt({ children, className = '', role, ...props }) {
   const cardRef = useRef(null);
-  const isLowPower = useLowPowerMode();
+  const { sobrietyLevel } = useEcoMode();
+  
+  // Vérifier si animations sont activées selon le niveau de sobriété
+  const canAnimate = getSobrietyFeature(sobrietyLevel, 'enableAnimations');
 
   useEffect(() => {
-    // Désactiver le tilt en mode low-power
-    if (isLowPower || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Désactiver le tilt si animations désactivées ou prefers-reduced-motion
+    if (!canAnimate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const card = cardRef.current;
     if (!card) return;

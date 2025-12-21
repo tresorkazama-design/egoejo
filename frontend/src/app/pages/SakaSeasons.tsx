@@ -1,19 +1,65 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSakaCycles } from "@/hooks/useSakaCycles";
 import { useSakaSilo } from "@/hooks/useSakaSilo";
+import CompostNotification from "@/components/saka/CompostNotification";
+import { useEcoMode } from "@/contexts/EcoModeContext";
+import { getSobrietyFeature } from "@/design-tokens";
 
 export default function SakaSeasonsPage() {
   const { cycles, loading: loadingCycles, error: errorCycles } = useSakaCycles();
   const { silo, loading: loadingSilo, error: errorSilo } = useSakaSilo();
+  const { sobrietyLevel } = useEcoMode();
+  
+  // Vérifier si animations sont activées selon le niveau de sobriété
+  const canAnimate = getSobrietyFeature(sobrietyLevel, 'enableAnimations');
+  
+  // État pour la notification de compostage
+  const [compostNotification, setCompostNotification] = useState<{
+    amount: number;
+    remainingBalance: number;
+    siloBalance: number;
+  } | null>(null);
+  
+  // Détecter un nouveau compostage (comparer avec état précédent)
+  const [previousCompost, setPreviousCompost] = useState<number>(0);
+  
+  useEffect(() => {
+    if (!silo) return;
+
+    const currentCompost = silo.total_composted || 0;
+    const newCompost = currentCompost - previousCompost;
+
+    if (newCompost > 0) {
+      // Nouveau compostage détecté
+      setCompostNotification({
+        amount: newCompost,
+        remainingBalance: 0, // À récupérer depuis l'API utilisateur si nécessaire
+        siloBalance: silo.total_balance || 0,
+      });
+      
+      setPreviousCompost(currentCompost);
+    }
+  }, [silo, previousCompost]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      {/* Notification de compostage */}
+      {compostNotification && (
+        <CompostNotification
+          amount={compostNotification.amount}
+          remainingBalance={compostNotification.remainingBalance}
+          siloBalance={compostNotification.siloBalance}
+          onClose={() => setCompostNotification(null)}
+          showAnimation={canAnimate}
+        />
+      )}
+
       <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
           Saisons SAKA 🌾
         </h1>
         <p className="text-muted-foreground">
-          Visualisez le cycle de vie des grains SAKA : récolte, plantation et compostage vers le Silo commun.
+          Visualisez le cycle de vie des grains SAKA : récolte, plantation et régénération vers le Silo commun.
         </p>
       </header>
 
@@ -34,7 +80,7 @@ export default function SakaSeasonsPage() {
             </p>
             {silo.last_compost_at && (
               <p className="text-xs text-muted-foreground">
-                Dernier compost : {new Date(silo.last_compost_at).toLocaleString("fr-FR")}
+                Dernière régénération : {new Date(silo.last_compost_at).toLocaleString("fr-FR")}
               </p>
             )}
           </div>
@@ -95,7 +141,7 @@ export default function SakaSeasonsPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium">Composté</p>
+                  <p className="font-medium">Régénéré</p>
                   <p className="text-muted-foreground">
                     {cycle.stats?.saka_composted?.toLocaleString("fr-FR") || 0} grains
                   </p>

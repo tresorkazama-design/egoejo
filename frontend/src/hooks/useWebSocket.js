@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { logger } from '../utils/logger';
 
+// OPTIMISATION RÉSEAU : Limite stricte sur les tentatives de reconnexion pour éviter le DDoS involontaire
+const MAX_RECONNECT_ATTEMPTS = 5;
+
 /**
  * Hook personnalisé pour gérer une connexion WebSocket
  * @param {string} url - URL du WebSocket
@@ -14,7 +17,7 @@ export function useWebSocket(url, options = {}) {
     onClose,
     reconnect = true,
     reconnectInterval = 3000,
-    reconnectAttempts = 5,
+    reconnectAttempts = MAX_RECONNECT_ATTEMPTS, // Utiliser la constante par défaut
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -104,11 +107,14 @@ export function useWebSocket(url, options = {}) {
         
         if (onClose) onClose(event);
 
-        // Tentative de reconnexion avec backoff exponentiel
+        // OPTIMISATION RÉSEAU : Tentative de reconnexion avec backoff exponentiel et limite stricte
+        // Utiliser MAX_RECONNECT_ATTEMPTS pour éviter le DDoS involontaire sur le serveur
+        const maxAttempts = Math.min(reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
+        
         if (
           shouldReconnectRef.current &&
           reconnect &&
-          reconnectCountRef.current < reconnectAttempts
+          reconnectCountRef.current < maxAttempts
         ) {
           reconnectCountRef.current += 1;
           // Backoff exponentiel: 1s, 2s, 4s, 8s, 16s...
@@ -117,13 +123,15 @@ export function useWebSocket(url, options = {}) {
             30000 // Max 30 secondes
           );
           
-          logger.debug(`Tentative de reconnexion ${reconnectCountRef.current}/${reconnectAttempts} dans ${backoffDelay}ms...`);
+          logger.debug(`Tentative de reconnexion ${reconnectCountRef.current}/${maxAttempts} dans ${backoffDelay}ms...`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, backoffDelay);
-        } else if (reconnectCountRef.current >= reconnectAttempts) {
-          logger.warn('Nombre maximum de tentatives de reconnexion atteint');
+        } else if (reconnectCountRef.current >= maxAttempts) {
+          logger.warn(`Nombre maximum de tentatives de reconnexion atteint (${maxAttempts}). Arrêt des reconnexions pour éviter le DDoS involontaire.`);
+          // Ne plus tenter de reconnexion
+          shouldReconnectRef.current = false;
         }
       };
     } catch (error) {

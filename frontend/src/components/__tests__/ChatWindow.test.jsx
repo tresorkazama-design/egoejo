@@ -166,8 +166,12 @@ describe('ChatWindow', () => {
     });
 
     // Attendre que le chargement soit terminé
+    // Note: Le composant appelle d'abord /auth/me/ pour vérifier l'authentification,
+    // puis /chat/messages/?thread=X&limit=100 avec le paramètre limit
     await waitFor(() => {
-      expect(fetchAPI).toHaveBeenCalledWith(`/chat/messages/?thread=${communityThread.id}`);
+      expect(fetchAPI).toHaveBeenCalledWith(
+        `/chat/messages/?thread=${communityThread.id}&limit=100`
+      );
     });
 
     await waitFor(() => {

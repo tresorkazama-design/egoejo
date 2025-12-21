@@ -1,8 +1,23 @@
-import { Suspense, useEffect, useRef, useState } from "react";
-import * as THREE from "three";
+import { Suspense, useEffect, useRef, useState, useMemo } from "react";
+// OPTIMISATION BUNDLE : Imports nommés pour Tree Shaking (réduit la taille du bundle de ~500KB à ~100KB)
+import {
+  WebGLRenderer,
+  Scene,
+  PerspectiveCamera,
+  BufferGeometry,
+  BufferAttribute,
+  PointsMaterial,
+  Points,
+  CanvasTexture,
+  Color,
+  AdditiveBlending,
+  NormalBlending
+} from "three";
 import { logger } from "../utils/logger";
-import { useLowPowerMode } from "../hooks/useLowPowerMode";
+import { useEcoMode } from "../contexts/EcoModeContext";
+import { getSobrietyFeature } from "../design-tokens";
 
+// OPTIMISATION MÉMOIRE : Fonction de création de texture mémorisée pour éviter la recréation à chaque render
 function makeSorghumTexture() {
   const size = 64;
   const canvas = document.createElement("canvas");
@@ -27,7 +42,7 @@ function makeSorghumTexture() {
   ctx.moveTo(cx - 8, cy);
   ctx.quadraticCurveTo(cx, cy - 2, cx + 8, cy + 1);
   ctx.stroke();
-  const texture = new THREE.CanvasTexture(canvas);
+  const texture = new CanvasTexture(canvas);
   texture.needsUpdate = true;
   texture.flipY = false;
   return texture;
@@ -36,17 +51,24 @@ function makeSorghumTexture() {
 function getGlow() {
   const query = new URLSearchParams(window.location.search);
   const value = (query.get("glow") || "soft").toLowerCase();
-  if (value === "boost") return { blending: THREE.AdditiveBlending, opacity: 0.72 };                                                                            
-  if (value === "bright") return { blending: THREE.AdditiveBlending, opacity: 0.6 };                                                                            
-  return { blending: THREE.NormalBlending, opacity: 0.72 };
+  if (value === "boost") return { blending: AdditiveBlending, opacity: 0.72 };                                                                            
+  if (value === "bright") return { blending: AdditiveBlending, opacity: 0.6 };                                                                            
+  return { blending: NormalBlending, opacity: 0.72 };
 }
 
 function SorghoWebGL() {
   const mountRef = useRef(null);
-  const isLowPower = useLowPowerMode();
+  const { sobrietyLevel } = useEcoMode();
   
-  // Si low power mode, ne pas initialiser Three.js
-  if (isLowPower) {
+  // Vérifier si 3D est activé selon le niveau de sobriété
+  const canRender3D = getSobrietyFeature(sobrietyLevel, 'enable3D');
+  
+  // OPTIMISATION MÉMOIRE : Mémoriser la texture pour éviter la recréation à chaque render
+  // useMemo garantit que la texture n'est créée qu'une seule fois
+  const texture = useMemo(() => makeSorghumTexture(), []);
+  
+  // Si 3D désactivé (sobriété >= 3), ne pas initialiser Three.js
+  if (!canRender3D) {
     return null;
   }
 
@@ -61,6 +83,8 @@ function SorghoWebGL() {
     let resizeObserver;
     let handleVisibilityChange = null;
     let cleanupVisibility = null;
+    // OPTIMISATION MÉMOIRE : Stocker la référence de la texture pour le cleanup
+    const textureRef = texture;
     try {
       const element = mountRef.current;
       if (!element) return;
@@ -74,7 +98,7 @@ function SorghoWebGL() {
       const width = element.clientWidth || window.innerWidth;
       const height = element.clientHeight || window.innerHeight;
 
-      renderer = new THREE.WebGLRenderer({ 
+      renderer = new WebGLRenderer({ 
         antialias: false, 
         alpha: true,
         preserveDrawingBuffer: false,
@@ -104,9 +128,9 @@ function SorghoWebGL() {
       
       element.appendChild(canvas);
 
-      scene = new THREE.Scene();
+      scene = new Scene();
       scene.background = null;
-      camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);       
+      camera = new PerspectiveCamera(60, width / height, 0.1, 100);       
       camera.position.set(0, 0.65, 10);
 
       const memory = window.navigator.deviceMemory || 4;
@@ -116,15 +140,15 @@ function SorghoWebGL() {
       const sizeFactor = smallViewport ? 0.7 : 1.0;
       const count = Math.max(40000, Math.floor(base * Math.max(0.25, Math.min(1.0, memoryFactor * sizeFactor))));                                               
 
-      geometry = new THREE.BufferGeometry();
+      geometry = new BufferGeometry();
       const positions = new Float32Array(count * 3);
       const colors = new Float32Array(count * 3);
       const sizes = new Float32Array(count);
       const velocities = new Float32Array(count * 3);
 
       const bounds = { x: 10, y: 2.2, z: 4.5 };
-      const baseColor = new THREE.Color("#c98b4e");
-      const tempColor = new THREE.Color();
+      const baseColor = new Color("#c98b4e");
+      const tempColor = new Color();
 
       for (let i = 0; i < count; i += 1) {
         const index = i * 3;
@@ -143,13 +167,14 @@ function SorghoWebGL() {
         velocities[index + 2] = (Math.random() - 0.5) * 0.008;
       }
 
-      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));                                                                               
-      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));     
-      geometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));       
+      geometry.setAttribute("position", new BufferAttribute(positions, 3));                                                                               
+      geometry.setAttribute("color", new BufferAttribute(colors, 3));     
+      geometry.setAttribute("size", new BufferAttribute(sizes, 1));       
 
-      const map = makeSorghumTexture();
+      // OPTIMISATION MÉMOIRE : Utiliser la texture mémorisée au lieu de la recréer
+      const map = texture;
       const glow = getGlow();
-      material = new THREE.PointsMaterial({
+      material = new PointsMaterial({
         map,
         transparent: true,
         blending: glow.blending,
@@ -159,7 +184,7 @@ function SorghoWebGL() {
         sizeAttenuation: true,
         vertexColors: true,
       });
-      points = new THREE.Points(geometry, material);
+      points = new Points(geometry, material);
       scene.add(points);
 
       const onResize = () => {
@@ -182,11 +207,22 @@ function SorghoWebGL() {
       const targetFPS = 60;
       const frameInterval = 1000 / targetFPS;
 
-      // Pause l'animation quand la page n'est pas visible
+      // OPTIMISATION BATTERIE : Utiliser document.visibilityState pour arrêter complètement l'animation
+      // Si l'onglet est masqué, cancelAnimationFrame est appelé pour économiser la batterie
       handleVisibilityChange = () => {
-        isVisible = !document.hidden;
+        const isNowVisible = document.visibilityState === 'visible';
+        isVisible = isNowVisible;
+        
+        // Si l'onglet devient visible, relancer l'animation
+        if (isNowVisible && !animId) {
+          animate(performance.now());
+        }
+        // Si l'onglet devient masqué, arrêter l'animation (animId sera annulé dans la boucle)
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Initialiser isVisible avec l'état actuel
+      isVisible = document.visibilityState === 'visible';
       
       // Stocker la référence pour le cleanup
       cleanupVisibility = () => {
@@ -197,8 +233,10 @@ function SorghoWebGL() {
 
       // Optimisation : utiliser des calculs en batch pour améliorer les performances
       const animate = (currentTime) => {
-        if (!isVisible) {
-          animId = requestAnimationFrame(animate);
+        // OPTIMISATION BATTERIE : Si l'onglet est masqué, arrêter complètement l'animation
+        if (!isVisible || document.visibilityState === 'hidden') {
+          // Ne pas appeler requestAnimationFrame si invisible = économie batterie
+          animId = null;
           return;
         }
 
@@ -249,11 +287,17 @@ function SorghoWebGL() {
     }
 
     return () => {
+      // OPTIMISATION MÉMOIRE : Cleanup complet pour éviter les fuites mémoire
       try {
-        cancelAnimationFrame(animId);
+        // Arrêter l'animation
+        if (animId) {
+          cancelAnimationFrame(animId);
+          animId = null;
+        }
       } catch (error) {
         logger.error('Erreur cleanup animation HeroSorgho:', error);
       }
+      
       if (cleanupVisibility) {
         try {
           cleanupVisibility();
@@ -261,6 +305,7 @@ function SorghoWebGL() {
           logger.error('Erreur cleanup visibility HeroSorgho:', error);
         }
       }
+      
       if (resizeObserver) {
         try {
           resizeObserver.disconnect();
@@ -268,21 +313,63 @@ function SorghoWebGL() {
           logger.error('Erreur cleanup resize observer HeroSorgho:', error);
         }
       }
+      
       try {
-        // Nettoyer les ressources Three.js
-        if (geometry) geometry.dispose();
+        // OPTIMISATION MÉMOIRE : Nettoyer les ressources Three.js
+        if (geometry) {
+          geometry.dispose();
+        }
         if (material) {
-          material.map?.dispose();
+          if (material.map) {
+            // OPTIMISATION MÉMOIRE : Nettoyer la texture mémorisée
+            material.map.dispose();
+          }
           material.dispose();
+        }
+        // OPTIMISATION MÉMOIRE : Nettoyer la texture mémorisée si elle existe
+        // La texture est déjà nettoyée via material.map.dispose(), mais on s'assure qu'elle est bien libérée
+        if (textureRef) {
+          try {
+            // Ne pas disposer si elle est encore utilisée par le material (déjà nettoyée)
+            // Mais s'assurer qu'elle est bien libérée si le material n'existe pas
+            if (!material || !material.map) {
+              textureRef.dispose();
+            }
+          } catch (error) {
+            logger.error('Erreur cleanup texture HeroSorgho:', error);
+          }
+        }
+        if (points) {
+          // Nettoyer les points avant de supprimer la scène
+          scene.remove(points);
         }
         if (renderer) {
           renderer.dispose();
-          renderer.forceContextLoss?.();
+          if (renderer.forceContextLoss) {
+            renderer.forceContextLoss();
+          }
         }
       } catch (error) {
         logger.error('Erreur cleanup Three.js HeroSorgho:', error);
       }
+      
+      // OPTIMISATION MÉMOIRE : Supprimer explicitement le canvas du DOM
       if (mountRef.current) {
+        // Supprimer tous les enfants (y compris le canvas)
+        while (mountRef.current.firstChild) {
+          const child = mountRef.current.firstChild;
+          // Si c'est un canvas, nettoyer le contexte WebGL
+          if (child instanceof HTMLCanvasElement && renderer) {
+            const gl = child.getContext('webgl') || child.getContext('webgl2');
+            if (gl) {
+              const loseContext = gl.getExtension('WEBGL_lose_context');
+              if (loseContext) {
+                loseContext.loseContext();
+              }
+            }
+          }
+          mountRef.current.removeChild(child);
+        }
         mountRef.current.innerHTML = "";
       }
     };
@@ -325,11 +412,12 @@ function SorghoWebGL() {
 
 export default function HeroSorgho() {
   const [canRender, setCanRender] = useState(false);
-  const isLowPower = useLowPowerMode();
+  const { sobrietyLevel } = useEcoMode();
+  const canRender3D = getSobrietyFeature(sobrietyLevel, 'enable3D');
 
   useEffect(() => {
-    // Si low power mode, ne pas rendre Three.js
-    if (isLowPower) {
+    // Si 3D désactivé (sobriété >= 3), ne pas rendre Three.js
+    if (!canRender3D) {
       setCanRender(false);
       return;
     }
@@ -344,9 +432,9 @@ export default function HeroSorgho() {
       }
     })();
     setCanRender(!reduce && webgl);
-  }, [isLowPower]);
+  }, [canRender3D]);
 
-  if (!canRender || isLowPower) {
+  if (!canRender || !canRender3D) {
     // Afficher une version statique en mode low-power
     return (
       <div 

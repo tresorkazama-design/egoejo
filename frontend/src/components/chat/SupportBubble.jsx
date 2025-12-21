@@ -8,6 +8,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { fetchAPI } from '../../utils/api';
 import ChatWindow from '../ChatWindow';
 import { useNotificationContext } from '../../contexts/NotificationContext';
+import { logger } from '../../utils/logger';
 
 const SUPPORT_ROUTES = ['/dashboard', '/wallet', '/projets'];
 
@@ -65,7 +66,7 @@ export default function SupportBubble() {
         checkOnlineStatus();
       }
     } catch (err) {
-      console.error('Erreur vérification éligibilité:', err);
+      logger.error('Erreur vérification éligibilité:', err);
       setIsEligible(false);
     } finally {
       setLoading(false);
@@ -79,7 +80,7 @@ export default function SupportBubble() {
         setThread(data.thread);
       }
     } catch (err) {
-      console.error('Erreur chargement thread concierge:', err);
+      logger.error('Erreur chargement thread concierge:', err);
     }
   };
 
@@ -148,7 +149,7 @@ export default function SupportBubble() {
           border: 'none',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           cursor: 'pointer',
-          zIndex: 1000,
+          zIndex: 'var(--z-floating)', // Utiliser z-index centralisé
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -179,7 +180,7 @@ export default function SupportBubble() {
             maxWidth: '90vw',
             backgroundColor: 'var(--surface)',
             boxShadow: '-4px 0 12px rgba(0,0,0,0.15)',
-            zIndex: 1001,
+            zIndex: 'var(--z-modal)', // Utiliser z-index centralisé
             display: 'flex',
             flexDirection: 'column',
             transform: isOpen || showContactForm ? 'translateX(0)' : 'translateX(100%)',
@@ -324,7 +325,7 @@ export default function SupportBubble() {
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0,0,0,0.3)',
-            zIndex: 1000,
+            zIndex: 'var(--z-floating)', // Utiliser z-index centralisé
           }}
         />
       )}

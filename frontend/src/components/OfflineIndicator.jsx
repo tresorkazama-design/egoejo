@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { t } from '../utils/i18n';
+import { zIndexLayers } from '../design-tokens';
 
 export const OfflineIndicator = () => {
   const [isOnline, setIsOnline] = useState(
@@ -38,7 +39,7 @@ export const OfflineIndicator = () => {
         top: '20px',
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 1000,
+        zIndex: zIndexLayers.tooltip, // Utiliser z-index centralisé
         padding: '12px 20px',
         backgroundColor: 'rgba(255, 193, 7, 0.9)',
         color: '#000',

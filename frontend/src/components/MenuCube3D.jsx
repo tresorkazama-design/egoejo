@@ -1,7 +1,8 @@
 import { Suspense, useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
-import * as THREE from "three";
+// OPTIMISATION BUNDLE : Imports nommés pour Tree Shaking (réduit la taille du bundle)
+import { MathUtils } from "three";
 import { useNavigate } from "react-router-dom";
 import { logger } from "../utils/logger";
 
@@ -65,24 +66,24 @@ function Cube({ links, onLinkClick, isOpen, onNavigate }) {
     if (cubeRef.current) {
       if (isOpen) {
         // Rotation pour révéler les faces
-        cubeRef.current.rotation.x = THREE.MathUtils.lerp(
+        cubeRef.current.rotation.x = MathUtils.lerp(
           cubeRef.current.rotation.x,
           Math.PI / 4,
           0.05
         );
-        cubeRef.current.rotation.y = THREE.MathUtils.lerp(
+        cubeRef.current.rotation.y = MathUtils.lerp(
           cubeRef.current.rotation.y,
           Math.PI / 4,
           0.05
         );
       } else {
         // Retour à la position initiale
-        cubeRef.current.rotation.x = THREE.MathUtils.lerp(
+        cubeRef.current.rotation.x = MathUtils.lerp(
           cubeRef.current.rotation.x,
           0,
           0.05
         );
-        cubeRef.current.rotation.y = THREE.MathUtils.lerp(
+        cubeRef.current.rotation.y = MathUtils.lerp(
           cubeRef.current.rotation.y,
           0,
           0.05

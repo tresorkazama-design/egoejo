@@ -200,7 +200,7 @@ export default function SwipeButton({
           fontWeight: '600',
           fontSize: '1rem',
           pointerEvents: 'none',
-          zIndex: 1,
+          zIndex: 'var(--z-content)', // Utiliser z-index centralisé
         }}
       >
         {isSubmitting ? 'Traitement...' : showSuccess ? '✅ Confirmé' : label}
@@ -228,7 +228,7 @@ export default function SwipeButton({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 2,
+          zIndex: 'var(--z-floating)', // Utiliser z-index centralisé
           boxShadow: isDragging ? '0 4px 12px rgba(0,0,0,0.15)' : '0 2px 4px rgba(0,0,0,0.1)',
         }}
         whileDrag={{ scale: 1.05 }}

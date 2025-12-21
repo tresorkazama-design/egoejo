@@ -1,5 +1,6 @@
 /**
  * Système de logging professionnel pour EGOEJO
+ * OPTIMISATION PERFORMANCE : Ne logue que si import.meta.env.DEV est true
  * Remplace tous les console.log par un système avec niveaux
  */
 
@@ -9,6 +10,9 @@ const LOG_LEVELS = {
   WARN: 2,
   ERROR: 3,
 };
+
+// OPTIMISATION PERFORMANCE : Ne logue que en développement
+const IS_DEV = import.meta.env.DEV;
 
 class Logger {
   constructor() {
@@ -20,6 +24,8 @@ class Logger {
    * Log un message de debug (seulement en développement)
    */
   debug(...args) {
+    // OPTIMISATION PERFORMANCE : Ne logue que si DEV est true
+    if (!IS_DEV) return;
     if (this.level <= LOG_LEVELS.DEBUG) {
       console.debug('[DEBUG]', ...args);
     }
@@ -29,6 +35,8 @@ class Logger {
    * Log un message d'information
    */
   info(...args) {
+    // OPTIMISATION PERFORMANCE : Ne logue que si DEV est true
+    if (!IS_DEV) return;
     if (this.level <= LOG_LEVELS.INFO) {
       console.info('[INFO]', ...args);
     }
@@ -38,6 +46,8 @@ class Logger {
    * Log un avertissement
    */
   warn(...args) {
+    // OPTIMISATION PERFORMANCE : Ne logue que si DEV est true
+    if (!IS_DEV) return;
     if (this.level <= LOG_LEVELS.WARN) {
       console.warn('[WARN]', ...args);
     }
@@ -45,24 +55,28 @@ class Logger {
 
   /**
    * Log une erreur et l'envoie à Sentry en production
+   * NOTE : Les erreurs sont toujours envoyées à Sentry en production, même si les logs sont désactivés
    */
   error(...args) {
-    if (this.level <= LOG_LEVELS.ERROR) {
+    // OPTIMISATION PERFORMANCE : Ne logue que si DEV est true
+    if (IS_DEV && this.level <= LOG_LEVELS.ERROR) {
       console.error('[ERROR]', ...args);
-      
-      // En production, envoyer à Sentry si disponible
-      if (this.enableSentry) {
-        try {
-          const errorMessage = args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-          ).join(' ');
-          
-          window.Sentry.captureException(new Error(errorMessage), {
-            level: 'error',
-            extra: args.length > 1 ? args.slice(1) : undefined,
-          });
-        } catch (sentryError) {
-          // Ne pas bloquer si Sentry échoue
+    }
+    
+    // En production, envoyer à Sentry si disponible (même si les logs sont désactivés)
+    if (this.enableSentry) {
+      try {
+        const errorMessage = args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        ).join(' ');
+        
+        window.Sentry.captureException(new Error(errorMessage), {
+          level: 'error',
+          extra: args.length > 1 ? args.slice(1) : undefined,
+        });
+      } catch (sentryError) {
+        // Ne pas bloquer si Sentry échoue
+        if (IS_DEV) {
           console.error('Erreur lors de l\'envoi à Sentry:', sentryError);
         }
       }

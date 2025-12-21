@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { zIndexLayers } from '../design-tokens';
 
 export const FullscreenMenu = ({ 
   isOpen, 
@@ -42,7 +43,8 @@ export const FullscreenMenu = ({
 
   return (
     <div
-      className={`fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center ${className}`}
+      className={`fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center ${className}`}
+      style={{ zIndex: zIndexLayers.modal }} // Utiliser z-index centralisé
       role="dialog"
       aria-modal="true"
       aria-label="Menu plein écran"

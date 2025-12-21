@@ -33,6 +33,9 @@ export default function ChatWindow({ thread }) {
   
   const wsUrl = getWebSocketUrl();
 
+  // OPTIMISATION MÉMOIRE : Limiter les messages à 100 pour éviter les fuites mémoire
+  const MAX_MESSAGES = 100;
+
   // Connexion WebSocket
   const { isConnected, sendMessage: sendWSMessage, disconnect: disconnectWS } = useWebSocket(wsUrl, {
     onOpen: () => {
@@ -56,10 +59,15 @@ export default function ChatWindow({ thread }) {
       if (data.type === 'chat_message') {
         setMessages((prev) => {
           const exists = prev.find((m) => m.id === data.payload.id);
+          let updated;
           if (exists) {
-            return prev.map((m) => (m.id === data.payload.id ? data.payload : m));
+            updated = prev.map((m) => (m.id === data.payload.id ? data.payload : m));
+          } else {
+            updated = [...prev, data.payload];
           }
-          return [...prev, data.payload];
+          // OPTIMISATION MÉMOIRE : Limiter à MAX_MESSAGES pour éviter les fuites mémoire
+          // Garder seulement les MAX_MESSAGES derniers messages
+          return updated.slice(-MAX_MESSAGES);
         });
         scrollToBottom();
       } else if (data.type === 'chat_typing') {
@@ -102,8 +110,12 @@ export default function ChatWindow({ thread }) {
     if (!thread) return;
     try {
       setLoading(true);
-      const data = await fetchAPI(`/chat/messages/?thread=${thread.id}`);
-      setMessages(data.results || data || []);
+      // OPTIMISATION MÉMOIRE : Limiter à 100 messages pour éviter les fuites mémoire
+      // TODO: Implémenter la pagination/virtual scrolling pour charger les messages plus anciens si nécessaire
+      const data = await fetchAPI(`/chat/messages/?thread=${thread.id}&limit=${MAX_MESSAGES}`);
+      const messagesList = data.results || data || [];
+      // S'assurer qu'on ne garde que les MAX_MESSAGES derniers messages
+      setMessages(messagesList.slice(-MAX_MESSAGES));
     } catch (err) {
       setError(handleAPIError(err));
     } finally {

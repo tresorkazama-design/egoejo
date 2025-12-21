@@ -79,7 +79,7 @@ export default function Layout() {
       <a href="#main-content" className="skip-link" style={{
         position: 'absolute',
         left: '-9999px',
-        zIndex: 999,
+        zIndex: 'var(--z-cursor)', // Utiliser z-index centralisé
         padding: '1em',
         backgroundColor: 'var(--accent)',
         color: 'var(--bg)',
