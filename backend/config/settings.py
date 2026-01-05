@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -340,6 +341,8 @@ if os.environ.get('DISABLE_THROTTLE_FOR_TESTS') == '1':
         'DEFAULT_THROTTLE_CLASSES': [],
         'DEFAULT_THROTTLE_RATES': {},
         'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': int(os.environ.get('API_PAGE_SIZE', '20')),
     }
 else:
     REST_FRAMEWORK = {
@@ -355,6 +358,8 @@ else:
             'ip': os.environ.get('THROTTLE_IP', '100/hour'),  # Limite par IP
         },
         'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': int(os.environ.get('API_PAGE_SIZE', '20')),
     }
 
 # ======================
@@ -442,6 +447,38 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', '1') == '1'
 
+# ADMINS : Liste des administrateurs qui recevront les alertes critiques
+# Format : [('Nom', 'email@example.com'), ...]
+# Peut être configuré via variable d'environnement ADMINS (JSON)
+ADMINS = []
+if os.environ.get('ADMINS'):
+    import json
+    try:
+        ADMINS = json.loads(os.environ.get('ADMINS'))
+        # S'assurer que ADMINS est une liste de tuples
+        if ADMINS and isinstance(ADMINS[0], list):
+            ADMINS = [tuple(admin) for admin in ADMINS]
+    except (json.JSONDecodeError, ValueError):
+        # Fallback : format simple "Nom,email@example.com;Nom2,email2@example.com"
+        admin_str = os.environ.get('ADMINS', '')
+        if admin_str:
+            for admin_pair in admin_str.split(';'):
+                if ',' in admin_pair:
+                    name, email = admin_pair.split(',', 1)
+                    ADMINS.append((name.strip(), email.strip()))
+
+# ALERTES EMAIL CRITIQUES
+# ======================
+ALERT_EMAIL_ENABLED = os.environ.get('ALERT_EMAIL_ENABLED', 'True').lower() == 'true'
+ALERT_EMAIL_SUBJECT_PREFIX = os.environ.get('ALERT_EMAIL_SUBJECT_PREFIX', '[URGENT] EGOEJO')
+
+# ALERTES WEBHOOK (Optionnel)
+# ======================
+ALERT_WEBHOOK_ENABLED = os.environ.get('ALERT_WEBHOOK_ENABLED', 'False').lower() == 'true'
+ALERT_WEBHOOK_URL = os.environ.get('ALERT_WEBHOOK_URL', '')
+ALERT_WEBHOOK_TYPE = os.environ.get('ALERT_WEBHOOK_TYPE', 'generic').lower()  # 'generic' ou 'slack'
+ALERT_WEBHOOK_TIMEOUT_SECONDS = int(os.environ.get('ALERT_WEBHOOK_TIMEOUT_SECONDS', '5'))
+
 # ====================================================================
 # SÉCURITÉ DEV / PROD
 # ====================================================================
@@ -473,6 +510,10 @@ ENABLE_INVESTMENT_FEATURES = os.environ.get('ENABLE_INVESTMENT_FEATURES', 'False
 EGOEJO_COMMISSION_RATE = float(os.environ.get('EGOEJO_COMMISSION_RATE', '0.05'))  # 5%
 STRIPE_FEE_ESTIMATE = float(os.environ.get('STRIPE_FEE_ESTIMATE', '0.03'))  # 3%
 
+# Frais Stripe détaillés (pour calcul proportionnel)
+STRIPE_FIXED_FEE = float(os.environ.get('STRIPE_FIXED_FEE', '0.25'))  # 0.25€ fixe
+STRIPE_PERCENT_FEE = float(os.environ.get('STRIPE_PERCENT_FEE', '0.015'))  # 1.5% (0.015)
+
 # Sécurité Fondateur
 # CORRECTION 3 : Nom unique et explicite pour éviter magic strings
 FOUNDER_GROUP_NAME = os.environ.get('FOUNDER_GROUP_NAME', 'Founders_V1_Protection')
@@ -486,6 +527,9 @@ FOUNDER_GROUP_NAME = os.environ.get('FOUNDER_GROUP_NAME', 'Founders_V1_Protectio
 # - SAKA ne sert pas à consommer, mais à influencer (gouvernance)
 # - SAKA inactif retourne au Silo commun (compostage)
 # - SAKA (Yin) et Euro (Yang) sont strictement séparés
+
+# Mode test E2E (pour activer les endpoints test-only)
+E2E_TEST_MODE = os.environ.get('E2E_TEST_MODE', 'False').lower() in ('1', 'true', 'yes', 'on')
 
 # Activation globale du protocole SAKA
 ENABLE_SAKA = os.environ.get('ENABLE_SAKA', 'False').lower() == 'true'  # Active la récolte + exposition global-assets
@@ -502,6 +546,22 @@ SAKA_COMPOST_RATE = float(os.environ.get('SAKA_COMPOST_RATE', '0.10'))  # % de b
 SAKA_COMPOST_MIN_BALANCE = int(os.environ.get('SAKA_COMPOST_MIN_BALANCE', '50'))  # Ne composter que si balance >= 50 SAKA
 SAKA_COMPOST_MIN_AMOUNT = int(os.environ.get('SAKA_COMPOST_MIN_AMOUNT', '10'))  # Composter au moins 10 SAKA quand on déclenche
 
+# PROTECTION HOSTILE : Validation des settings SAKA critiques en production
+if not DEBUG:
+    # En production, le compostage DOIT être activé si SAKA est activé
+    if ENABLE_SAKA and not SAKA_COMPOST_ENABLED:
+        raise ImproperlyConfigured(
+            "SAKA_COMPOST_ENABLED doit être True en production si ENABLE_SAKA=True. "
+            "Le compostage est obligatoire pour respecter la philosophie anti-accumulation EGOEJO."
+        )
+    
+    # En production, la redistribution DOIT être activée si SAKA est activé
+    if ENABLE_SAKA and not SAKA_SILO_REDIS_ENABLED:
+        raise ImproperlyConfigured(
+            "SAKA_SILO_REDIS_ENABLED doit être True en production si ENABLE_SAKA=True. "
+            "La redistribution est obligatoire pour respecter la philosophie de circulation obligatoire EGOEJO."
+        )
+
 # Configuration Vote Quadratique Fertilisé (Phase 2)
 SAKA_VOTE_MAX_MULTIPLIER = float(os.environ.get('SAKA_VOTE_MAX_MULTIPLIER', '2.0'))  # Max x2 de poids
 SAKA_VOTE_SCALE = int(os.environ.get('SAKA_VOTE_SCALE', '200'))  # 200 SAKA => +100% de poids
@@ -517,6 +577,58 @@ SAKA_PROJECT_BOOST_COST = int(os.environ.get('SAKA_PROJECT_BOOST_COST', '10'))  
 SAKA_SILO_REDIS_ENABLED = os.environ.get('SAKA_SILO_REDIS_ENABLED', 'False').lower() == 'true'  # Active la redistribution automatique
 SAKA_SILO_REDIS_RATE = float(os.environ.get('SAKA_SILO_REDIS_RATE', '0.05'))  # 5% du Silo redistribué par cycle
 SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY = int(os.environ.get('SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY', '1'))  # Min total_harvested pour être éligible
+
+# ==============================================
+# VALIDATION FAIL-FAST : Settings SAKA critiques
+# ==============================================
+# Validation au démarrage Django - Toute valeur invalide lève ImproperlyConfigured
+
+# Validation SAKA_COMPOST_RATE : 0 < rate <= 1
+if SAKA_COMPOST_RATE <= 0:
+    raise ImproperlyConfigured(
+        f"SAKA_COMPOST_RATE doit être strictement supérieur à 0. "
+        f"Valeur actuelle : {SAKA_COMPOST_RATE}"
+    )
+if SAKA_COMPOST_RATE > 1.0:
+    raise ImproperlyConfigured(
+        f"SAKA_COMPOST_RATE doit être strictement supérieur à 0 et inférieur ou égal à 1. "
+        f"Valeur actuelle : {SAKA_COMPOST_RATE}"
+    )
+
+# Validation SAKA_COMPOST_INACTIVITY_DAYS : 1 <= days <= 365
+if SAKA_COMPOST_INACTIVITY_DAYS < 1 or SAKA_COMPOST_INACTIVITY_DAYS > 365:
+    raise ImproperlyConfigured(
+        f"SAKA_COMPOST_INACTIVITY_DAYS doit être entre 1 et 365. "
+        f"Valeur actuelle : {SAKA_COMPOST_INACTIVITY_DAYS}"
+    )
+
+# Validation SAKA_SILO_REDIS_RATE : 0 < rate <= 1
+if SAKA_SILO_REDIS_RATE <= 0:
+    raise ImproperlyConfigured(
+        f"SAKA_SILO_REDIS_RATE doit être strictement supérieur à 0. "
+        f"Valeur actuelle : {SAKA_SILO_REDIS_RATE}"
+    )
+if SAKA_SILO_REDIS_RATE > 1.0:
+    raise ImproperlyConfigured(
+        f"SAKA_SILO_REDIS_RATE doit être strictement supérieur à 0 et inférieur ou égal à 1. "
+        f"Valeur actuelle : {SAKA_SILO_REDIS_RATE}"
+    )
+
+# Validation : Si SAKA_SILO_REDIS_ENABLED = True alors SAKA_SILO_REDIS_RATE doit être valide
+if SAKA_SILO_REDIS_ENABLED and (SAKA_SILO_REDIS_RATE <= 0 or SAKA_SILO_REDIS_RATE > 1.0):
+    raise ImproperlyConfigured(
+        f"SAKA_SILO_REDIS_ENABLED est True mais SAKA_SILO_REDIS_RATE est invalide. "
+        f"Valeur actuelle : {SAKA_SILO_REDIS_RATE}"
+    )
+
+# PROTECTION HOSTILE : Validation des settings SAKA critiques en production
+if not DEBUG:
+    # En production, la redistribution DOIT être activée si SAKA est activé
+    if ENABLE_SAKA and not SAKA_SILO_REDIS_ENABLED:
+        raise ImproperlyConfigured(
+            "SAKA_SILO_REDIS_ENABLED doit être True en production si ENABLE_SAKA=True. "
+            "La redistribution est obligatoire pour respecter la philosophie de circulation obligatoire EGOEJO."
+        )
 
 # ==============================================
 # IMPACT ORACLES (Architecture pour données externes)

@@ -13,9 +13,12 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.egoejo_compliance
 class TestSakaNoFinancialReturn:
     """
     Tests de conformité : Vérification de l'absence de rendement financier basé sur SAKA
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     @pytest.fixture
@@ -36,7 +39,13 @@ class TestSakaNoFinancialReturn:
         Le SAKA est une monnaie d'engagement, pas d'investissement.
         """
         if not saka_service_path.exists():
-            pytest.skip(f"Fichier non trouvé : {saka_service_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'core/services/saka.py' est introuvable. "
+                f"Chemin attendu : {saka_service_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre les retours financiers SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(saka_service_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -75,7 +84,13 @@ class TestSakaNoFinancialReturn:
         RÈGLE ABSOLUE : Les modèles SAKA ne doivent pas contenir de champs liés au rendement financier.
         """
         if not saka_model_path.exists():
-            pytest.skip(f"Fichier non trouvé : {saka_model_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'core/models/saka.py' est introuvable. "
+                f"Chemin attendu : {saka_model_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre les retours financiers SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(saka_model_path, 'r', encoding='utf-8') as f:
             content = f.read()

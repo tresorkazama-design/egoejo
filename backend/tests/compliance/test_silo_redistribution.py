@@ -25,11 +25,14 @@ from core.services.saka import harvest_saka, redistribute_saka_silo, run_saka_co
 User = get_user_model()
 
 
+@pytest.mark.egoejo_compliance
 class TestSiloRedistribution:
     """
     Tests de conformité : Redistribution du Silo SAKA
     
     RÈGLE ABSOLUE : Le Silo ne peut pas être vidé par un seul acteur.
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     @pytest.mark.django_db

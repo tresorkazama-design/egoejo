@@ -27,6 +27,7 @@ from django.conf import settings
 User = get_user_model()
 
 
+@pytest.mark.egoejo_compliance
 class TestNoSakaAccumulation:
     """
     Tests de conformité : Anti-accumulation SAKA

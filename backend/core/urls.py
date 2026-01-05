@@ -12,7 +12,7 @@ from core.api.gdpr_views import DataExportView, DataDeleteView
 from core.api.monitoring_views import MetricsView, AlertsView, MetricsStatsView, AlertsListView
 from core.api.impact_views import ImpactDashboardView, GlobalAssetsView
 from core.api.chat_support import ConciergeThreadView, ConciergeEligibilityView, SupportContactView
-from finance.views import PocketTransferView, WalletPassAppleView, WalletPassGoogleView
+from finance.views import PocketTransferView, WalletPassAppleView, WalletPassGoogleView, StripeWebhookView
 
 from .views import (
     CagnotteListCreate,
@@ -45,6 +45,11 @@ from core.api.saka_metrics_views import (  # Métriques SAKA pour monitoring
     SakaCycleMetricsView,
     SakaAllMetricsView,
 )
+from core.api.compliance_views import egoejo_compliance_status, egoejo_compliance_badge  # Label public EGOEJO COMPLIANT
+from core.api.public_compliance import egoejo_constitution_status, egoejo_constitution_badge  # Constitution EGOEJO
+from core.api.content_compliance_views import (
+    content_compliance_report,
+)  # Compliance éditoriale du contenu
 
 router = DefaultRouter()
 
@@ -100,6 +105,9 @@ urlpatterns = [
     path("wallet-pass/apple/", WalletPassAppleView.as_view(), name="wallet-pass-apple"),
     path("wallet-pass/google/", WalletPassGoogleView.as_view(), name="wallet-pass-google"),
     
+    # --- STRIPE WEBHOOKS ---
+    path("finance/stripe/webhook/", StripeWebhookView.as_view(), name="stripe-webhook"),
+    
     # --- SUPPORT CONCIERGE ---
     path("support/concierge/", ConciergeThreadView.as_view(), name="concierge-thread"),
     path("support/concierge/eligibility/", ConciergeEligibilityView.as_view(), name="concierge-eligibility"),
@@ -127,9 +135,10 @@ urlpatterns = [
            # --- SAKA PROTOCOL - PHASE 3 : COMPOSTAGE & SILO COMMUN 🌾 ---
            path("saka/silo/", saka_views.saka_silo_view, name="saka-silo"),
            path("saka/silo/redistribute/", saka_views.saka_silo_redistribute, name="saka-silo-redistribute"),  # Admin uniquement - Redistribution Silo (V1 simple)
-          path("saka/compost-preview/", saka_views.saka_compost_preview_view, name="saka-compost-preview"),
+           path("saka/compost-preview/", saka_views.saka_compost_preview_view, name="saka-compost-preview"),
           path("saka/transactions/", saka_views.saka_transactions_view, name="saka-transactions"),  # Historique des transactions SAKA
-          path("saka/compost-trigger/", saka_views.saka_compost_trigger_view, name="saka-compost-trigger"),  # Admin uniquement
+          path("saka/grant/", saka_views.saka_grant_test_view, name="saka-grant-test"),  # Test-only: Créditer SAKA (E2E)
+           path("saka/compost-trigger/", saka_views.saka_compost_trigger_view, name="saka-compost-trigger"),  # Admin uniquement
            path("saka/compost-run/", saka_views.saka_compost_run_view, name="saka-compost-run"),  # Admin uniquement - Dry-run depuis frontend
            path("saka/stats/", saka_views.saka_stats_view, name="saka-stats"),  # Admin uniquement - Monitoring & KPIs
           path("saka/compost-logs/", saka_views.saka_compost_logs_view, name="saka-compost-logs"),  # Admin uniquement - Audit logs
@@ -154,4 +163,15 @@ urlpatterns = [
     path("intents/admin/", admin_data, name="intent-admin-data"),
     path("intents/export/", export_intents, name="intent-export"),
     path("intents/<int:intent_id>/delete/", delete_intent, name="intent-delete"),
+    
+    # --- LABEL PUBLIC EGOEJO COMPLIANT ---
+    path("public/egoejo-compliance.json", egoejo_compliance_status, name="egoejo-compliance-status"),
+    path("public/egoejo-compliance-badge.svg", egoejo_compliance_badge, name="egoejo-compliance-badge"),
+    
+    # --- CONSTITUTION EGOEJO (Rapport signé CI/CD) ---
+    path("public/egoejo-constitution.json", egoejo_constitution_status, name="egoejo-constitution-status"),
+    path("public/egoejo-constitution.svg", egoejo_constitution_badge, name="egoejo-constitution-badge"),
+    
+    # --- COMPLIANCE ÉDITORIALE CONTENU ---
+    path("public/content-compliance.json", content_compliance_report, name="content-compliance-report"),
 ]

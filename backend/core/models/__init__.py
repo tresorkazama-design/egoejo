@@ -15,4 +15,5 @@ from .monitoring import PerformanceMetric, MonitoringAlert  # noqa: F401
 from .impact import ImpactDashboard, ProjectImpact4P  # noqa: F401
 from .saka import SakaWallet, SakaTransaction, SakaSilo, SakaCompostLog, SakaProjectSupport, SakaCycle  # noqa: F401
 from .communities import Community  # noqa: F401
+from .alerts import CriticalAlertEvent  # noqa: F401
 

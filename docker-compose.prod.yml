@@ -1,0 +1,238 @@
+version: '3.8'
+
+# ============================================
+# EGOEJO - Configuration Docker Production
+# ============================================
+# 
+# Cette configuration permet de déployer EGOEJO sur n'importe quel
+# hébergeur supportant Docker Compose (AWS ECS, DigitalOcean, Hetzner, etc.)
+# 
+# Migration depuis Railway/Vercel :
+# - Backend : Railway → Docker Compose
+# - Frontend : Vercel → Nginx statique
+#
+# ============================================
+
+services:
+  # ============================================
+  # Backend Django (ASGI avec Daphne)
+  # ============================================
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: egoejo-backend:latest
+    container_name: egoejo-web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    env_file:
+      - ./backend/.env.production
+    environment:
+      # Variables critiques (à définir dans .env.production)
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-0}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://cache:6379/0
+      # CORS (à adapter selon votre domaine)
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+      # SSL (production)
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-1}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-1}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-1}
+    volumes:
+      # Volume pour les fichiers statiques (collectstatic)
+      - static_volume:/app/staticfiles
+      # Volume pour les médias (optionnel, peut être externalisé vers S3)
+      - media_volume:/app/media
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+    networks:
+      - egoejo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================
+  # Worker Celery (Tâches asynchrones)
+  # ============================================
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: egoejo-backend:latest
+    container_name: egoejo-worker
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info --concurrency=4
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://cache:6379/2
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-0}
+    volumes:
+      - media_volume:/app/media
+    depends_on:
+      - web
+      - db
+      - cache
+    networks:
+      - egoejo-network
+
+  # ============================================
+  # Celery Beat (Tâches périodiques)
+  # ============================================
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: egoejo-backend:latest
+    container_name: egoejo-beat
+    restart: unless-stopped
+    command: celery -A config beat --loglevel=info
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://cache:6379/2
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-0}
+    depends_on:
+      - web
+      - db
+      - cache
+    networks:
+      - egoejo-network
+
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  db:
+    image: postgres:16-alpine
+    container_name: egoejo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-egoejo}
+      POSTGRES_USER: ${DB_USER:-egoejo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=fr_FR.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Backup automatique (optionnel)
+      - ./backups:/backups
+    ports:
+      # Exposer uniquement en local pour la maintenance (à retirer en production)
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - egoejo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-egoejo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Optimisations PostgreSQL
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+
+  # ============================================
+  # Redis (Cache + Channels + Celery)
+  # ============================================
+  cache:
+    image: redis:7-alpine
+    container_name: egoejo-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      # Exposer uniquement en local pour la maintenance (à retirer en production)
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - egoejo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ============================================
+  # Nginx (Reverse Proxy + Frontend Static)
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: egoejo-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # Configuration Nginx
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # Frontend statique (build Vite)
+      - ./frontend/frontend/dist:/usr/share/nginx/html/frontend:ro
+      # Backend static files
+      - static_volume:/static:ro
+      # Backend media files
+      - media_volume:/media:ro
+      # Certificats SSL (Let's Encrypt)
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+    networks:
+      - egoejo-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  egoejo-network:
+    driver: bridge
+

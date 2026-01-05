@@ -58,7 +58,25 @@ class WalletTransaction(models.Model):
     amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))]
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text="Montant net (après frais Stripe)"
+    )
+    amount_gross = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text="Montant brut (avant frais Stripe)"
+    )
+    stripe_fee = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        default=Decimal('0'),
+        validators=[MinValueValidator(Decimal('0'))],
+        help_text="Part des frais Stripe allouée à cette transaction (proportionnelle)"
     )
     transaction_type = models.CharField(
         max_length=20,

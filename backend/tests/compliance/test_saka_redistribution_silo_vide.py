@@ -30,11 +30,14 @@ User = get_user_model()
     SAKA_SILO_REDIS_RATE=0.1,  # 10% du Silo redistribué
     SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY=1,
 )
+@pytest.mark.egoejo_compliance
 class TestSakaRedistributionSiloVide(TestCase):
     """
     Tests pour garantir que la redistribution vide effectivement le Silo.
     
     PROTECTION : Empêche l'accumulation infinie du Silo en validant la redistribution effective.
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     VIOLATION EMPÊCHÉE : Redistribution simulée, accumulation Silo, contournement redistribution.
     """
     

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from core.models.saka import SakaSilo, SakaCompostLog, SakaCycle, SakaTransaction
 from core.services.saka import get_user_compost_preview, run_saka_compost_cycle
 from core.services.saka_stats import (
@@ -408,8 +409,13 @@ def saka_transactions_view(request):
     - direction: Filtrer par type ('EARN' ou 'SPEND')
     """
     if not getattr(settings, "ENABLE_SAKA", False):
-        paginator = SakaTransactionPagination()
-        return paginator.get_paginated_response([])
+        # Retourner une réponse paginée vide correctement formatée
+        return Response({
+            "count": 0,
+            "next": None,
+            "previous": None,
+            "results": []
+        }, status=status.HTTP_200_OK)
     
     # Validation des paramètres de pagination
     try:
@@ -446,3 +452,132 @@ def saka_transactions_view(request):
     
     return paginator.get_paginated_response(results)
 
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def saka_grant_test_view(request):
+    """
+    POST /api/saka/grant/
+    
+    Endpoint test-only pour créditer SAKA à un utilisateur (E2E tests uniquement).
+    Disponible uniquement si E2E_TEST_MODE=True ou DEBUG=True.
+    
+    Body JSON:
+    {
+        "amount": 100,  // Montant de SAKA à créditer
+        "reason": "e2e_test"  // Raison (optionnel, défaut: "e2e_test")
+    }
+    
+    Returns:
+        dict: {
+            "ok": bool,
+            "amount": int,
+            "new_balance": int,
+            "transaction_id": int
+        }
+    """
+    # Vérifier que l'endpoint est disponible uniquement en mode test
+    e2e_test_mode = getattr(settings, "E2E_TEST_MODE", False)
+    debug_mode = getattr(settings, "DEBUG", False)
+    
+    if not (e2e_test_mode or debug_mode):
+        return Response(
+            {"ok": False, "reason": "Endpoint disponible uniquement en mode test"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    if not getattr(settings, "ENABLE_SAKA", False):
+        return Response(
+            {"ok": False, "reason": "SAKA_PROTOCOL_DISABLED"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Récupérer les paramètres
+    amount = request.data.get("amount")
+    reason_str = request.data.get("reason", "e2e_test")
+    
+    if amount is None:
+        return Response(
+            {"ok": False, "reason": "amount_required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        amount = int(amount)
+        if amount <= 0 or amount > 500:  # Limite de sécurité pour les tests
+            return Response(
+                {"ok": False, "reason": "invalid_amount", "message": "Amount must be between 1 and 500"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    except (ValueError, TypeError):
+        return Response(
+            {"ok": False, "reason": "invalid_amount"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        from core.services.saka import harvest_saka, SakaReason, get_or_create_wallet, get_saka_balance
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # S'assurer que le wallet existe (get_or_create_wallet gère ça automatiquement)
+        # Cela évite les erreurs si le wallet n'existe pas encore
+        wallet = get_or_create_wallet(request.user)
+        if not wallet:
+            return Response(
+                {"ok": False, "reason": "wallet_creation_failed", "error": "Impossible de créer ou récupérer le wallet SAKA"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        logger.info(f"[E2E] Wallet SAKA pour {request.user.username}: balance={wallet.balance}, total_harvested={wallet.total_harvested}")
+        
+        # Utiliser MANUAL_ADJUST pour les tests E2E (avec limite de 500 SAKA)
+        # Note: MANUAL_ADJUST > 500 est strictement interdit, donc on limite à 500
+        if amount > 500:
+            amount = 500  # Limiter à 500 SAKA pour respecter la limite stricte
+        
+        # Récupérer le solde avant crédit pour le log
+        balance_before = get_saka_balance(request.user)
+        logger.info(f"[E2E] Solde SAKA avant crédit: {balance_before} SAKA, montant à créditer: {amount} SAKA")
+        
+        transaction = harvest_saka(
+            user=request.user,
+            reason=SakaReason.MANUAL_ADJUST,
+            amount=amount,
+            metadata={"source": "e2e_test", "reason": reason_str}
+        )
+        
+        if transaction:
+            # Récupérer le nouveau solde
+            new_balance = get_saka_balance(request.user)
+            logger.info(f"[E2E] SAKA crédité avec succès: {amount} SAKA, nouveau solde: {new_balance} SAKA, transaction_id: {transaction.id}")
+            
+            return Response({
+                "ok": True,
+                "amount": amount,
+                "new_balance": new_balance,
+                "transaction_id": transaction.id,
+            }, status=status.HTTP_200_OK)
+        else:
+            # harvest_saka peut retourner None si la limite quotidienne est atteinte
+            logger.warning(f"[E2E] harvest_saka a retourné None pour {request.user.username} (montant: {amount} SAKA)")
+            return Response(
+                {"ok": False, "reason": "harvest_failed", "error": "harvest_saka a retourné None (peut-être limite quotidienne atteinte)"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    except ValidationError as e:
+        # ValidationError est levée par harvest_saka pour les limites
+        logger.error(f"[E2E] ValidationError lors du crédit SAKA: {str(e)}")
+        return Response(
+            {"ok": False, "reason": "validation_error", "error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        # Log l'erreur complète pour le débogage
+        import traceback
+        logger.error(f"[E2E] Erreur lors du crédit SAKA: {str(e)}\n{traceback.format_exc()}")
+        return Response(
+            {"ok": False, "reason": "error", "error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

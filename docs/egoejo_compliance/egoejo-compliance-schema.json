@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EGOEJO Compliance Label Schema",
+  "description": "Schéma JSON pour le label public EGOEJO COMPLIANT",
+  "type": "object",
+  "required": [
+    "project_name",
+    "label_version",
+    "compliance_status",
+    "audit_date",
+    "double_structure_verified"
+  ],
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "Nom du projet",
+      "example": "EGOEJO"
+    },
+    "label_version": {
+      "type": "string",
+      "description": "Version du label EGOEJO COMPLIANT",
+      "pattern": "^\\d+\\.\\d+$",
+      "example": "1.0"
+    },
+    "compliance_status": {
+      "type": "string",
+      "enum": [
+        "egoejo-compliant-core",
+        "egoejo-compliant-extended",
+        "non-compliant"
+      ],
+      "description": "Statut de conformité EGOEJO"
+    },
+    "audit_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de l'audit de conformité (ISO 8601)",
+      "example": "2025-01-27"
+    },
+    "audit_authority": {
+      "type": "string",
+      "description": "Autorité ayant effectué l'audit",
+      "example": "EGOEJO Compliance Team"
+    },
+    "double_structure_verified": {
+      "type": "boolean",
+      "description": "Vérification de la double structure (SAKA relationnel > EUR instrumental)"
+    },
+    "criteria_validated": {
+      "type": "object",
+      "description": "Critères validés par catégorie",
+      "properties": {
+        "core": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Critères Core validés",
+          "example": [
+            "saka_eur_separation",
+            "anti_accumulation",
+            "compostage_obligatoire",
+            "circulation_obligatoire"
+          ]
+        },
+        "extended": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Critères Extended validés",
+          "example": [
+            "governance_protective",
+            "audit_logs_centralized",
+            "monitoring_real_time"
+          ]
+        }
+      }
+    },
+    "tests_passed": {
+      "type": "object",
+      "description": "Résultats des tests de compliance",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Nombre total de tests",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "description": "Nombre de tests passés",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "description": "Nombre de tests échoués",
+          "minimum": 0
+        },
+        "last_run": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date de dernière exécution des tests (ISO 8601)",
+          "example": "2025-01-27T10:30:00Z"
+        }
+      }
+    },
+    "philosophical_guarantees": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Garanties philosophiques respectées",
+      "example": [
+        "SAKA non-financier",
+        "SAKA non-monétaire",
+        "SAKA non-convertible",
+        "Anti-accumulation",
+        "Circulation obligatoire"
+      ]
+    },
+    "explicit_prohibitions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Interdictions explicites respectées",
+      "example": [
+        "Aucune conversion SAKA ↔ EUR",
+        "Aucun rendement financier SAKA",
+        "Aucun affichage monétaire SAKA"
+      ]
+    },
+    "badge_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL du badge SVG correspondant au statut",
+      "example": "https://egoejo.org/badges/egoejo-compliant-core.svg"
+    },
+    "verification_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL de vérification publique du label",
+      "example": "https://egoejo.org/public/egoejo-compliance.json"
+    }
+  },
+  "additionalProperties": false
+}
+

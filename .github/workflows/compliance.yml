@@ -1,0 +1,68 @@
+name: Compliance Philosophique EGOEJO
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  compliance-tests:
+    runs-on: ubuntu-latest
+    name: Tests de Compliance SAKA/EUR
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: egotest
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+      
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest
+          SECRET_KEY: test-secret-key-for-ci-testing-only-min-50-chars-required
+          ENABLE_SAKA: 'True'
+        run: |
+          cd backend
+          python manage.py migrate
+      
+      - name: Run Compliance Tests (BLOQUANT)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest
+          SECRET_KEY: test-secret-key-for-ci-testing-only-min-50-chars-required
+          ENABLE_SAKA: 'True'
+        run: |
+          cd backend
+          # Tests de compliance philosophique - BLOQUANT
+          # Si un test échoue, le workflow échoue (bloque le merge)
+          pytest tests/compliance/ -v --tb=short
+          if [ $? -ne 0 ]; then
+            echo "❌ VIOLATION CONSTITUTION EGOEJO DÉTECTÉE"
+            echo "Les tests de compliance ont échoué."
+            echo "Ce commit viole la séparation stricte SAKA/EUR."
+            exit 1
+          fi
+          echo "✅ Conformité philosophique validée"
+

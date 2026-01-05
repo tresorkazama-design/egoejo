@@ -19,9 +19,12 @@ from core.models.saka import SakaWallet, SakaSilo, SakaCompostLog
 from core.services.saka import run_saka_compost_cycle
 
 
+@pytest.mark.egoejo_compliance
 class TestSakaCycleIncompressible:
     """
     Tests de conformité : Vérification que le cycle SAKA est incompressible
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     @pytest.fixture
@@ -37,7 +40,13 @@ class TestSakaCycleIncompressible:
         Le cycle SAKA est NON NÉGOCIABLE.
         """
         if not saka_service_path.exists():
-            pytest.skip(f"Fichier non trouvé : {saka_service_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'core/services/saka.py' est introuvable. "
+                f"Chemin attendu : {saka_service_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre la compression du cycle SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(saka_service_path, 'r', encoding='utf-8') as f:
             content = f.read()

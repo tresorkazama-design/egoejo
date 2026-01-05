@@ -27,7 +27,7 @@ from tenacity import (
     after_log,
 )
 
-from core.models.saka import SakaWallet, SakaTransaction, SakaSilo, SakaCompostLog, SakaCycle
+from core.models.saka import SakaWallet, SakaTransaction, SakaSilo, SakaCompostLog, SakaCycle, AllowSakaMutation
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +89,12 @@ SAKA_DAILY_LIMITS = {
     SakaReason.POLL_VOTE: 10,   # Max 10 votes par jour
     SakaReason.INVITE_ACCEPTED: 5,  # Max 5 invitations acceptées par jour
     SakaReason.INVEST_BONUS: 1,  # Max 1 bonus investissement par jour
-    SakaReason.MANUAL_ADJUST: 0,  # Pas de limite (admin uniquement)
+    SakaReason.MANUAL_ADJUST: 0,  # Limite gérée séparément (voir harvest_saka)
 }
+
+# Limites spécifiques pour MANUAL_ADJUST (Constitution EGOEJO: anti-accumulation)
+MANUAL_ADJUST_DAILY_LIMIT = 1000  # Max 1000 SAKA/jour/utilisateur (même pour admin)
+MANUAL_ADJUST_DUAL_APPROVAL_THRESHOLD = 500  # Montants > 500 nécessitent double validation
 
 
 def is_saka_enabled():
@@ -190,6 +194,25 @@ def harvest_saka(
     if amount <= 0:
         return None
     
+    # PROTECTION CONSTITUTION EGOEJO : Limites spécifiques pour MANUAL_ADJUST
+    # Constitution: no direct SAKA mutation - Anti-accumulation stricte
+    # Vérification AVANT le verrouillage pour éviter de verrouiller inutilement
+    if reason == SakaReason.MANUAL_ADJUST:
+        # BLOCAGE STRICT : Toute transaction unique > 500 SAKA est refusée
+        # Constitution EGOEJO: Anti-accumulation - Aucun minting arbitraire autorisé
+        if amount > MANUAL_ADJUST_DUAL_APPROVAL_THRESHOLD:
+            error_msg = (
+                f"VIOLATION CONSTITUTION EGOEJO : MANUAL_ADJUST > {MANUAL_ADJUST_DUAL_APPROVAL_THRESHOLD} SAKA est strictement interdit. "
+                f"Montant demandé: {amount} SAKA. "
+                f"Seuil maximum par transaction: {MANUAL_ADJUST_DUAL_APPROVAL_THRESHOLD} SAKA. "
+                f"Cette opération est refusée pour garantir l'anti-accumulation. "
+                f"Aucun mécanisme de double validation n'est disponible. "
+                f"Pour des montants supérieurs, utilisez plusieurs transactions de {MANUAL_ADJUST_DUAL_APPROVAL_THRESHOLD} SAKA maximum, "
+                f"sous réserve de la limite quotidienne de {MANUAL_ADJUST_DAILY_LIMIT} SAKA/jour."
+            )
+            logger.critical(error_msg)
+            raise ValidationError(error_msg)
+    
     # CORRECTION RACE CONDITION : Verrouiller le wallet DIRECTEMENT avec get_or_create
     # Évite la race condition où deux requêtes créent le wallet simultanément
     # et où la vérification de limite se fait avant le verrouillage
@@ -202,6 +225,43 @@ def harvest_saka(
             'total_composted': 0,
         }
     )
+    
+    # PROTECTION CONSTITUTION EGOEJO : Hard Cap Quotidien sur 24h (Anti-Accumulation)
+    # (pour MANUAL_ADJUST, vérification après verrouillage pour garantir l'atomicité)
+    # IMPORTANT: Utiliser select_for_update() sur les transactions pour voir les transactions
+    # non commitées dans la même transaction atomique
+    if reason == SakaReason.MANUAL_ADJUST:
+        from django.db.models import Sum
+        
+        # HARD CAP : Vérifier la somme des MANUAL_ADJUST sur les dernières 24h
+        # Constitution EGOEJO: Anti-accumulation stricte - Impossible de contourner avec plusieurs transactions
+        # Utiliser timezone.now() - timedelta(hours=24) pour vérifier les 24 dernières heures
+        # (plus robuste que created_at__date=today qui peut être contourné en changeant de jour)
+        cutoff_24h = timezone.now() - timedelta(hours=24)
+        
+        # Vérifier la limite sur 24h (1000 SAKA/24h/utilisateur, même pour admin)
+        # Vérification APRÈS verrouillage pour garantir l'atomicité
+        # Utiliser select_for_update() pour voir les transactions non commitées dans la même transaction
+        last_24h_total_manual = SakaTransaction.objects.select_for_update().filter(
+            user=user,
+            direction='EARN',
+            reason=SakaReason.MANUAL_ADJUST.value,
+            created_at__gte=cutoff_24h  # Dernières 24h (plus robuste que created_at__date=today)
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Vérifier si le montant demandé dépasse la limite quotidienne (hard cap)
+        # Utiliser >= (strict) pour bloquer si atteint ou dépasse
+        if last_24h_total_manual + amount > MANUAL_ADJUST_DAILY_LIMIT:
+            error_msg = (
+                f"Limite de sécurité atteinte. Impossible de créer plus de {MANUAL_ADJUST_DAILY_LIMIT} SAKA/jour manuellement. "
+                f"Limite: {MANUAL_ADJUST_DAILY_LIMIT} SAKA/24h/utilisateur (même pour admin). "
+                f"Déjà crédité dans les 24 dernières heures: {last_24h_total_manual} SAKA. "
+                f"Montant demandé: {amount} SAKA. "
+                f"Total serait: {last_24h_total_manual + amount} SAKA (dépasse de {last_24h_total_manual + amount - MANUAL_ADJUST_DAILY_LIMIT} SAKA). "
+                f"Constitution EGOEJO: Anti-accumulation stricte - Aucun minting arbitraire autorisé."
+            )
+            logger.critical(error_msg)
+            raise ValidationError(error_msg)
     
     # Anti-farming : vérifier la limite quotidienne APRÈS verrouillage
     # (dans la même transaction pour éviter double crédit)
@@ -245,11 +305,12 @@ def harvest_saka(
         # Pour simplifier, on crédite le montant complet si la limite n'est pas atteinte
         # amount_effective = amount (pas de réduction partielle)
     
-    # Mettre à jour le portefeuille
-    wallet.balance += amount
-    wallet.total_harvested += amount
-    wallet.last_activity_date = timezone.now()
-    wallet.save()
+    # Mettre à jour le portefeuille (avec autorisation via contexte)
+    with AllowSakaMutation():
+        wallet.balance += amount
+        wallet.total_harvested += amount
+        wallet.last_activity_date = timezone.now()
+        wallet.save()
     
     # Créer la transaction
     saka_transaction = SakaTransaction.objects.create(
@@ -257,6 +318,7 @@ def harvest_saka(
         direction='EARN',
         amount=amount,
         reason=reason.value,
+        transaction_type='HARVEST',
         metadata=metadata or {}
     )
     
@@ -312,12 +374,14 @@ def spend_saka(
         return False
     
     # Mettre à jour le portefeuille avec F() expressions pour garantir l'atomicité
+    # (avec autorisation via contexte)
     from django.db.models import F
-    SakaWallet.objects.filter(id=wallet.id).update(
-        balance=F('balance') - amount,
-        total_planted=F('total_planted') + amount,
-        last_activity_date=timezone.now()
-    )
+    with AllowSakaMutation():
+        SakaWallet.objects.filter(id=wallet.id).update(
+            balance=F('balance') - amount,
+            total_planted=F('total_planted') + amount,
+            last_activity_date=timezone.now()
+        )
     
     # Créer la transaction
     SakaTransaction.objects.create(
@@ -325,6 +389,7 @@ def spend_saka(
         direction='SPEND',
         amount=amount,
         reason=reason,
+        transaction_type='SPEND',
         metadata=metadata or {}
     )
     
@@ -498,6 +563,7 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
                         direction='SPEND',
                         amount=amount,
                         reason='compost',
+                        transaction_type='COMPOST',
                         metadata={
                             "source": "compost_cycle",
                             "cutoff": cutoff.isoformat(),
@@ -510,12 +576,14 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
                 chunk_affected += 1
             
             # OPTIMISATION : Bulk update des wallets (1 requête au lieu de N)
+            # (avec autorisation via contexte)
             if wallets_to_update:
-                SakaWallet.objects.bulk_update(
-                    wallets_to_update,
-                    ['balance', 'total_composted', 'last_activity_date'],
-                    batch_size=BATCH_SIZE
-                )
+                with AllowSakaMutation():
+                    SakaWallet.objects.bulk_update(
+                        wallets_to_update,
+                        ['balance', 'total_composted', 'last_activity_date'],
+                        batch_size=BATCH_SIZE
+                    )
             
             # OPTIMISATION : Bulk create des transactions (1 requête au lieu de N)
             if transactions_to_create:
@@ -730,11 +798,13 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
                 
                 # OPTIMISATION : Mise à jour des wallets avec F() expressions (atomique, pas de verrouillage)
                 # F() expressions sont atomiques au niveau DB, pas besoin de select_for_update()
-                SakaWallet.objects.filter(id__in=chunk_wallet_ids).update(
-                    balance=F('balance') + per_wallet,
-                    total_harvested=F('total_harvested') + per_wallet,
-                    last_activity_date=timezone.now()
-                )
+                # (avec autorisation via contexte)
+                with AllowSakaMutation():
+                    SakaWallet.objects.filter(id__in=chunk_wallet_ids).update(
+                        balance=F('balance') + per_wallet,
+                        total_harvested=F('total_harvested') + per_wallet,
+                        last_activity_date=timezone.now()
+                    )
                 
                 # OPTIMISATION : Créer les transactions SAKA en batch
                 transactions_to_create = [
@@ -743,6 +813,7 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
                         direction='EARN',
                         amount=per_wallet,
                         reason='silo_redistribution',
+                        transaction_type='REDISTRIBUTION',
                         metadata={}
                     )
                     for wallet_id in chunk_wallet_ids

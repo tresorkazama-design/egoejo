@@ -19,9 +19,12 @@ from django.test import override_settings
 from django.conf import settings
 
 
+@pytest.mark.egoejo_compliance
 class TestBanqueDormanteStrict:
     """
     Tests de conformité : Vérification que la banque dormante (EUR) reste strictement dormante
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     @pytest.fixture
@@ -49,7 +52,13 @@ class TestBanqueDormanteStrict:
         RÈGLE ABSOLUE : La structure instrumentale (Investment/EUR) ne doit jamais s'exécuter sans flag actif.
         """
         if investment_views_path is None or not investment_views_path.exists():
-            pytest.skip("Module Investment non trouvé ou non activé")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le module Investment est introuvable ou non activé. "
+                f"Chemin attendu : {investment_views_path}. "
+                f"Ce module est OBLIGATOIRE pour la conformité EGOEJO (même s'il est dormant). "
+                f"Sans ce module, les protections contre l'activation non contrôlée des features investment ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(investment_views_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -123,7 +132,13 @@ class TestBanqueDormanteStrict:
         finance_service_path = Path(__file__).parent.parent.parent / "finance" / "services.py"
         
         if not finance_service_path.exists():
-            pytest.skip(f"Fichier non trouvé : {finance_service_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'finance/services.py' est introuvable. "
+                f"Chemin attendu : {finance_service_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre l'impact Finance/SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(finance_service_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -160,7 +175,13 @@ class TestBanqueDormanteStrict:
         finance_service_path = Path(__file__).parent.parent.parent / "finance" / "services.py"
         
         if not finance_service_path.exists():
-            pytest.skip(f"Fichier non trouvé : {finance_service_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'finance/services.py' est introuvable. "
+                f"Chemin attendu : {finance_service_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre l'impact Finance/SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(finance_service_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -207,7 +228,13 @@ class TestBanqueDormanteStrict:
         finance_views_path = Path(__file__).parent.parent.parent / "finance" / "views.py"
         
         if not finance_views_path.exists():
-            pytest.skip(f"Fichier non trouvé : {finance_views_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'finance/views.py' est introuvable. "
+                f"Chemin attendu : {finance_views_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre l'activation non contrôlée des features financières ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(finance_views_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -401,7 +428,13 @@ class TestBanqueDormanteStrict:
         saka_service_path = Path(__file__).parent.parent.parent / "core" / "services" / "saka.py"
         
         if not saka_service_path.exists():
-            pytest.skip(f"Fichier non trouvé : {saka_service_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'core/services/saka.py' est introuvable. "
+                f"Chemin attendu : {saka_service_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre la contrainte EUR/SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(saka_service_path, 'r', encoding='utf-8') as f:
             content = f.read()

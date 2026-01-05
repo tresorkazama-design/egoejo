@@ -1,0 +1,102 @@
+name: 🤖 PR Bot - EGOEJO Compliant (Home/Vision)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-bot-home-vision:
+    name: PR Bot - Home/Vision Compliance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/frontend/package-lock.json
+      
+      - name: 📥 Install dependencies
+        working-directory: frontend/frontend
+        run: npm ci
+      
+      - name: 🛡️ Run compliance audit
+        id: audit
+        working-directory: frontend/frontend
+        run: |
+          # Exécuter l'audit et capturer le JSON
+          # Rediriger stderr vers stdout pour capturer tout
+          AUDIT_OUTPUT=$(npm run audit:home-vision -- --json 2>&1 || true)
+          
+          # Extraire uniquement le JSON valide (chercher le premier { jusqu'au dernier })
+          # Utiliser node pour extraire proprement le JSON
+          AUDIT_JSON=$(echo "$AUDIT_OUTPUT" | node -e "
+            const readline = require('readline');
+            const rl = readline.createInterface({ input: process.stdin });
+            let jsonStarted = false;
+            let jsonLines = [];
+            rl.on('line', (line) => {
+              if (line.trim().startsWith('{')) {
+                jsonStarted = true;
+              }
+              if (jsonStarted) {
+                jsonLines.push(line);
+              }
+            });
+            rl.on('close', () => {
+              const jsonStr = jsonLines.join('\\n');
+              try {
+                JSON.parse(jsonStr);
+                console.log(jsonStr);
+              } catch (e) {
+                console.log('{\"status\":\"non-compliant\",\"violations_count\":1,\"violations\":[],\"timestamp\":\"' + new Date().toISOString() + '\"}');
+              }
+            });
+          ")
+          
+          # Sauvegarder le JSON propre dans un fichier pour le script PR bot
+          echo "$AUDIT_JSON" > audit-result.json
+          
+          # Extraire le statut
+          STATUS=$(echo "$AUDIT_JSON" | node -e "try { const j=JSON.parse(require('fs').readFileSync(0,'utf-8')); console.log(j.status || 'non-compliant'); } catch(e) { console.log('non-compliant'); }")
+          
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "✅ Statut de conformité : $STATUS"
+          
+          # Afficher le résultat pour debug
+          echo "📊 Résultat de l'audit (extrait) :"
+          echo "$AUDIT_JSON" | head -5
+          
+          # BLOQUANT : Si l'audit échoue, le workflow doit échouer
+          # Constitution EGOEJO: Aucune violation tolérée
+          if [ "$STATUS" != "compliant" ]; then
+            echo ""
+            echo "❌ =========================================="
+            echo "❌ VIOLATION CONSTITUTION EGOEJO DÉTECTÉE"
+            echo "❌ =========================================="
+            echo ""
+            echo "L'audit Home/Vision a détecté des violations."
+            echo "Le merge est BLOQUÉ jusqu'à correction."
+            echo ""
+            exit 1
+          fi
+      
+      - name: 🤖 Run PR Bot
+        working-directory: frontend/frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          STATUS: ${{ steps.audit.outputs.status }}
+        run: |
+          node ../../.github/scripts/pr_bot_home_vision.js

@@ -1,0 +1,1107 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "page_file": "frontend/frontend/src/app/pages/Home.jsx",
+      "api_calls": []
+    },
+    {
+      "route": "/univers",
+      "page_file": "frontend/frontend/src/app/pages/Univers.jsx",
+      "api_calls": []
+    },
+    {
+      "route": "/vision",
+      "page_file": "frontend/frontend/src/app/pages/Vision.jsx",
+      "api_calls": []
+    },
+    {
+      "route": "/citations",
+      "page_file": "frontend/frontend/src/app/pages/Citations.jsx",
+      "api_calls": []
+    },
+    {
+      "route": "/alliances",
+      "page_file": "frontend/frontend/src/app/pages/Alliances.jsx",
+      "api_calls": []
+    },
+    {
+      "route": "/projets",
+      "page_file": "frontend/frontend/src/app/pages/Projets.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/projets/",
+          "hook": null,
+          "auth": false
+        },
+        {
+          "method": "GET",
+          "url": "/api/config/features/",
+          "hook": null,
+          "auth": false
+        },
+        {
+          "method": "POST",
+          "url": "/api/projets/<id>/boost/",
+          "hook": "useSaka",
+          "auth": true
+        },
+        {
+          "method": "GET",
+          "url": "/api/projets/semantic-search/",
+          "hook": null,
+          "auth": false,
+          "component": "SemanticSearch.jsx"
+        },
+        {
+          "method": "GET",
+          "url": "/api/projets/semantic-suggestions/",
+          "hook": null,
+          "auth": false,
+          "component": "SemanticSuggestions.jsx"
+        }
+      ]
+    },
+    {
+      "route": "/contenus",
+      "page_file": "frontend/frontend/src/app/pages/Contenus.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/contents/?status=published",
+          "hook": null,
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/communaute",
+      "page_file": "frontend/frontend/src/app/pages/Communaute.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/communities/",
+          "hook": null,
+          "auth": false
+        },
+        {
+          "method": "GET",
+          "url": "/api/communities/<slug>/",
+          "hook": null,
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/votes",
+      "page_file": "frontend/frontend/src/app/pages/Votes.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/polls/",
+          "hook": "useSaka",
+          "auth": false
+        },
+        {
+          "method": "POST",
+          "url": "/api/polls/<id>/vote/",
+          "hook": "useSaka",
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/rejoindre",
+      "page_file": "frontend/frontend/src/app/pages/Rejoindre.jsx",
+      "api_calls": [
+        {
+          "method": "POST",
+          "url": "/api/intents/rejoindre/",
+          "hook": null,
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/chat",
+      "page_file": "frontend/frontend/src/app/pages/Chat.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/chat/threads/",
+          "hook": "useWebSocket",
+          "auth": true,
+          "component": "ChatList.jsx"
+        },
+        {
+          "method": "GET",
+          "url": "/api/chat/messages/?thread=<id>&limit=100",
+          "hook": "useWebSocket",
+          "auth": true,
+          "component": "ChatWindow.jsx"
+        },
+        {
+          "method": "POST",
+          "url": "/api/chat/messages/",
+          "hook": "useWebSocket",
+          "auth": true,
+          "component": "ChatWindow.jsx"
+        },
+        {
+          "method": "WS",
+          "url": "/ws/chat/<thread_id>/",
+          "hook": "useWebSocket",
+          "auth": true,
+          "component": "ChatWindow.jsx"
+        },
+        {
+          "method": "GET",
+          "url": "/api/support/concierge/",
+          "hook": null,
+          "auth": true,
+          "component": "SupportBubble.jsx"
+        },
+        {
+          "method": "GET",
+          "url": "/api/support/concierge/eligibility/",
+          "hook": null,
+          "auth": true,
+          "component": "SupportBubble.jsx"
+        },
+        {
+          "method": "POST",
+          "url": "/api/support/contact/",
+          "hook": null,
+          "auth": true,
+          "component": "SupportBubble.jsx"
+        }
+      ]
+    },
+    {
+      "route": "/login",
+      "page_file": "frontend/frontend/src/app/pages/Login.jsx",
+      "api_calls": [
+        {
+          "method": "POST",
+          "url": "/api/auth/login/",
+          "hook": "useAuth",
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/register",
+      "page_file": "frontend/frontend/src/app/pages/Register.jsx",
+      "api_calls": [
+        {
+          "method": "POST",
+          "url": "/api/auth/register/",
+          "hook": "useAuth",
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/admin",
+      "page_file": "frontend/frontend/src/app/pages/Admin.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/intents/admin/",
+          "hook": null,
+          "auth": true
+        },
+        {
+          "method": "GET",
+          "url": "/api/intents/export/",
+          "hook": null,
+          "auth": true
+        },
+        {
+          "method": "DELETE",
+          "url": "/api/intents/<id>/delete/",
+          "hook": null,
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/impact",
+      "page_file": "frontend/frontend/src/app/pages/Impact.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/impact/dashboard/",
+          "hook": null,
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/dashboard",
+      "page_file": "frontend/frontend/src/app/pages/Dashboard.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/impact/global-assets/",
+          "hook": "useGlobalAssets",
+          "auth": true
+        },
+        {
+          "method": "POST",
+          "url": "/api/wallet/pockets/transfer/",
+          "hook": "useGlobalAssets",
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/my-card",
+      "page_file": "frontend/frontend/src/app/pages/MyCard.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/impact/global-assets/",
+          "hook": "useGlobalAssets",
+          "auth": true
+        },
+        {
+          "method": "GET",
+          "url": "/api/wallet-pass/apple/",
+          "hook": "useGlobalAssets",
+          "auth": true
+        },
+        {
+          "method": "GET",
+          "url": "/api/wallet-pass/google/",
+          "hook": "useGlobalAssets",
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/racines-philosophie",
+      "page_file": "frontend/frontend/src/app/pages/RacinesPhilosophie.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/contents/?category=racines-philosophie&status=published",
+          "hook": null,
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/mycelium",
+      "page_file": "frontend/frontend/src/app/pages/Mycelium.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/mycelium/data/",
+          "hook": null,
+          "auth": false,
+          "component": "MyceliumVisualization.jsx"
+        },
+        {
+          "method": "POST",
+          "url": "/api/mycelium/reduce/",
+          "hook": null,
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/podcast",
+      "page_file": "frontend/frontend/src/app/pages/Podcast.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/contents/?content_type=podcast&status=published",
+          "hook": null,
+          "auth": false
+        }
+      ]
+    },
+    {
+      "route": "/saka/silo",
+      "page_file": "frontend/frontend/src/app/pages/SakaSilo.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/saka/silo/",
+          "hook": "useSakaSilo",
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/saka/saisons",
+      "page_file": "frontend/frontend/src/app/pages/SakaSeasons.tsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/saka/cycles/",
+          "hook": "useSakaCycles",
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/saka/history",
+      "page_file": "frontend/frontend/src/app/pages/SakaHistory.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/saka/transactions/",
+          "hook": "useSaka",
+          "auth": true
+        }
+      ]
+    },
+    {
+      "route": "/admin/saka-monitor",
+      "page_file": "frontend/frontend/src/app/pages/SakaMonitor.jsx",
+      "api_calls": [
+        {
+          "method": "GET",
+          "url": "/api/saka/stats/",
+          "hook": "useSakaStats",
+          "auth": true
+        },
+        {
+          "method": "GET",
+          "url": "/api/saka/compost-logs/",
+          "hook": "useSakaCompostLogs",
+          "auth": true
+        },
+        {
+          "method": "POST",
+          "url": "/api/saka/compost-run/",
+          "hook": "useSakaCompostRun",
+          "auth": true
+        }
+      ]
+    }
+  ],
+  "endpoints": [
+    {
+      "url": "/api/auth/login/",
+      "method": "POST",
+      "view_file": "backend/core/api/token_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["User"],
+      "consumers": [
+        {
+          "route": "/login",
+          "component": "Login.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/auth/register/",
+      "method": "POST",
+      "view_file": "backend/core/api/auth_views.py",
+      "serializer": "UserSerializer",
+      "permissions": ["AllowAny"],
+      "models": ["User"],
+      "consumers": [
+        {
+          "route": "/register",
+          "component": "Register.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/auth/me/",
+      "method": "GET",
+      "view_file": "backend/core/api/auth_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["User"],
+      "consumers": [
+        {
+          "route": "global",
+          "component": "AuthContext.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/auth/refresh/",
+      "method": "POST",
+      "view_file": "backend/core/api/token_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": [],
+      "consumers": [
+        {
+          "route": "global",
+          "component": "AuthContext.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/projets/",
+      "method": "GET",
+      "view_file": "backend/core/api/projects.py",
+      "serializer": "ProjetSerializer",
+      "permissions": ["IsAuthenticatedOrReadOnly"],
+      "models": ["Projet"],
+      "consumers": [
+        {
+          "route": "/projets",
+          "component": "Projets.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/projets/<id>/",
+      "method": "GET",
+      "view_file": "backend/core/api/projects.py",
+      "serializer": "ProjetSerializer",
+      "permissions": ["IsAuthenticatedOrReadOnly"],
+      "models": ["Projet"],
+      "consumers": [
+        {
+          "route": "/projets",
+          "component": "Projets.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/projets/<id>/boost/",
+      "method": "POST",
+      "view_file": "backend/core/api/projects.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["Projet", "SakaWallet", "SakaTransaction"],
+      "consumers": [
+        {
+          "route": "/projets",
+          "component": "Projets.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/projets/search/",
+      "method": "GET",
+      "view_file": "backend/core/api/search_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Projet"],
+      "consumers": []
+    },
+    {
+      "url": "/api/projets/semantic-search/",
+      "method": "GET",
+      "view_file": "backend/core/api/semantic_search_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Projet"],
+      "consumers": [
+        {
+          "route": "component",
+          "component": "SemanticSearch.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/projets/semantic-suggestions/",
+      "method": "GET",
+      "view_file": "backend/core/api/semantic_search_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Projet"],
+      "consumers": [
+        {
+          "route": "component",
+          "component": "SemanticSuggestions.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/projets/<id>/oracles/",
+      "method": "GET",
+      "view_file": "backend/core/api/oracle_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["ProjectOracle"],
+      "consumers": []
+    },
+    {
+      "url": "/api/contents/",
+      "method": "GET",
+      "view_file": "backend/core/api/content_views.py",
+      "serializer": "EducationalContentSerializer",
+      "permissions": ["AllowAny"],
+      "models": ["EducationalContent"],
+      "consumers": [
+        {
+          "route": "/contenus",
+          "component": "Contenus.jsx"
+        },
+        {
+          "route": "/racines-philosophie",
+          "component": "RacinesPhilosophie.jsx"
+        },
+        {
+          "route": "/podcast",
+          "component": "Podcast.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/contents/<id>/mark-consumed/",
+      "method": "POST",
+      "view_file": "backend/core/api/content_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["EducationalContent", "SakaWallet", "SakaTransaction"],
+      "consumers": []
+    },
+    {
+      "url": "/api/communities/",
+      "method": "GET",
+      "view_file": "backend/core/api/communities_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Community"],
+      "consumers": [
+        {
+          "route": "/communaute",
+          "component": "Communaute.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/communities/<slug>/",
+      "method": "GET",
+      "view_file": "backend/core/api/communities_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Community"],
+      "consumers": [
+        {
+          "route": "/communaute",
+          "component": "Communaute.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/polls/",
+      "method": "GET",
+      "view_file": "backend/core/api/polls.py",
+      "serializer": "PollSerializer",
+      "permissions": ["IsAuthenticatedOrReadOnly"],
+      "models": ["Poll", "PollOption"],
+      "consumers": [
+        {
+          "route": "/votes",
+          "component": "Votes.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/polls/<id>/vote/",
+      "method": "POST",
+      "view_file": "backend/core/api/polls.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["Poll", "PollVote", "SakaWallet", "SakaTransaction"],
+      "consumers": [
+        {
+          "route": "/votes",
+          "component": "Votes.jsx"
+        },
+        {
+          "route": "component",
+          "component": "QuadraticVote.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/intents/rejoindre/",
+      "method": "POST",
+      "view_file": "backend/core/api/intents.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Intent"],
+      "consumers": [
+        {
+          "route": "/rejoindre",
+          "component": "Rejoindre.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/intents/admin/",
+      "method": "GET",
+      "view_file": "backend/core/api/intents.py",
+      "serializer": null,
+      "permissions": ["IsAdminUser"],
+      "models": ["Intent"],
+      "consumers": [
+        {
+          "route": "/admin",
+          "component": "Admin.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/intents/export/",
+      "method": "GET",
+      "view_file": "backend/core/api/intents.py",
+      "serializer": null,
+      "permissions": ["IsAdminUser"],
+      "models": ["Intent"],
+      "consumers": [
+        {
+          "route": "/admin",
+          "component": "Admin.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/intents/<id>/delete/",
+      "method": "DELETE",
+      "view_file": "backend/core/api/intents.py",
+      "serializer": null,
+      "permissions": ["IsAdminUser"],
+      "models": ["Intent"],
+      "consumers": [
+        {
+          "route": "/admin",
+          "component": "Admin.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/impact/dashboard/",
+      "method": "GET",
+      "view_file": "backend/core/api/impact_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["User", "Projet", "Cagnotte", "Intent"],
+      "consumers": [
+        {
+          "route": "/impact",
+          "component": "Impact.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/impact/global-assets/",
+      "method": "GET",
+      "view_file": "backend/core/api/impact_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["UserWallet", "WalletPocket", "SakaWallet", "EscrowContract"],
+      "consumers": [
+        {
+          "route": "/dashboard",
+          "component": "Dashboard.jsx"
+        },
+        {
+          "route": "/my-card",
+          "component": "MyCard.jsx"
+        },
+        {
+          "route": "hook",
+          "component": "useGlobalAssets.js"
+        }
+      ]
+    },
+    {
+      "url": "/api/wallet/pockets/transfer/",
+      "method": "POST",
+      "view_file": "backend/finance/views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["UserWallet", "WalletPocket", "WalletTransaction"],
+      "consumers": [
+        {
+          "route": "/dashboard",
+          "component": "Dashboard.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/wallet-pass/apple/",
+      "method": "GET",
+      "view_file": "backend/finance/views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["User"],
+      "consumers": [
+        {
+          "route": "/my-card",
+          "component": "MyCard.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/wallet-pass/google/",
+      "method": "GET",
+      "view_file": "backend/finance/views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["User"],
+      "consumers": [
+        {
+          "route": "/my-card",
+          "component": "MyCard.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/silo/",
+      "method": "GET",
+      "view_file": "backend/core/api/saka_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["SakaSilo"],
+      "consumers": [
+        {
+          "route": "/saka/silo",
+          "component": "SakaSilo.jsx"
+        },
+        {
+          "route": "hook",
+          "component": "useSakaSilo.ts"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/compost-preview/",
+      "method": "GET",
+      "view_file": "backend/core/api/saka_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["SakaWallet"],
+      "consumers": [
+        {
+          "route": "hook",
+          "component": "useSaka.js"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/stats/",
+      "method": "GET",
+      "view_file": "backend/core/api/saka_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["SakaWallet", "SakaTransaction"],
+      "consumers": [
+        {
+          "route": "hook",
+          "component": "useSaka.js"
+        },
+        {
+          "route": "/admin/saka-monitor",
+          "component": "SakaMonitor.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/transactions/",
+      "method": "GET",
+      "view_file": "backend/core/api/saka_views.py",
+      "serializer": "SakaTransactionSerializer",
+      "permissions": ["IsAuthenticated"],
+      "models": ["SakaTransaction"],
+      "consumers": [
+        {
+          "route": "/saka/history",
+          "component": "SakaHistory.jsx"
+        },
+        {
+          "route": "hook",
+          "component": "useSaka.js"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/compost-logs/",
+      "method": "GET",
+      "view_file": "backend/core/api/saka_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["SakaCompostLog"],
+      "consumers": [
+        {
+          "route": "hook",
+          "component": "useSaka.js"
+        },
+        {
+          "route": "/admin/saka-monitor",
+          "component": "SakaMonitor.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/cycles/",
+      "method": "GET",
+      "view_file": "backend/core/api/saka_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["SakaCycle"],
+      "consumers": [
+        {
+          "route": "/saka/saisons",
+          "component": "SakaSeasons.tsx"
+        },
+        {
+          "route": "hook",
+          "component": "useSakaCycles.ts"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/compost-run/",
+      "method": "POST",
+      "view_file": "backend/core/api/saka_views.py",
+      "serializer": null,
+      "permissions": ["IsAdminUser"],
+      "models": ["SakaWallet", "SakaSilo", "SakaCompostLog"],
+      "consumers": [
+        {
+          "route": "hook",
+          "component": "useSaka.js"
+        },
+        {
+          "route": "/admin/saka-monitor",
+          "component": "SakaMonitor.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/saka/metrics/all/",
+      "method": "GET",
+      "view_file": "backend/core/api/saka_metrics_views.py",
+      "serializer": null,
+      "permissions": ["IsAdminUser"],
+      "models": ["SakaWallet", "SakaTransaction", "SakaSilo", "SakaCompostLog"],
+      "consumers": []
+    },
+    {
+      "url": "/api/mycelium/data/",
+      "method": "GET",
+      "view_file": "backend/core/api/mycelium_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Projet"],
+      "consumers": [
+        {
+          "route": "/mycelium",
+          "component": "Mycelium.jsx"
+        },
+        {
+          "route": "component",
+          "component": "MyceliumVisualization.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/mycelium/reduce/",
+      "method": "POST",
+      "view_file": "backend/core/api/mycelium_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Projet"],
+      "consumers": []
+    },
+    {
+      "url": "/api/config/features/",
+      "method": "GET",
+      "view_file": "backend/core/api/config_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": [],
+      "consumers": [
+        {
+          "route": "/projets",
+          "component": "Projets.jsx"
+        },
+        {
+          "route": "component",
+          "component": "QuadraticVote.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/support/concierge/",
+      "method": "GET",
+      "view_file": "backend/core/api/chat_support.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["ConciergeThread"],
+      "consumers": [
+        {
+          "route": "/chat",
+          "component": "Chat.jsx"
+        },
+        {
+          "route": "component",
+          "component": "SupportBubble.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/support/concierge/eligibility/",
+      "method": "GET",
+      "view_file": "backend/core/api/chat_support.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": [],
+      "consumers": [
+        {
+          "route": "component",
+          "component": "SupportBubble.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/support/contact/",
+      "method": "POST",
+      "view_file": "backend/core/api/chat_support.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": [],
+      "consumers": [
+        {
+          "route": "component",
+          "component": "SupportBubble.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/chat/threads/",
+      "method": "GET",
+      "view_file": "backend/core/views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["ChatThread"],
+      "consumers": [
+        {
+          "route": "/chat",
+          "component": "Chat.jsx"
+        },
+        {
+          "route": "component",
+          "component": "ChatList.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/chat/messages/",
+      "method": "GET",
+      "view_file": "backend/core/views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["ChatMessage"],
+      "consumers": [
+        {
+          "route": "/chat",
+          "component": "ChatWindow.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/chat/messages/",
+      "method": "POST",
+      "view_file": "backend/core/views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["ChatMessage"],
+      "consumers": [
+        {
+          "route": "/chat",
+          "component": "ChatWindow.jsx"
+        }
+      ]
+    },
+    {
+      "url": "/api/oracles/available/",
+      "method": "GET",
+      "view_file": "backend/core/api/oracle_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": [],
+      "consumers": [],
+      "status": "orphan"
+    },
+    {
+      "url": "/api/analytics/metrics/",
+      "method": "POST",
+      "view_file": "backend/core/api/monitoring_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": [],
+      "consumers": [
+        {
+          "route": "utility",
+          "component": "monitoring.js"
+        },
+        {
+          "route": "utility",
+          "component": "performance-metrics.js"
+        }
+      ]
+    },
+    {
+      "url": "/api/monitoring/alerts/",
+      "method": "POST",
+      "view_file": "backend/core/api/monitoring_views.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": [],
+      "consumers": [
+        {
+          "route": "utility",
+          "component": "monitoring.js"
+        }
+      ]
+    },
+    {
+      "url": "/ws/chat/<thread_id>/",
+      "method": "WS",
+      "view_file": "backend/core/consumers.py",
+      "serializer": null,
+      "permissions": ["IsAuthenticated"],
+      "models": ["ChatMessage"],
+      "consumers": [
+        {
+          "route": "/chat",
+          "component": "ChatWindow.jsx"
+        },
+        {
+          "route": "hook",
+          "component": "useWebSocket.js"
+        }
+      ]
+    },
+    {
+      "url": "/ws/polls/<poll_id>/",
+      "method": "WS",
+      "view_file": "backend/core/consumers.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": ["Poll"],
+      "consumers": [],
+      "status": "orphan"
+    },
+    {
+      "url": "/api/public/egoejo-compliance.json",
+      "method": "GET",
+      "view_file": "backend/core/api/compliance_views.py",
+      "serializer": null,
+      "permissions": ["AllowAny"],
+      "models": [],
+      "consumers": [],
+      "status": "orphan"
+    }
+  ]
+}
+

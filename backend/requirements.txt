@@ -13,6 +13,7 @@ argon2-cffi>=23.1.0
 # HTTP & API
 django-cors-headers>=4.0.0
 gunicorn>=21.2.0
+requests>=2.31.0  # Pour webhooks (alertes critiques)
 
 # Utilities
 python-dotenv>=1.0.0
@@ -63,5 +64,5 @@ cryptography>=41.0.0
 drf-spectacular>=0.27.0
 
 # Security tools (dev only)
-bandit>=1.7.5
+bandit>=1.9.2  # Compatible Python 3.14
 safety>=2.3.5

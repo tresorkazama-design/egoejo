@@ -34,11 +34,14 @@ from django.conf import settings
 User = get_user_model()
 
 
+@pytest.mark.egoejo_compliance
 class TestSakaCycleIntegrity:
     """
     Tests de conformité : Intégrité du Cycle SAKA
     
     RÈGLE ABSOLUE : Le cycle SAKA est non négociable.
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     @pytest.mark.django_db

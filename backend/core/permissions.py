@@ -43,3 +43,213 @@ class IsFounderOrReadOnly(permissions.BasePermission):
         
         return False
 
+
+# ==============================================
+# PERMISSIONS CMS - GESTION DE CONTENU
+# ==============================================
+
+# Noms des groupes Django pour les rôles CMS
+CONTENT_EDITOR_GROUP_NAME = 'Content_Editors'
+CONTENT_CONTRIBUTOR_GROUP_NAME = 'Content_Contributors'
+CONTENT_REVIEWER_GROUP_NAME = 'Content_Reviewers'
+
+
+def is_user_in_group(user, group_name):
+    """
+    Vérifie si un utilisateur appartient à un groupe Django.
+    
+    Args:
+        user: Utilisateur Django
+        group_name: Nom du groupe
+    
+    Returns:
+        bool: True si l'utilisateur est dans le groupe
+    """
+    if not user or not user.is_authenticated:
+        return False
+    return user.groups.filter(name=group_name).exists()
+
+
+def is_content_admin(user):
+    """
+    Vérifie si un utilisateur est admin (superuser ou staff).
+    
+    Args:
+        user: Utilisateur Django
+    
+    Returns:
+        bool: True si l'utilisateur est admin
+    """
+    if not user or not user.is_authenticated:
+        return False
+    return user.is_superuser or user.is_staff
+
+
+def is_content_editor(user):
+    """
+    Vérifie si un utilisateur est editor (admin ou groupe Content_Editors).
+    
+    Args:
+        user: Utilisateur Django
+    
+    Returns:
+        bool: True si l'utilisateur est editor
+    """
+    if is_content_admin(user):
+        return True
+    return is_user_in_group(user, CONTENT_EDITOR_GROUP_NAME)
+
+
+def is_content_contributor(user):
+    """
+    Vérifie si un utilisateur est contributor (admin, editor, ou groupe Content_Contributors).
+    
+    Args:
+        user: Utilisateur Django
+    
+    Returns:
+        bool: True si l'utilisateur est contributor
+    """
+    if is_content_editor(user):
+        return True
+    return is_user_in_group(user, CONTENT_CONTRIBUTOR_GROUP_NAME)
+
+
+class CanPublishContent(permissions.BasePermission):
+    """
+    Permission pour publier un contenu.
+    
+    Autorisé :
+    - Admin (superuser ou staff)
+    - Editor (groupe Content_Editors)
+    
+    Refusé :
+    - Contributor
+    - Utilisateur anonyme
+    """
+    message = "Vous devez être admin ou editor pour publier un contenu."
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return is_content_editor(request.user)
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Vérifie les permissions au niveau de l'objet.
+        Par défaut, utilise has_permission.
+        """
+        return self.has_permission(request, view)
+
+
+class CanRejectContent(permissions.BasePermission):
+    """
+    Permission pour rejeter un contenu.
+    
+    Autorisé :
+    - Admin (superuser ou staff)
+    - Editor (groupe Content_Editors)
+    
+    Refusé :
+    - Contributor
+    - Utilisateur anonyme
+    """
+    message = "Vous devez être admin ou editor pour rejeter un contenu."
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return is_content_editor(request.user)
+
+    def has_object_permission(self, request, view, obj):
+        return self.has_permission(request, view)
+
+
+class CanArchiveContent(permissions.BasePermission):
+    """
+    Permission pour archiver un contenu.
+    
+    Autorisé :
+    - Admin (superuser ou staff)
+    - Editor (groupe Content_Editors)
+    
+    Refusé :
+    - Contributor
+    - Utilisateur anonyme
+    """
+    message = "Vous devez être admin ou editor pour archiver un contenu."
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return is_content_editor(request.user)
+
+    def has_object_permission(self, request, view, obj):
+        return self.has_permission(request, view)
+
+
+class CanUnpublishContent(permissions.BasePermission):
+    """
+    Permission pour dépublication (unpublish) d'un contenu.
+    
+    Autorisé :
+    - Admin (superuser ou staff)
+    - Editor (groupe Content_Editors)
+    
+    Refusé :
+    - Contributor
+    - Utilisateur anonyme
+    """
+    message = "Vous devez être admin ou editor pour dépublication un contenu."
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return is_content_editor(request.user)
+
+    def has_object_permission(self, request, view, obj):
+        return self.has_permission(request, view)
+
+
+class CanCreateContent(permissions.BasePermission):
+    """
+    Permission pour créer un contenu.
+    
+    Autorisé :
+    - Admin (superuser ou staff)
+    - Editor (groupe Content_Editors)
+    - Contributor (groupe Content_Contributors)
+    - Utilisateur authentifié (peut proposer un contenu)
+    
+    Refusé :
+    - Utilisateur anonyme → 401 Unauthorized (pas de token)
+    """
+    message = "Vous devez être authentifié pour créer un contenu."
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            # Lecture autorisée pour tous
+            return True
+        # Création nécessite authentification stricte
+        if not request.user or not request.user.is_authenticated:
+            return False  # DRF retournera 403, mais le code dans perform_create retourne 401
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        # Un contributor peut modifier seulement ses propres contenus en draft/pending
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        if is_content_editor(request.user):
+            # Editor peut modifier tous les contenus
+            return True
+        
+        if is_content_contributor(request.user):
+            # Contributor peut modifier seulement ses propres contenus en draft/pending
+            if obj.author != request.user:
+                return False
+            if obj.status not in ['draft', 'pending']:
+                return False
+            return True
+        
+        return False

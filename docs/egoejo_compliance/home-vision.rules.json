@@ -1,0 +1,137 @@
+{
+  "version": "1.0",
+  "date": "2025-01-27",
+  "scope": "Pages Accueil et Vision - Conformité EGOEJO",
+  "rules": [
+    {
+      "id": "donation_text_nets",
+      "description": "Le texte '100 % des dons' doit inclure 'nets' ou une mention de frais",
+      "test_ref": "scripts/audit-home-vision.js:checkDonationText",
+      "severity": "critical",
+      "files": [
+        "src/app/pages/Home*.jsx",
+        "src/app/pages/Vision*.jsx",
+        "src/components/Layout*.jsx",
+        "src/locales/*.json"
+      ]
+    },
+    {
+      "id": "vision_i18n_principles",
+      "description": "Les clés i18n vision.principles_* doivent exister dans tous les fichiers de traduction",
+      "test_ref": "scripts/audit-home-vision.js:checkVisionI18nKeys",
+      "severity": "critical",
+      "keys": [
+        "vision.principles_title",
+        "vision.principle_relational_title",
+        "vision.principle_relational_desc",
+        "vision.principle_anti_accumulation_title",
+        "vision.principle_anti_accumulation_desc",
+        "vision.principle_cycle_title",
+        "vision.principle_cycle_desc"
+      ],
+      "files": [
+        "src/locales/*.json"
+      ]
+    },
+    {
+      "id": "vision_i18n_glossary",
+      "description": "Les clés i18n vision.glossary_* doivent exister dans tous les fichiers de traduction",
+      "test_ref": "scripts/audit-home-vision.js:checkVisionI18nKeys",
+      "severity": "critical",
+      "keys": [
+        "vision.glossary_title",
+        "vision.glossary_vivant_term",
+        "vision.glossary_vivant_def",
+        "vision.glossary_saka_term",
+        "vision.glossary_saka_def",
+        "vision.glossary_eur_term",
+        "vision.glossary_eur_def",
+        "vision.glossary_silo_term",
+        "vision.glossary_silo_def",
+        "vision.glossary_compostage_term",
+        "vision.glossary_compostage_def",
+        "vision.glossary_alliance_term",
+        "vision.glossary_alliance_def",
+        "vision.glossary_gardiens_term",
+        "vision.glossary_gardiens_def"
+      ],
+      "files": [
+        "src/locales/*.json"
+      ]
+    },
+    {
+      "id": "skip_link_i18n",
+      "description": "Le skip-link ne doit pas être hardcodé en FR dans Layout.jsx, doit utiliser t('accessibility.skip_to_main', language)",
+      "test_ref": "scripts/audit-home-vision.js:checkSkipLinkHardcoded",
+      "severity": "critical",
+      "files": [
+        "src/components/Layout*.jsx"
+      ]
+    },
+    {
+      "id": "home_saka_eur_note",
+      "description": "La page Accueil doit contenir une note explicite SAKA/EUR (pas de conversion, pas d'équivalence monétaire)",
+      "test_ref": "src/app/pages/__tests__/Home.audit-compliance.test.jsx",
+      "severity": "high",
+      "files": [
+        "src/app/pages/Home*.jsx",
+        "src/locales/*.json"
+      ]
+    },
+    {
+      "id": "vision_principles_section",
+      "description": "La page Vision doit contenir une section 'Principes fondamentaux' explicite avec 3 principes",
+      "test_ref": "src/app/pages/__tests__/Vision.audit-compliance.test.jsx",
+      "severity": "high",
+      "files": [
+        "src/app/pages/Vision*.jsx",
+        "src/locales/*.json"
+      ]
+    },
+    {
+      "id": "vision_glossary_section",
+      "description": "La page Vision doit contenir un glossaire (définitions) pour : vivant, SAKA, EUR, silo, compostage, alliance, gardiens",
+      "test_ref": "src/app/pages/__tests__/Vision.audit-compliance.test.jsx",
+      "severity": "high",
+      "files": [
+        "src/app/pages/Vision*.jsx",
+        "src/locales/*.json"
+      ]
+    },
+    {
+      "id": "vision_disclaimer",
+      "description": "La page Vision doit contenir un disclaimer contextuel sur les citations autochtones",
+      "test_ref": "src/app/pages/__tests__/Vision.audit-compliance.test.jsx",
+      "severity": "medium",
+      "files": [
+        "src/app/pages/Vision*.jsx",
+        "src/locales/*.json"
+      ]
+    },
+    {
+      "id": "navigation_hash_soutenir",
+      "description": "Le lien 'Soutenir' doit scroller vers #soutenir (visible dans viewport) sur desktop et mobile",
+      "test_ref": "e2e/audit-compliance-accueil-vision.spec.js:A1",
+      "severity": "high",
+      "files": [
+        "src/app/pages/Home*.jsx",
+        "src/components/Layout*.jsx"
+      ]
+    },
+    {
+      "id": "skip_link_functionality",
+      "description": "Le skip-link doit focus et scroller vers #main-content",
+      "test_ref": "e2e/audit-compliance-accueil-vision.spec.js:A2",
+      "severity": "high",
+      "files": [
+        "src/components/Layout*.jsx"
+      ]
+    }
+  ],
+  "status_mapping": {
+    "compliant": "Toutes les règles critical et high sont respectées",
+    "conditional": "Toutes les règles critical sont respectées, certaines règles high/medium peuvent échouer",
+    "non-compliant": "Au moins une règle critical échoue"
+  }
+}
+

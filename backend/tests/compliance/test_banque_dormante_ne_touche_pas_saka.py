@@ -13,9 +13,12 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.egoejo_compliance
 class TestBanqueDormanteNeTouchePasSaka:
     """
     Tests de conformité : Vérification que la banque dormante (EUR) ne touche pas SAKA
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     @pytest.fixture
@@ -43,7 +46,13 @@ class TestBanqueDormanteNeTouchePasSaka:
         RÈGLE ABSOLUE : La structure instrumentale (EUR) ne doit pas dépendre de SAKA.
         """
         if not finance_service_path.exists():
-            pytest.skip(f"Fichier non trouvé : {finance_service_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'finance/services.py' est introuvable. "
+                f"Chemin attendu : {finance_service_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre la dépendance Finance/SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(finance_service_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -76,7 +85,13 @@ class TestBanqueDormanteNeTouchePasSaka:
         RÈGLE ABSOLUE : La structure instrumentale (EUR) ne doit pas utiliser SAKA.
         """
         if not finance_service_path.exists():
-            pytest.skip(f"Fichier non trouvé : {finance_service_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'finance/services.py' est introuvable. "
+                f"Chemin attendu : {finance_service_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre la dépendance Finance/SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(finance_service_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -110,7 +125,13 @@ class TestBanqueDormanteNeTouchePasSaka:
         RÈGLE ABSOLUE : Les modèles EUR ne doivent pas avoir de ForeignKey vers SAKA.
         """
         if not finance_model_path.exists():
-            pytest.skip(f"Fichier non trouvé : {finance_model_path}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'finance/models.py' est introuvable. "
+                f"Chemin attendu : {finance_model_path}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre la dépendance Finance/SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(finance_model_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -143,7 +164,13 @@ class TestBanqueDormanteNeTouchePasSaka:
         RÈGLE ABSOLUE : La structure instrumentale (Investment/EUR) ne doit pas toucher SAKA.
         """
         if investment_model_path is None or not investment_model_path.exists():
-            pytest.skip("Module Investment non trouvé ou non activé")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le module Investment est introuvable ou non activé. "
+                f"Chemin attendu : {investment_model_path}. "
+                f"Ce module est OBLIGATOIRE pour la conformité EGOEJO (même s'il est dormant). "
+                f"Sans ce module, les protections contre la dépendance Investment/SAKA ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         with open(investment_model_path, 'r', encoding='utf-8') as f:
             content = f.read()

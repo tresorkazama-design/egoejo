@@ -33,11 +33,14 @@ User = get_user_model()
     SAKA_COMPOST_MIN_BALANCE=50,
     SAKA_COMPOST_MIN_AMOUNT=10,
 )
+@pytest.mark.egoejo_compliance
 class TestSakaCompostDepreciationEffective(TestCase):
     """
     Tests pour garantir que le compostage est EFFECTIF (dépréciation réelle).
     
     PROTECTION : Empêche l'accumulation infinie en validant la dépréciation effective.
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     VIOLATION EMPÊCHÉE : Compostage simulé, accumulation infinie, contournement du cycle.
     """
     

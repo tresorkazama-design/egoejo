@@ -95,28 +95,23 @@ def check_redis_health(self):
     """
     Vérifie que Redis est accessible
     Envoie une alerte si Redis n'est pas accessible
-    """
-    from django.core.cache import cache
     
-    try:
-        # Tester la connexion Redis
-        cache.set('health_check', 'ok', 10)
-        result = cache.get('health_check')
-        
-        if result != 'ok':
-            raise Exception("Redis ne répond pas correctement")
-        
-        return {
-            'status': 'ok',
-            'message': 'Redis est accessible',
-        }
-    except Exception as e:
-        logger.error(f"[ALERTE] Redis non accessible: {e}")
+    AMÉLIORATION : Utilise core.utils.redis_health.get_redis_status() pour un diagnostic détaillé
+    """
+    from core.utils.redis_health import get_redis_status
+    
+    status = get_redis_status()
+    
+    if not status['available']:
+        logger.critical(
+            f"[ALERTE] Redis indisponible - Backend: {status['backend']}, "
+            f"Erreur: {status['error']}"
+        )
         
         if hasattr(settings, 'NOTIFY_EMAIL') and settings.NOTIFY_EMAIL:
             send_mail(
                 subject='[EGOEJO] Alerte : Redis non accessible',
-                message=f'Redis n\'est pas accessible: {e}',
+                message=f'Redis n\'est pas accessible.\n\nBackend: {status["backend"]}\nErreur: {status["error"]}\n\nL\'application fonctionne en mode dégradé (fallback activé).',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[settings.NOTIFY_EMAIL],
                 fail_silently=True,
@@ -124,7 +119,15 @@ def check_redis_health(self):
         
         return {
             'status': 'error',
-            'message': f'Redis non accessible: {e}',
+            'message': f'Redis non accessible: {status["error"]}',
+            'backend': status['backend'],
             'action_required': 'Vérifier la configuration Redis',
         }
+    
+    logger.info(f"Redis disponible - Backend: {status['backend']}")
+    return {
+        'status': 'ok',
+        'message': 'Redis est accessible',
+        'backend': status['backend'],
+    }
 

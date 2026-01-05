@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 import hashlib
 
 User = settings.AUTH_USER_MODEL
@@ -26,6 +28,7 @@ class EducationalContent(models.Model):
       ("pending", "En attente de validation"),
       ("published", "Publié"),
       ("rejected", "Rejeté"),
+      ("archived", "Archivé"),
   ]
 
   CATEGORY_CHOICES = [
@@ -121,6 +124,29 @@ class EducationalContent(models.Model):
 
   created_at = models.DateTimeField(auto_now_add=True)
   updated_at = models.DateTimeField(auto_now=True)
+  
+  # Champs de tracking pour le workflow CMS V1
+  published_by = models.ForeignKey(
+      User,
+      on_delete=models.SET_NULL,
+      null=True,
+      blank=True,
+      related_name="published_contents",
+      help_text="Utilisateur qui a publié ce contenu.",
+  )
+  published_at = models.DateTimeField(
+      null=True,
+      blank=True,
+      help_text="Date de publication du contenu.",
+  )
+  modified_by = models.ForeignKey(
+      User,
+      on_delete=models.SET_NULL,
+      null=True,
+      blank=True,
+      related_name="modified_contents",
+      help_text="Dernier utilisateur ayant modifié ce contenu.",
+  )
 
   class Meta:
       ordering = ["-created_at"]
@@ -143,6 +169,96 @@ class EducationalContent(models.Model):
       """
       text = (self.title or "") + "\n" + (self.description or "")
       return hashlib.sha256(text.encode("utf-8")).hexdigest()
+  
+  # Workflow CMS V1 - Transitions autorisées
+  ALLOWED_TRANSITIONS = {
+      "draft": ["pending"],  # draft -> pending (Contributor, Editor)
+      "pending": ["published", "rejected"],  # pending -> published (Admin) ou rejected (Editor, Admin)
+      "published": ["archived"],  # published -> archived (Admin)
+      "rejected": ["draft", "pending"],  # rejected -> draft/pending (pour révision)
+      "archived": [],  # archived est terminal (pas de transition depuis archived)
+  }
+  
+  def can_transition_to(self, new_status, user=None):
+      """
+      Vérifie si une transition de status est autorisée.
+      
+      Args:
+          new_status: Le nouveau statut souhaité
+          user: L'utilisateur qui effectue la transition (optionnel)
+      
+      Returns:
+          tuple: (bool, str) - (autorisé, message d'erreur si non autorisé)
+      """
+      current_status = self.status
+      
+      # Vérifier si la transition est dans la liste autorisée
+      if new_status not in self.ALLOWED_TRANSITIONS.get(current_status, []):
+          return False, f"Transition non autorisée : {current_status} -> {new_status}"
+      
+      # Vérifications spécifiques selon le rôle (si user fourni)
+      if user:
+          from core.permissions import is_content_editor, is_content_admin, is_content_contributor
+        
+          # draft -> pending : Contributor ou Editor
+          if current_status == "draft" and new_status == "pending":
+              if not user.is_authenticated:
+                  return False, "Authentification requise pour soumettre un brouillon"
+              if not (is_content_contributor(user) or is_content_editor(user)):
+                  return False, "Seuls les Contributors et Editors peuvent soumettre un brouillon"
+          
+          # pending -> published : Admin uniquement
+          elif current_status == "pending" and new_status == "published":
+              if not user.is_authenticated:
+                  return False, "Authentification requise pour publier un contenu"
+              if not is_content_admin(user):
+                  return False, "Seuls les Admins peuvent publier un contenu"
+          
+          # pending -> rejected : Editor ou Admin
+          elif current_status == "pending" and new_status == "rejected":
+              if not user.is_authenticated:
+                  return False, "Authentification requise pour rejeter un contenu"
+              if not is_content_editor(user):
+                  return False, "Seuls les Editors et Admins peuvent rejeter un contenu"
+          
+          # published -> archived : Admin uniquement
+          elif current_status == "published" and new_status == "archived":
+              if not user.is_authenticated:
+                  return False, "Authentification requise pour archiver un contenu"
+              if not is_content_admin(user):
+                  return False, "Seuls les Admins peuvent archiver un contenu"
+      
+      return True, ""
+  
+  def transition_to(self, new_status, user=None):
+      """
+      Effectue une transition de status avec validation.
+      
+      Args:
+          new_status: Le nouveau statut
+          user: L'utilisateur qui effectue la transition
+      
+      Raises:
+          ValidationError: Si la transition n'est pas autorisée
+      """
+      can_transition, error_message = self.can_transition_to(new_status, user)
+      
+      if not can_transition:
+          raise ValidationError(error_message)
+      
+      old_status = self.status
+      self.status = new_status
+      
+      # Mettre à jour les champs de tracking
+      if user and user.is_authenticated:
+          self.modified_by = user
+          
+          # Si publication, enregistrer published_by et published_at
+          if new_status == "published" and old_status != "published":
+              self.published_by = user
+              self.published_at = timezone.now()
+      
+      self.save(update_fields=["status", "published_by", "published_at", "modified_by", "updated_at"])
 
 
 class ContentLike(models.Model):

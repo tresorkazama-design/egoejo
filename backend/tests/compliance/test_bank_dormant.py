@@ -26,11 +26,14 @@ from finance.services import pledge_funds
 User = get_user_model()
 
 
+@pytest.mark.egoejo_compliance
 class TestBankDormant:
     """
     Tests de conformité : Banque Dormante (EUR)
     
     RÈGLE ABSOLUE : La structure instrumentale (EUR) est dormante.
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     @pytest.mark.django_db

@@ -1,0 +1,119 @@
+name: 🛡️ Audit BLOQUANT - Home/Vision
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  audit-home-vision:
+    name: Audit BLOQUANT Home/Vision
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/frontend/package-lock.json
+      
+      - name: 📥 Install dependencies
+        working-directory: frontend/frontend
+        run: npm ci
+      
+      - name: 🔍 Run ESLint
+        id: lint
+        working-directory: frontend/frontend
+        run: npm run lint
+        continue-on-error: false
+      
+      - name: 🧪 Run unit tests
+        id: unit-tests
+        working-directory: frontend/frontend
+        run: npm run test:run
+        continue-on-error: false
+      
+      - name: 🛡️ Run audit:home-vision
+        id: audit
+        working-directory: frontend/frontend
+        run: npm run audit:home-vision
+        continue-on-error: false
+      
+      - name: 🎭 Install Playwright browsers
+        working-directory: frontend/frontend
+        run: npx playwright install --with-deps chromium
+      
+      - name: 🎭 Run E2E tests (home-vision-compliance)
+        id: e2e-tests
+        working-directory: frontend/frontend
+        run: npm run test:e2e -- e2e/home-vision-compliance.spec.js
+        continue-on-error: false
+        env:
+          CI: true
+          E2E_MODE: mock-only
+      
+      - name: 📊 Generate summary
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "📊 RÉSUMÉ AUDIT HOME/VISION"
+          echo "=========================================="
+          echo ""
+          
+          # Lint
+          if [ "${{ steps.lint.outcome }}" == "success" ]; then
+            echo "✅ Lint: OK"
+          else
+            echo "❌ Lint: ÉCHEC"
+          fi
+          
+          # Unit tests
+          if [ "${{ steps.unit-tests.outcome }}" == "success" ]; then
+            echo "✅ Unit tests: OK"
+          else
+            echo "❌ Unit tests: ÉCHEC"
+          fi
+          
+          # Audit
+          if [ "${{ steps.audit.outcome }}" == "success" ]; then
+            echo "✅ Audit: OK"
+          else
+            echo "❌ Audit: ÉCHEC"
+          fi
+          
+          # E2E tests
+          if [ "${{ steps.e2e-tests.outcome }}" == "success" ]; then
+            echo "✅ E2E tests: OK"
+          else
+            echo "❌ E2E tests: ÉCHEC"
+          fi
+          
+          echo ""
+          echo "=========================================="
+          
+          # Échouer si une étape a échoué
+          if [ "${{ steps.lint.outcome }}" != "success" ] || \
+             [ "${{ steps.unit-tests.outcome }}" != "success" ] || \
+             [ "${{ steps.audit.outcome }}" != "success" ] || \
+             [ "${{ steps.e2e-tests.outcome }}" != "success" ]; then
+            echo ""
+            echo "❌ ÉCHEC : Au moins une étape a échoué."
+            exit 1
+          else
+            echo ""
+            echo "✅ SUCCÈS : Toutes les étapes sont passées."
+          fi
+      
+      - name: 📤 Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-home-vision-compliance
+          path: frontend/frontend/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

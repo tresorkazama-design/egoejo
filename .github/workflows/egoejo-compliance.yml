@@ -1,0 +1,353 @@
+name: 🛡️ EGOEJO Compliance Philosophique
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:  # Permet l'exécution manuelle
+
+jobs:
+  egoejo-compliance:
+    name: Tests de Compliance Philosophique SAKA/EUR
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Timeout augmenté pour tous les scans
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: egotest_compliance
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: 📦 Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🗄️ Run database migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest_compliance
+          SECRET_KEY: test-secret-key-for-ci-compliance-testing-min-50-chars-required-egoejo
+          ENABLE_SAKA: 'True'
+          SAKA_COMPOST_ENABLED: 'True'
+          SAKA_SILO_REDIS_ENABLED: 'True'
+        run: |
+          cd backend
+          python manage.py migrate --noinput
+      
+      - name: 🛡️ Run Compliance Tests (BLOQUANT)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest_compliance
+          SECRET_KEY: test-secret-key-for-ci-compliance-testing-min-50-chars-required-egoejo
+          ENABLE_SAKA: 'True'
+          SAKA_COMPOST_ENABLED: 'True'
+          SAKA_SILO_REDIS_ENABLED: 'True'
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          cd backend
+          echo "🛡️ Exécution des tests de compliance philosophique EGOEJO..."
+          echo "📋 Tests protégés par le tag @egoejo_compliance"
+          echo ""
+          
+          # Exécuter UNIQUEMENT les tests marqués @egoejo_compliance
+          # Inclut automatiquement les tests de compliance éditoriale du contenu
+          # Si un seul test échoue, le workflow échoue (BLOQUANT)
+          pytest -m egoejo_compliance -v --tb=short --strict-markers
+          
+          if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ =========================================="
+            echo "❌ VIOLATION CONSTITUTION EGOEJO DÉTECTÉE"
+            echo "❌ =========================================="
+            echo ""
+            echo "Les tests de compliance (incluant compliance éditoriale) ont échoué."
+            echo "Ce commit viole la séparation stricte SAKA/EUR, la philosophie EGOEJO,"
+            echo "ou la Constitution éditoriale du contenu."
+            echo ""
+            echo "Action requise :"
+            echo "1. Corriger le code pour respecter la séparation SAKA/EUR"
+            echo "2. Vérifier la compliance éditoriale des contenus publiés"
+            echo "3. Relancer les tests : pytest -m egoejo_compliance -v"
+            echo "4. Recommiter"
+            echo ""
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ =========================================="
+          echo "✅ Conformité philosophique et éditoriale validée"
+          echo "✅ =========================================="
+          echo ""
+          
+          if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ =========================================="
+            echo "❌ VIOLATION CONSTITUTION EGOEJO DÉTECTÉE"
+            echo "❌ =========================================="
+            echo ""
+            echo "Les tests de compliance philosophique ont échoué."
+            echo "Ce commit viole la séparation stricte SAKA/EUR ou la philosophie EGOEJO."
+            echo ""
+            echo "Action requise :"
+            echo "1. Corriger le code pour respecter la séparation SAKA/EUR"
+            echo "2. Relancer les tests : pytest -m egoejo_compliance -v"
+            echo "3. Recommiter"
+            echo ""
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ =========================================="
+          echo "✅ Conformité philosophique validée"
+          echo "✅ =========================================="
+          echo ""
+      
+      - name: 🔍 Scan Automatique du Code Python
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest_compliance
+          SECRET_KEY: test-secret-key-for-ci-compliance-testing-min-50-chars-required-egoejo
+          ENABLE_SAKA: 'True'
+          SAKA_COMPOST_ENABLED: 'True'
+          SAKA_SILO_REDIS_ENABLED: 'True'
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          cd backend
+          echo "🔍 =========================================="
+          echo "🔍 SCAN AUTOMATIQUE DU CODE PYTHON"
+          echo "🔍 =========================================="
+          echo ""
+          echo "📋 Objectif : Détecter les violations SAKA/EUR dans le code Python"
+          echo "📋 Méthode : Scan récursif de tous les fichiers .py"
+          echo ""
+          
+          # Exécuter le test de scan récursif
+          pytest tests/compliance/test_no_saka_eur_conversion.py::TestNoSakaEurConversion::test_scan_recursif_tous_fichiers_python_backend -v --tb=short
+          
+          SCAN_EXIT_CODE=$?
+          
+          if [ $SCAN_EXIT_CODE -ne 0 ]; then
+            echo ""
+            echo "❌ =========================================="
+            echo "❌ VIOLATION DÉTECTÉE DANS LE CODE PYTHON"
+            echo "❌ =========================================="
+            echo ""
+            echo "Le scan récursif a détecté des patterns interdits :"
+            echo "- Conversion SAKA ↔ EUR"
+            echo "- Accumulation financière"
+            echo "- Affichage monétaire"
+            echo ""
+            echo "Action requise :"
+            echo "1. Examiner le rapport du test pour identifier les violations"
+            echo "2. Corriger le code pour respecter la séparation SAKA/EUR"
+            echo "3. Relancer le scan : pytest tests/compliance/test_no_saka_eur_conversion.py::TestNoSakaEurConversion::test_scan_recursif_tous_fichiers_python_backend -v"
+            echo "4. Recommiter"
+            echo ""
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Scan du code Python : Aucune violation détectée"
+          echo ""
+      
+      - name: 🌐 Scan des Endpoints API
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egotest_compliance
+          SECRET_KEY: test-secret-key-for-ci-compliance-testing-min-50-chars-required-egoejo
+          ENABLE_SAKA: 'True'
+          SAKA_COMPOST_ENABLED: 'True'
+          SAKA_SILO_REDIS_ENABLED: 'True'
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          cd backend
+          echo "🌐 =========================================="
+          echo "🌐 SCAN DES ENDPOINTS API"
+          echo "🌐 =========================================="
+          echo ""
+          echo "📋 Objectif : Vérifier que les endpoints API respectent la constitution EGOEJO"
+          echo "📋 Méthode : Scan automatique de toutes les routes Django"
+          echo ""
+          
+          # Exécuter le test de scan des endpoints
+          pytest tests/compliance/test_api_endpoints_protection.py::TestAPIEndpointsProtection::test_scan_complet_endpoints_et_serializers -v --tb=short
+          
+          ENDPOINTS_EXIT_CODE=$?
+          
+          if [ $ENDPOINTS_EXIT_CODE -ne 0 ]; then
+            echo ""
+            echo "❌ =========================================="
+            echo "❌ VIOLATION DÉTECTÉE DANS LES ENDPOINTS API"
+            echo "❌ =========================================="
+            echo ""
+            echo "Le scan des endpoints a détecté des violations :"
+            echo "- Endpoints suggérant conversion SAKA ↔ EUR"
+            echo "- Endpoints suggérant achat/valeur financière"
+            echo "- Endpoints suggérant accumulation"
+            echo ""
+            echo "Action requise :"
+            echo "1. Examiner le rapport du test pour identifier les endpoints violants"
+            echo "2. Corriger ou supprimer les endpoints non conformes"
+            echo "3. Relancer le scan : pytest tests/compliance/test_api_endpoints_protection.py::TestAPIEndpointsProtection::test_scan_complet_endpoints_et_serializers -v"
+            echo "4. Recommiter"
+            echo ""
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Scan des endpoints API : Aucune violation détectée"
+          echo ""
+      
+      - name: 🎨 Setup Node.js pour ESLint
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/frontend/package-lock.json
+      
+      - name: 📦 Installer les dépendances frontend
+        run: |
+          cd frontend/frontend
+          npm ci
+      
+      - name: 🔍 Vérification ESLint SAKA (no-monetary-symbols)
+        run: |
+          cd frontend/frontend
+          echo "🔍 =========================================="
+          echo "🔍 VÉRIFICATION ESLINT SAKA"
+          echo "🔍 =========================================="
+          echo ""
+          echo "📋 Objectif : Détecter les symboles monétaires dans le code frontend"
+          echo "📋 Règle : egoejo/no-monetary-symbols"
+          echo "📋 Symboles interdits : €, $, USD, EUR, GBP, CHF, JPY, CAD, AUD"
+          echo ""
+          
+          # Exécuter ESLint avec la règle custom
+          # BLOQUANT : Toute violation ESLint SAKA doit faire échouer le workflow
+          # Constitution EGOEJO: Aucune tolérance pour les symboles monétaires dans le code SAKA
+          npm run lint -- --max-warnings 0 --format json --output-file eslint-report.json
+          ESLINT_EXIT_CODE=$?
+          
+          if [ $ESLINT_EXIT_CODE -ne 0 ]; then
+            echo ""
+            echo "❌ =========================================="
+            echo "❌ VIOLATION ESLINT SAKA DÉTECTÉE"
+            echo "❌ =========================================="
+            echo ""
+            echo "La règle egoejo/no-monetary-symbols a détecté des violations :"
+            echo "- Symboles monétaires dans les strings"
+            echo "- Symboles monétaires dans les commentaires"
+            echo "- Symboles monétaires dans le JSX"
+            echo ""
+            
+            # Afficher les erreurs ESLint
+            if [ -f eslint-report.json ]; then
+              echo "📋 Détails des violations :"
+              cat eslint-report.json | grep -A 5 "no-monetary-symbols" || true
+            fi
+            
+            echo ""
+            echo "Action requise :"
+            echo "1. Examiner les erreurs ESLint ci-dessus"
+            echo "2. Remplacer les symboles monétaires par formatSakaAmount()"
+            echo "3. Relancer ESLint : npm run lint"
+            echo "4. Recommiter"
+            echo ""
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Vérification ESLint SAKA : Aucune violation détectée"
+          echo ""
+      
+      - name: 📊 Résumé des tests de compliance
+        if: always()
+        run: |
+          cd backend
+          echo "## 📋 Résumé des Tests de Compliance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Tests Exécutés" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Tests de Compliance Philosophique** (tag \`@egoejo_compliance\`)" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Scan Automatique du Code Python** (scan récursif)" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Scan des Endpoints API** (routes Django)" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Vérification ESLint SAKA** (règle no-monetary-symbols)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Détails" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          pytest -m egoejo_compliance --collect-only -q 2>&1 | grep "test_" | head -20 >> $GITHUB_STEP_SUMMARY || true
+          
+          # Ajouter le résumé ESLint si disponible
+          if [ -f frontend/frontend/eslint-report.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔍 Résumé ESLint" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Rapport ESLint disponible dans \`eslint-report.json\`" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: 📄 Générer Rapport d'Audit
+        if: always()
+        run: |
+          echo "## 🛡️ Rapport d'Audit EGOEJO Compliance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date** : $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit** : ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branche** : ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Scans Effectués" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. ✅ Tests de Compliance Philosophique" >> $GITHUB_STEP_SUMMARY
+          echo "2. ✅ Scan Automatique du Code Python" >> $GITHUB_STEP_SUMMARY
+          echo "3. ✅ Scan des Endpoints API" >> $GITHUB_STEP_SUMMARY
+          echo "4. ✅ Vérification ESLint SAKA" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Critères Vérifiés" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Conversion SAKA ↔ EUR interdite" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Affichage monétaire SAKA interdit" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Accumulation SAKA interdite" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Désactivation compostage interdite" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Activation V2.0 sans feature flag interdite" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Endpoints API non conformes interdits" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔒 Statut" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **CONFORME EGOEJO** - Tous les scans ont réussi" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **NON CONFORME** - Violations détectées" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Ce rapport est généré automatiquement par le workflow EGOEJO Compliance.*" >> $GITHUB_STEP_SUMMARY
+          echo "*Pour plus d'informations, voir [docs/egoejo_compliance/LABEL_EGOEJO_COMPLIANT.md](../../docs/egoejo_compliance/LABEL_EGOEJO_COMPLIANT.md)*" >> $GITHUB_STEP_SUMMARY

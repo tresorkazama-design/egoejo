@@ -60,10 +60,99 @@ class ContributionAdmin(admin.ModelAdmin):
 
 @admin.register(EducationalContent)
 class EducationalContentAdmin(admin.ModelAdmin):
-    list_display = ("title", "type", "status", "created_at")
+    list_display = ("title", "type", "status", "author", "published_at", "created_at")
     list_filter = ("type", "status", "created_at")
     search_fields = ("title", "description")
     prepopulated_fields = {"slug": ("title",)}
+    readonly_fields = ("created_at", "updated_at", "published_at", "published_by", "modified_by")
+    
+    fieldsets = (
+        ("Informations générales", {
+            "fields": ("title", "slug", "type", "category", "status", "description", "tags")
+        }),
+        ("Auteur", {
+            "fields": ("author", "anonymous_display_name")
+        }),
+        ("Fichiers et liens", {
+            "fields": ("file", "external_url", "audio_file")
+        }),
+        ("Projet lié", {
+            "fields": ("project",)
+        }),
+        ("Tracking workflow", {
+            "fields": ("published_by", "published_at", "modified_by", "created_at", "updated_at"),
+            "classes": ("collapse",)
+        }),
+    )
+    
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Définit les champs en lecture seule selon le statut.
+        """
+        readonly = list(self.readonly_fields)
+        
+        if obj:
+            # Si le contenu est publié ou archivé, certains champs sont en lecture seule
+            if obj.status in ["published", "archived"]:
+                readonly.extend(["title", "slug", "type", "category", "description", "tags", "author"])
+        
+        return readonly
+    
+    actions = ["publish_contents", "archive_contents", "reject_contents"]
+    
+    def publish_contents(self, request, queryset):
+        """Action admin : Publier les contenus sélectionnés"""
+        from django.core.exceptions import ValidationError
+        count = 0
+        errors = []
+        for content in queryset:
+            try:
+                content.transition_to("published", user=request.user)
+                count += 1
+            except ValidationError as e:
+                errors.append(f"{content.title}: {str(e)}")
+        
+        if count > 0:
+            self.message_user(request, f"{count} contenu(s) publié(s).")
+        if errors:
+            self.message_user(request, f"Erreurs: {', '.join(errors)}", level="error")
+    publish_contents.short_description = "Publier les contenus sélectionnés"
+    
+    def archive_contents(self, request, queryset):
+        """Action admin : Archiver les contenus sélectionnés"""
+        from django.core.exceptions import ValidationError
+        count = 0
+        errors = []
+        for content in queryset:
+            try:
+                content.transition_to("archived", user=request.user)
+                count += 1
+            except ValidationError as e:
+                errors.append(f"{content.title}: {str(e)}")
+        
+        if count > 0:
+            self.message_user(request, f"{count} contenu(s) archivé(s).")
+        if errors:
+            self.message_user(request, f"Erreurs: {', '.join(errors)}", level="error")
+    archive_contents.short_description = "Archiver les contenus sélectionnés"
+    
+    def reject_contents(self, request, queryset):
+        """Action admin : Rejeter les contenus sélectionnés"""
+        from django.core.exceptions import ValidationError
+        count = 0
+        errors = []
+        for content in queryset:
+            try:
+                content.transition_to("rejected", user=request.user)
+                count += 1
+            except ValidationError as e:
+                errors.append(f"{content.title}: {str(e)}")
+        
+        if count > 0:
+            self.message_user(request, f"{count} contenu(s) rejeté(s).")
+        if errors:
+            self.message_user(request, f"Erreurs: {', '.join(errors)}", level="error")
+    reject_contents.short_description = "Rejeter les contenus sélectionnés"
 
 
 @admin.register(HelpRequest)
@@ -178,11 +267,21 @@ def action_run_saka_compost_live(modeladmin, request, queryset):
         )
 @admin.register(SakaWallet)
 class SakaWalletAdmin(admin.ModelAdmin):
+    """
+    Admin pour les portefeuilles SAKA.
+    
+    Constitution EGOEJO: no direct SAKA mutation.
+    Les champs balance, total_harvested, total_planted, total_composted sont en lecture seule.
+    Toute modification SAKA doit passer par les services (harvest_saka, spend_saka, etc.).
+    """
     list_display = ("user", "balance", "total_harvested", "total_planted", "total_composted", "last_activity_date", "updated_at")
     list_filter = ("last_activity_date", "updated_at")
     search_fields = ("user__username", "user__email")
-    readonly_fields = ("created_at", "updated_at", "last_activity_date")
+    # Constitution: no direct SAKA mutation - Tous les champs de solde/cumul sont en lecture seule
+    readonly_fields = ("created_at", "updated_at", "last_activity_date", "balance", "total_harvested", "total_planted", "total_composted")
     ordering = ("-balance", "-updated_at")
+    # Pas de list_editable : empêche l'édition en masse
+    # Pas de fieldsets personnalisés : utilise les champs par défaut avec readonly_fields
 
 
 @admin.register(SakaTransaction)

@@ -1,0 +1,174 @@
+name: 🎭 E2E Full-Stack Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Permet de déclencher manuellement
+
+jobs:
+  e2e-fullstack:
+    name: E2E Full-Stack (SAKA Vote + Projet Financement)
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: egoejo_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: 📦 Install Python dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🗄️ Setup database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egoejo_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-e2e-only
+          DEBUG: '1'
+          E2E_TEST_MODE: '1'
+          ENABLE_SAKA: '1'
+        run: |
+          python manage.py migrate --noinput
+          python manage.py collectstatic --noinput
+      
+      - name: 🚀 Start Django backend
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/egoejo_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-e2e-only
+          DEBUG: '1'
+          E2E_TEST_MODE: '1'
+          ENABLE_SAKA: '1'
+        run: |
+          python manage.py runserver 0.0.0.0:8000 &
+          sleep 5
+          # Vérifier que le backend répond
+          curl -f http://localhost:8000/ || exit 1
+        continue-on-error: false
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/frontend/package-lock.json
+      
+      - name: 📥 Install frontend dependencies
+        working-directory: frontend/frontend
+        run: npm ci
+      
+      - name: 🎭 Install Playwright browsers
+        working-directory: frontend/frontend
+        run: npx playwright install --with-deps chromium
+      
+      - name: 🚀 Start frontend dev server
+        working-directory: frontend/frontend
+        run: |
+          npm run dev &
+          sleep 10
+          # Vérifier que le frontend répond
+          curl -f http://localhost:5173/ || exit 1
+        continue-on-error: false
+      
+      - name: 🎭 Run E2E Full-Stack tests (SAKA Vote)
+        id: e2e-saka-vote
+        working-directory: frontend/frontend
+        run: npm run test:e2e -- e2e/flux-complet-saka-vote.spec.js
+        env:
+          CI: true
+          BACKEND_URL: http://localhost:8000
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+        continue-on-error: false
+      
+      - name: 🎭 Run E2E Full-Stack tests (Projet Financement)
+        id: e2e-projet-financement
+        working-directory: frontend/frontend
+        run: npm run test:e2e -- e2e/flux-complet-projet-financement.spec.js
+        env:
+          CI: true
+          BACKEND_URL: http://localhost:8000
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+        continue-on-error: false
+      
+      - name: 📊 Generate summary
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "📊 RÉSUMÉ E2E FULL-STACK"
+          echo "=========================================="
+          echo ""
+          
+          # E2E SAKA Vote
+          if [ "${{ steps.e2e-saka-vote.outcome }}" == "success" ]; then
+            echo "✅ E2E SAKA Vote: OK"
+          else
+            echo "❌ E2E SAKA Vote: ÉCHEC"
+          fi
+          
+          # E2E Projet Financement
+          if [ "${{ steps.e2e-projet-financement.outcome }}" == "success" ]; then
+            echo "✅ E2E Projet Financement: OK"
+          else
+            echo "❌ E2E Projet Financement: ÉCHEC"
+          fi
+          
+          echo ""
+          echo "=========================================="
+          
+          # Échouer si une étape a échoué
+          if [ "${{ steps.e2e-saka-vote.outcome }}" != "success" ] || \
+             [ "${{ steps.e2e-projet-financement.outcome }}" != "success" ]; then
+            echo ""
+            echo "❌ ÉCHEC : Au moins un test E2E a échoué."
+            exit 1
+          else
+            echo ""
+            echo "✅ SUCCÈS : Tous les tests E2E sont passés."
+          fi
+      
+      - name: 📤 Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-fullstack
+          path: frontend/frontend/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+

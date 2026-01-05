@@ -168,6 +168,7 @@ else:
     _PATTERNS_ERROR = None
 
 
+@pytest.mark.egoejo_compliance
 class TestNoSakaEurConversion:
     """
     Tests de conformité : Aucune conversion SAKA vers monnaie fiat
@@ -195,7 +196,13 @@ class TestNoSakaEurConversion:
         saka_service_file = Path(__file__).parent.parent.parent / "core" / "services" / "saka.py"
         
         if not saka_service_file.exists():
-            pytest.skip(f"Fichier non trouvé : {saka_service_file}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'core/services/saka.py' est introuvable. "
+                f"Chemin attendu : {saka_service_file}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre la conversion SAKA/EUR ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         # Lire le fichier UNE SEULE FOIS
         with open(saka_service_file, 'r', encoding='utf-8') as f:
@@ -225,7 +232,13 @@ class TestNoSakaEurConversion:
         saka_service_file = Path(__file__).parent.parent.parent / "core" / "services" / "saka.py"
         
         if not saka_service_file.exists():
-            pytest.skip(f"Fichier non trouvé : {saka_service_file}")
+            pytest.fail(
+                f"PROTECTION MANQUANTE : Le fichier critique 'core/services/saka.py' est introuvable. "
+                f"Chemin attendu : {saka_service_file}. "
+                f"Ce fichier est OBLIGATOIRE pour la conformité EGOEJO. "
+                f"Sans ce fichier, les protections contre la conversion SAKA/EUR ne peuvent pas être vérifiées. "
+                f"Conformité EGOEJO VIOLÉE."
+            )
         
         # Lire le fichier UNE SEULE FOIS
         with open(saka_service_file, 'r', encoding='utf-8') as f:
@@ -317,7 +330,13 @@ class TestNoSakaEurConversion:
         from core.services.saka import get_or_create_wallet
         wallet = get_or_create_wallet(user)
         if wallet is None:
-            pytest.skip("SAKA is disabled in this test environment")
+            pytest.fail(
+                "PROTECTION MANQUANTE : SAKA est désactivé dans cet environnement de test. "
+                "SAKA doit être ACTIVÉ pour tous les tests de compliance EGOEJO. "
+                "Sans SAKA activé, les protections philosophiques ne peuvent pas être vérifiées. "
+                "Conformité EGOEJO VIOLÉE. "
+                "Action requise : Configurer ENABLE_SAKA=True dans les variables d'environnement de test."
+            )
         wallet.refresh_from_db()
         saka_balance = wallet.balance
         
@@ -382,3 +401,211 @@ class TestNoSakaEurConversion:
             f"Violations trouvées :\n" + "\n".join(violations) + "\n\n"
             f"ACTION REQUISE : Supprimer tout affichage interdit du SAKA."
         )
+    
+    def test_scan_recursif_tous_fichiers_python_backend(self):
+        """
+        VIOLATION DU MANIFESTE EGOEJO si :
+        Un fichier Python du backend contient des patterns interdits.
+        
+        Test : Scanner récursivement TOUS les fichiers Python du backend pour détecter :
+        - Conversion monétaire SAKA ↔ EUR ou autre devise
+        - Accumulation financière
+        - Équivalence SAKA ↔ monnaie fiat
+        
+        Le test FAIL si un seul pattern est trouvé.
+        """
+        backend_dir = Path(__file__).parent.parent.parent
+        
+        # Patterns interdits explicites (liste complète)
+        FORBIDDEN_PATTERNS = [
+            # Conversion SAKA ↔ EUR
+            (r'convert.*saka.*eur', 'Conversion SAKA vers EUR'),
+            (r'convert.*eur.*saka', 'Conversion EUR vers SAKA'),
+            (r'saka.*to.*eur', 'Conversion SAKA vers EUR (to)'),
+            (r'eur.*to.*saka', 'Conversion EUR vers SAKA (to)'),
+            (r'saka.*exchange.*rate.*eur', 'Taux de change SAKA/EUR'),
+            (r'eur.*exchange.*rate.*saka', 'Taux de change EUR/SAKA'),
+            (r'saka.*\*\s*eur.*rate', 'Calcul SAKA * taux EUR'),
+            (r'eur.*rate.*\*\s*saka', 'Calcul taux EUR * SAKA'),
+            (r'saka.*\*\s*exchange_rate', 'Calcul SAKA * taux de change'),
+            (r'exchange_rate.*\*\s*saka', 'Calcul taux de change * SAKA'),
+            
+            # Conversion SAKA ↔ autres devises
+            (r'convert.*saka.*(?:usd|gbp|chf|jpy|cad|aud)', 'Conversion SAKA vers autre devise'),
+            (r'convert.*(?:usd|gbp|chf|jpy|cad|aud).*saka', 'Conversion autre devise vers SAKA'),
+            (r'saka.*to.*(?:usd|gbp|chf|jpy|cad|aud)', 'Conversion SAKA vers autre devise (to)'),
+            (r'(?:usd|gbp|chf|jpy|cad|aud).*to.*saka', 'Conversion autre devise vers SAKA (to)'),
+            
+            # Valeur monétaire du SAKA
+            (r'saka.*\*\s*[\d.]+.*eur', 'Calcul valeur SAKA en EUR'),
+            (r'saka.*\*\s*[\d.]+.*usd', 'Calcul valeur SAKA en USD'),
+            (r'saka.*value.*eur', 'Valeur SAKA en EUR'),
+            (r'saka.*value.*usd', 'Valeur SAKA en USD'),
+            (r'saka.*worth.*eur', 'Valeur SAKA en EUR (worth)'),
+            (r'saka.*worth.*usd', 'Valeur SAKA en USD (worth)'),
+            (r'saka.*price.*eur', 'Prix SAKA en EUR'),
+            (r'saka.*price.*usd', 'Prix SAKA en USD'),
+            (r'eur.*equivalent.*saka', 'Équivalent EUR du SAKA'),
+            (r'usd.*equivalent.*saka', 'Équivalent USD du SAKA'),
+            (r'saka.*equivalent.*eur', 'Équivalent SAKA en EUR'),
+            (r'saka.*equivalent.*usd', 'Équivalent SAKA en USD'),
+            (r'return.*saka.*\*\s*[\d.]+.*eur', 'Retour valeur SAKA en EUR'),
+            (r'return.*saka.*\*\s*[\d.]+.*usd', 'Retour valeur SAKA en USD'),
+            
+            # Accumulation financière
+            (r'saka.*accumulate', 'Accumulation SAKA'),
+            (r'saka.*interest', 'Intérêt sur SAKA'),
+            (r'saka.*yield', 'Rendement SAKA'),
+            (r'saka.*return.*rate', 'Taux de rendement SAKA'),
+            (r'saka.*profit', 'Profit SAKA'),
+            (r'saka.*dividend', 'Dividende SAKA'),
+            (r'saka.*investment', 'Investissement SAKA'),
+            (r'saka.*speculation', 'Spéculation SAKA'),
+            
+            # Affichage monétaire
+            (r'saka.*€', 'Affichage SAKA avec symbole €'),
+            (r'saka.*\$', 'Affichage SAKA avec symbole $'),
+            (r'saka.*eur', 'Affichage SAKA avec EUR'),
+            (r'saka.*usd', 'Affichage SAKA avec USD'),
+            (r'saka.*gbp', 'Affichage SAKA avec GBP'),
+            (r'format.*saka.*currency', 'Format SAKA comme devise'),
+            (r'format.*currency.*saka', 'Format devise pour SAKA'),
+            (r'saka.*currency', 'SAKA comme devise'),
+            (r'currency.*saka', 'Devise SAKA'),
+        ]
+        
+        # Compiler tous les patterns
+        compiled_patterns = []
+        for pattern_str, description in FORBIDDEN_PATTERNS:
+            try:
+                compiled_patterns.append((re.compile(pattern_str, re.IGNORECASE), description))
+            except re.error as e:
+                pytest.fail(f"Pattern regex invalide : {pattern_str} - {e}")
+        
+        # Collecter tous les fichiers Python du backend
+        python_files = []
+        excluded_dirs = {
+            '__pycache__', 'migrations', 'venv', 'env', '.venv', 
+            'htmlcov', 'staticfiles', 'media', 'test-results',
+            'node_modules', '.git'
+        }
+        
+        for py_file in backend_dir.rglob('*.py'):
+            # Exclure les fichiers dans les dossiers interdits
+            parts = py_file.parts
+            if any(excluded in parts for excluded in excluded_dirs):
+                continue
+            
+            # Exclure les fichiers de test (sauf les tests de compliance)
+            if 'tests' in parts and 'compliance' not in parts:
+                continue
+            
+            # Exclure les fichiers de test dans le dossier racine
+            if py_file.name.startswith('test_') and 'compliance' not in py_file.parts:
+                continue
+            
+            python_files.append(py_file)
+        
+        # Scanner tous les fichiers
+        all_violations = []
+        
+        for py_file in python_files:
+            try:
+                with open(py_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.split('\n')
+            except (UnicodeDecodeError, PermissionError) as e:
+                # Ignorer les fichiers non lisibles
+                continue
+            
+            # Scanner avec chaque pattern
+            for compiled_pattern, description in compiled_patterns:
+                for match in compiled_pattern.finditer(content):
+                    line_num = content[:match.start()].count('\n') + 1
+                    line_content = lines[line_num - 1].strip() if line_num <= len(lines) else ''
+                    
+                    # Exclure les commentaires et docstrings
+                    stripped_line = line_content.lstrip()
+                    if stripped_line.startswith('#') or stripped_line.startswith('"""') or stripped_line.startswith("'''"):
+                        continue
+                    
+                    # Exclure les docstrings multilignes (début ou fin)
+                    # Vérifier si on est dans une docstring
+                    before_match = content[:match.start()]
+                    # Compter les """ et ''' avant la position du match
+                    triple_double = before_match.count('"""')
+                    triple_single = before_match.count("'''")
+                    # Si nombre impair, on est dans une docstring
+                    if triple_double % 2 == 1 or triple_single % 2 == 1:
+                        continue
+                    
+                    # Extraire le contexte (ligne précédente et suivante si disponible)
+                    context_lines = []
+                    if line_num > 1:
+                        context_lines.append(f"  {line_num - 1:4d} | {lines[line_num - 2].rstrip()}")
+                    context_lines.append(f"  {line_num:4d} | {line_content}")
+                    if line_num < len(lines):
+                        context_lines.append(f"  {line_num + 1:4d} | {lines[line_num].rstrip()}")
+                    
+                    violation = {
+                        'file': str(py_file.relative_to(backend_dir)),
+                        'line': line_num,
+                        'pattern': description,
+                        'match': match.group()[:100],  # Limiter la longueur
+                        'code': line_content[:120],  # Limiter la longueur
+                        'context': '\n'.join(context_lines)
+                    }
+                    all_violations.append(violation)
+        
+        # Générer le rapport détaillé
+        if all_violations:
+            report_lines = [
+                "=" * 80,
+                "VIOLATION DU MANIFESTE EGOEJO : Patterns interdits détectés",
+                "=" * 80,
+                "",
+                f"Nombre total de violations : {len(all_violations)}",
+                "",
+            ]
+            
+            # Grouper par fichier
+            violations_by_file = {}
+            for v in all_violations:
+                file_key = v['file']
+                if file_key not in violations_by_file:
+                    violations_by_file[file_key] = []
+                violations_by_file[file_key].append(v)
+            
+            for file_path, violations in sorted(violations_by_file.items()):
+                report_lines.extend([
+                    f"\n📁 Fichier : {file_path}",
+                    f"   Violations : {len(violations)}",
+                    "-" * 80,
+                ])
+                
+                for v in violations:
+                    report_lines.extend([
+                        f"  ❌ Ligne {v['line']} : {v['pattern']}",
+                        f"     Match : {v['match']}",
+                        f"     Code : {v['code']}",
+                        f"     Contexte :",
+                        v['context'],
+                        "",
+                    ])
+            
+            report_lines.extend([
+                "=" * 80,
+                "ACTION REQUISE : Supprimer toutes les violations détectées.",
+                "=" * 80,
+            ])
+            
+            report = "\n".join(report_lines)
+            
+            pytest.fail(
+                f"\n{report}\n\n"
+                f"Le test FAIL car {len(all_violations)} violation(s) a/ont été détectée(s). "
+                f"Toute violation doit être corrigée avant de pouvoir continuer."
+            )
+        
+        # Si aucune violation, le test passe
+        assert len(all_violations) == 0, "Aucune violation ne devrait être détectée si le test arrive ici."

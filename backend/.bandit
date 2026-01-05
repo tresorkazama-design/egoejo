@@ -1,0 +1,17 @@
+[bandit]
+# Configuration Bandit pour EGOEJO
+# Exclure les répertoires non pertinents
+exclude_dirs = venv,.venv,__pycache__,migrations,node_modules,.git
+
+# Niveau de confiance minimum
+confidence_level = medium
+
+# Niveau de gravité minimum
+severity_level = medium
+
+# Fichiers à ignorer
+skips = B101,B601,B602,B603
+
+# Tests à exécuter
+tests = B201,B301,B401,B501,B601
+

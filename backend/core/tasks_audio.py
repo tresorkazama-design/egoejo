@@ -170,7 +170,7 @@ def _generate_with_elevenlabs(text, voice_id='default'):
             }
         }
         
-        response = requests.post(url, json=data, headers=headers)
+        response = requests.post(url, json=data, headers=headers, timeout=30)  # nosec B113 - Timeout ajouté
         response.raise_for_status()
         
         return response.content

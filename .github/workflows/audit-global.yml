@@ -1,0 +1,399 @@
+name: 🛡️ Audit BLOQUANT GLOBAL - EGOEJO Compliance
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  # ============================================
+  # JOB 1: AUDIT STATIQUE (Mots interdits)
+  # ============================================
+  audit-static:
+    name: 🛡️ Audit Statique (Mots Interdits)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/frontend/package-lock.json
+      
+      - name: 📥 Install frontend dependencies
+        working-directory: frontend/frontend
+        run: npm ci
+      
+      - name: 🛡️ Run audit:global (Frontend + Backend)
+        id: audit-global
+        working-directory: frontend/frontend
+        run: npm run audit:global
+        continue-on-error: false
+
+  # ============================================
+  # JOB 2: BACKEND COMPLIANCE TESTS
+  # ============================================
+  backend-compliance:
+    name: 🧪 Backend Compliance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: 📥 Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🧪 Run backend compliance tests
+        id: backend-compliance
+        working-directory: backend
+        run: |
+          pytest tests/compliance/ \
+            -v \
+            --tb=short \
+            -m egoejo_compliance \
+            --junit-xml=junit-compliance.xml
+        continue-on-error: false
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: '0'
+      
+      - name: 📤 Upload compliance test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-compliance-reports
+          path: backend/junit-compliance.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ============================================
+  # JOB 3: BACKEND PERMISSION TESTS
+  # ============================================
+  backend-permissions:
+    name: 🔐 Backend Permission Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: 📥 Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🔐 Run backend permission tests
+        id: backend-permissions
+        working-directory: backend
+        run: |
+          pytest core/tests/api/test_*_permissions.py core/tests/cms/test_content_permissions.py \
+            -v \
+            --tb=short \
+            --junit-xml=junit-permissions.xml \
+            -m critical
+        continue-on-error: false
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: '0'
+      
+      - name: 📤 Upload permission test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-permissions-reports
+          path: backend/junit-permissions.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ============================================
+  # JOB 4: FRONTEND UNIT TESTS
+  # ============================================
+  frontend-unit:
+    name: 🧪 Frontend Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/frontend/package-lock.json
+      
+      - name: 📥 Install frontend dependencies
+        working-directory: frontend/frontend
+        run: npm ci
+      
+      - name: 🧪 Run frontend unit tests
+        id: frontend-unit
+        working-directory: frontend/frontend
+        run: npm test -- --run
+        continue-on-error: false
+      
+      - name: 📤 Upload test coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-unit-coverage
+          path: frontend/frontend/coverage/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ============================================
+  # JOB 5: FRONTEND E2E CRITICAL TESTS
+  # ============================================
+  frontend-e2e-critical:
+    name: 🎭 Frontend E2E Critical Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    services:
+      # PostgreSQL for Django backend
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      # Redis for Django Channels, caching, and SAKA Silo
+      redis:
+        image: redis:6
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/frontend/package-lock.json
+      
+      - name: 📥 Install frontend dependencies
+        working-directory: frontend/frontend
+        run: npm ci
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: 📥 Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: ⚙️ Run Django migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: 'True'
+          E2E_TEST_MODE: 'True'
+          ENABLE_SAKA: 'True'
+          SAKA_COMPOST_ENABLED: 'True'
+          SAKA_SILO_REDIS_ENABLED: 'True'
+        run: |
+          python manage.py migrate
+          python manage.py collectstatic --noinput
+      
+      - name: 🚀 Start Django backend
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          DEBUG: 'True'
+          E2E_TEST_MODE: 'True'
+          ENABLE_SAKA: 'True'
+          SAKA_COMPOST_ENABLED: 'True'
+          SAKA_SILO_REDIS_ENABLED: 'True'
+        run: |
+          nohup python manage.py runserver 0.0.0.0:8000 > /tmp/django.log 2>&1 &
+          echo "Waiting for Django backend to start..."
+          sleep 10
+          curl -f http://localhost:8000/api/health/ || curl -f http://localhost:8000/api/ || echo "Backend health check failed"
+      
+      - name: 🚀 Start frontend dev server
+        working-directory: frontend/frontend
+        run: |
+          npm run dev > /tmp/vite.log 2>&1 &
+          echo "Waiting for frontend dev server to start..."
+          sleep 10
+          curl -f http://localhost:5173 || echo "Frontend health check failed"
+      
+      - name: 🎭 Install Playwright browsers
+        working-directory: frontend/frontend
+        run: npx playwright install --with-deps chromium
+      
+      - name: 🎭 Run E2E Critical tests
+        id: frontend-e2e-critical
+        working-directory: frontend/frontend
+        run: |
+          npm run test:e2e -- e2e/flux-complet-saka-vote.spec.js e2e/flux-complet-projet-financement.spec.js
+        continue-on-error: false
+        env:
+          CI: true
+          E2E_MODE: full-stack
+          BACKEND_URL: http://localhost:8000
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+      
+      - name: 📤 Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-critical
+          path: frontend/frontend/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ============================================
+  # JOB 6: CRITICAL COMPLIANCE (P0/P1 BLOQUANT)
+  # ============================================
+  critical-compliance:
+    name: 🚨 Critical Compliance (P0/P1 BLOQUANT)
+    runs-on: ubuntu-latest
+    needs: [audit-static, backend-compliance, backend-permissions, frontend-unit, frontend-e2e-critical]
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 📊 Generate final summary
+        run: |
+          echo "=========================================="
+          echo "🚨 RÉSUMÉ CRITICAL COMPLIANCE (P0/P1)"
+          echo "=========================================="
+          echo ""
+          
+          # Audit statique
+          if [ "${{ needs.audit-static.result }}" == "success" ]; then
+            echo "✅ Audit statique (mots interdits): OK"
+          else
+            echo "❌ Audit statique (mots interdits): ÉCHEC"
+          fi
+          
+          # Backend compliance
+          if [ "${{ needs.backend-compliance.result }}" == "success" ]; then
+            echo "✅ Tests compliance backend: OK"
+          else
+            echo "❌ Tests compliance backend: ÉCHEC"
+          fi
+          
+          # Backend permissions
+          if [ "${{ needs.backend-permissions.result }}" == "success" ]; then
+            echo "✅ Tests permissions backend: OK"
+          else
+            echo "❌ Tests permissions backend: ÉCHEC"
+          fi
+          
+          # Frontend unit tests
+          if [ "${{ needs.frontend-unit.result }}" == "success" ]; then
+            echo "✅ Tests unitaires frontend: OK"
+          else
+            echo "❌ Tests unitaires frontend: ÉCHEC"
+          fi
+          
+          # Frontend E2E critical
+          if [ "${{ needs.frontend-e2e-critical.result }}" == "success" ]; then
+            echo "✅ Tests E2E critiques frontend: OK"
+          else
+            echo "❌ Tests E2E critiques frontend: ÉCHEC"
+          fi
+          
+          echo ""
+          echo "=========================================="
+          
+          # Échouer si un job a échoué
+          if [ "${{ needs.audit-static.result }}" != "success" ] || \
+             [ "${{ needs.backend-compliance.result }}" != "success" ] || \
+             [ "${{ needs.backend-permissions.result }}" != "success" ] || \
+             [ "${{ needs.frontend-unit.result }}" != "success" ] || \
+             [ "${{ needs.frontend-e2e-critical.result }}" != "success" ]; then
+            echo ""
+            echo "❌ ÉCHEC CRITIQUE : Au moins un job P0/P1 a échoué."
+            echo "🚫 Le merge est BLOQUÉ jusqu'à correction."
+            exit 1
+          else
+            echo ""
+            echo "✅ SUCCÈS : Tous les jobs P0/P1 sont passés."
+            echo "✅ Le merge est AUTORISÉ."
+          fi
+      
+      - name: 📝 Generate signed compliance report
+        if: success()
+        env:
+          COMPLIANCE_SIGNATURE_SECRET: ${{ secrets.COMPLIANCE_SIGNATURE_SECRET }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+        run: |
+          python scripts/generate_compliance_report.py
+      
+      - name: 📤 Upload compliance report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report
+          path: compliance_report.json
+          retention-days: 30
+          if-no-files-found: warn
+      
+      - name: 📝 Commit compliance report (if on main)
+        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add compliance_report.json || true
+          git diff --staged --quiet || git commit -m "chore: update compliance report [skip ci]" || true
+          git push || echo "Push failed (may be expected if no changes)"

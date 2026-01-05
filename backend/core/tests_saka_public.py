@@ -119,6 +119,7 @@ class SakaPublicEndpointsTestCase(TestCase):
             amount=100,
             direction='EARN',
             reason='test',
+            transaction_type='HARVEST',
         )
         # Mettre à jour created_at explicitement
         transaction_date_earn = timezone.make_aware(
@@ -134,6 +135,7 @@ class SakaPublicEndpointsTestCase(TestCase):
             amount=50,
             direction='SPEND',
             reason='test',
+            transaction_type='SPEND',
         )
         # Mettre à jour created_at explicitement
         transaction_date_spend = timezone.make_aware(

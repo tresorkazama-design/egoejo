@@ -43,6 +43,7 @@ User = get_user_model()
     SAKA_SILO_REDIS_RATE=0.05,  # 5% du Silo redistribué
     SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY=1,
 )
+@pytest.mark.egoejo_compliance
 class SakaPhilosophyTestCase(TestCase):
     """
     Tests philosophiques : Protection du Manifeste EGOEJO
@@ -51,6 +52,8 @@ class SakaPhilosophyTestCase(TestCase):
     - Anti-accumulation stérile
     - Circulation obligatoire
     - Retour au commun
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     def setUp(self):
@@ -825,10 +828,13 @@ class SakaPhilosophyTestCase(TestCase):
     SAKA_COMPOST_MIN_BALANCE=50,
     SAKA_COMPOST_MIN_AMOUNT=10,
 )
+@pytest.mark.egoejo_compliance
 class SakaPhilosophyIntegrationTestCase(TransactionTestCase):
     """
     Tests d'intégration philosophiques : Vérification du cycle complet
     avec plusieurs utilisateurs et plusieurs cycles.
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     def setUp(self):
@@ -933,6 +939,7 @@ class SakaPhilosophyIntegrationTestCase(TransactionTestCase):
     SAKA_COMPOST_ENABLED=False,  # Compostage désactivé
     SAKA_SILO_REDIS_ENABLED=False,  # Redistribution désactivée
 )
+@pytest.mark.egoejo_compliance
 class SakaPhilosophyFailureTestCase(TestCase):
     """
     Tests de protection : Vérifier que le système refuse les configurations

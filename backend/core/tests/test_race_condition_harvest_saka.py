@@ -107,14 +107,31 @@ class TestRaceConditionHarvestSaka(TestCase):
         - Résultat attendu AVANT correction : 2 transactions (les 2 passent la vérification)
         - Résultat attendu APRÈS correction : 1 transaction (limite atteinte après 1er vote)
         """
+        # Créer ou récupérer le wallet (éviter UNIQUE constraint)
+        wallet, _ = SakaWallet.objects.get_or_create(
+            user=self.user,
+            defaults={'balance': 45}  # 9 * 5 = 45 grains
+        )
+        # Si le wallet existait déjà, mettre à jour le solde
+        if wallet.balance != 45:
+            wallet.balance = 45
+            wallet.save()
+        
+        # Nettoyer les transactions existantes pour ce test
+        SakaTransaction.objects.filter(
+            user=self.user,
+            direction='EARN',
+            reason='poll_vote'
+        ).delete()
+        
         # Créer 9 transactions existantes (limite = 10)
-        wallet = SakaWallet.objects.create(user=self.user, balance=45)  # 9 * 5 = 45 grains
         for i in range(9):
             SakaTransaction.objects.create(
                 user=self.user,
                 direction='EARN',
                 reason='poll_vote',
-                amount=5
+                amount=5,
+                transaction_type='HARVEST'
             )
         
         results = []

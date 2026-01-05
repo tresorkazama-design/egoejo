@@ -27,12 +27,15 @@ from core.models.saka import SakaWallet
 User = get_user_model()
 
 
+@pytest.mark.egoejo_compliance
 class TestSakaEurEtancheite:
     """
     Tests pour garantir l'étanchéité entre SAKA et EUR.
     
     PROTECTION : Empêche toute liaison entre UserWallet (EUR) et SakaWallet (SAKA).
     VIOLATION EMPÊCHÉE : Conversion implicite, liaison fonctionnelle, corruption structurelle.
+    
+    TAG : @egoejo_compliance - Test BLOQUANT pour la protection philosophique EGOEJO
     """
     
     def test_aucune_fonction_lie_userwallet_sakawallet(self):
