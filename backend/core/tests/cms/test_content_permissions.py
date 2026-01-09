@@ -169,7 +169,7 @@ class TestContentPublishPermissions:
     def test_anonymous_cannot_publish(self, client, anonymous_user, content_pending):
         """Un utilisateur anonyme ne peut pas publier"""
         url = reverse('content-publish', kwargs={'pk': content_pending.id})
-        response = client.post(url)
+        response = client.post(url, follow=True)
         
         # DRF peut retourner 401 ou 403 pour les utilisateurs anonymes selon le contexte
         assert response.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
@@ -178,7 +178,7 @@ class TestContentPublishPermissions:
         """Un contributor ne peut pas publier"""
         client.force_authenticate(user=contributor_user)
         url = reverse('content-publish', kwargs={'pk': content_pending.id})
-        response = client.post(url)
+        response = client.post(url, follow=True)
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
         content_pending.refresh_from_db()
@@ -188,7 +188,7 @@ class TestContentPublishPermissions:
         """Un editor peut publier"""
         client.force_authenticate(user=editor_user)
         url = reverse('content-publish', kwargs={'pk': content_pending.id})
-        response = client.post(url)
+        response = client.post(url, follow=True)
         
         assert response.status_code == status.HTTP_200_OK
         content_pending.refresh_from_db()
@@ -198,7 +198,7 @@ class TestContentPublishPermissions:
         """Un admin peut publier"""
         client.force_authenticate(user=admin_user)
         url = reverse('content-publish', kwargs={'pk': content_pending.id})
-        response = client.post(url)
+        response = client.post(url, follow=True)
         
         assert response.status_code == status.HTTP_200_OK
         content_pending.refresh_from_db()
@@ -213,7 +213,7 @@ class TestContentRejectPermissions:
     def test_anonymous_cannot_reject(self, client, anonymous_user, content_pending):
         """Un utilisateur anonyme ne peut pas rejeter"""
         url = reverse('content-reject', kwargs={'pk': content_pending.id})
-        response = client.post(url, {'rejection_reason': 'Test rejection'})
+        response = client.post(url, {'rejection_reason': 'Test rejection'}, follow=True)
         
         # DRF peut retourner 401 ou 403 pour les utilisateurs anonymes selon le contexte
         assert response.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
@@ -222,7 +222,7 @@ class TestContentRejectPermissions:
         """Un contributor ne peut pas rejeter"""
         client.force_authenticate(user=contributor_user)
         url = reverse('content-reject', kwargs={'pk': content_pending.id})
-        response = client.post(url, {'rejection_reason': 'Test rejection'})
+        response = client.post(url, {'rejection_reason': 'Test rejection'}, follow=True)
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
         content_pending.refresh_from_db()
@@ -231,7 +231,8 @@ class TestContentRejectPermissions:
     def test_editor_can_reject(self, client, editor_user, content_pending):
         """Un editor peut rejeter"""
         client.force_authenticate(user=editor_user)
-        url = reverse('content-reject', kwargs={'pk': content_pending.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_pending.id}/reject/'
         response = client.post(url, {'rejection_reason': 'Test rejection'})
         
         assert response.status_code == status.HTTP_200_OK
@@ -241,7 +242,8 @@ class TestContentRejectPermissions:
     def test_admin_can_reject(self, client, admin_user, content_pending):
         """Un admin peut rejeter"""
         client.force_authenticate(user=admin_user)
-        url = reverse('content-reject', kwargs={'pk': content_pending.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_pending.id}/reject/'
         response = client.post(url, {'rejection_reason': 'Test rejection'})
         
         assert response.status_code == status.HTTP_200_OK
@@ -256,7 +258,8 @@ class TestContentArchivePermissions:
     
     def test_anonymous_cannot_archive(self, client, anonymous_user, content_published):
         """Un utilisateur anonyme ne peut pas archiver"""
-        url = reverse('content-archive', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/archive/'
         response = client.post(url)
         
         # DRF peut retourner 401 ou 403 pour les utilisateurs anonymes selon le contexte
@@ -265,7 +268,8 @@ class TestContentArchivePermissions:
     def test_contributor_cannot_archive(self, client, contributor_user, content_published):
         """Un contributor ne peut pas archiver"""
         client.force_authenticate(user=contributor_user)
-        url = reverse('content-archive', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/archive/'
         response = client.post(url)
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -275,23 +279,25 @@ class TestContentArchivePermissions:
     def test_editor_can_archive(self, client, editor_user, content_published):
         """Un editor peut archiver"""
         client.force_authenticate(user=editor_user)
-        url = reverse('content-archive', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/archive/'
         response = client.post(url)
         
         assert response.status_code == status.HTTP_200_OK
-        # Note : Le statut sera "rejected" en workaround jusqu'à l'ajout de "archived"
+        # Note : Le statut sera "archived" après l'implémentation
         content_published.refresh_from_db()
-        assert content_published.status == 'rejected'  # Workaround temporaire
+        assert content_published.status == 'archived'
     
     def test_admin_can_archive(self, client, admin_user, content_published):
         """Un admin peut archiver"""
         client.force_authenticate(user=admin_user)
-        url = reverse('content-archive', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/archive/'
         response = client.post(url)
         
         assert response.status_code == status.HTTP_200_OK
         content_published.refresh_from_db()
-        assert content_published.status == 'rejected'  # Workaround temporaire
+        assert content_published.status == 'archived'
 
 
 @pytest.mark.django_db
@@ -301,7 +307,8 @@ class TestContentUnpublishPermissions:
     
     def test_anonymous_cannot_unpublish(self, client, anonymous_user, content_published):
         """Un utilisateur anonyme ne peut pas dépublication"""
-        url = reverse('content-unpublish', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/unpublish/'
         response = client.post(url)
         
         # DRF peut retourner 401 ou 403 pour les utilisateurs anonymes selon le contexte
@@ -310,7 +317,8 @@ class TestContentUnpublishPermissions:
     def test_contributor_cannot_unpublish(self, client, contributor_user, content_published):
         """Un contributor ne peut pas dépublication"""
         client.force_authenticate(user=contributor_user)
-        url = reverse('content-unpublish', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/unpublish/'
         response = client.post(url)
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -320,7 +328,8 @@ class TestContentUnpublishPermissions:
     def test_editor_can_unpublish(self, client, editor_user, content_published):
         """Un editor peut dépublication"""
         client.force_authenticate(user=editor_user)
-        url = reverse('content-unpublish', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/unpublish/'
         response = client.post(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -330,7 +339,8 @@ class TestContentUnpublishPermissions:
     def test_admin_can_unpublish(self, client, admin_user, content_published):
         """Un admin peut dépublication"""
         client.force_authenticate(user=admin_user)
-        url = reverse('content-unpublish', kwargs={'pk': content_published.id})
+        # Utiliser l'URL directe avec slash final pour éviter les redirections
+        url = f'/api/contents/{content_published.id}/unpublish/'
         response = client.post(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -346,14 +356,14 @@ class TestContentReadPermissions:
     def test_anonymous_can_list_contents(self, client, anonymous_user):
         """Un utilisateur anonyme peut lister les contenus"""
         url = reverse('content-list')
-        response = client.get(url)
+        response = client.get(url, follow=True)
         
         assert response.status_code == status.HTTP_200_OK
     
     def test_anonymous_can_retrieve_content(self, client, anonymous_user, content_published):
         """Un utilisateur anonyme peut voir un contenu publié"""
         url = reverse('content-detail', kwargs={'pk': content_published.id})
-        response = client.get(url)
+        response = client.get(url, follow=True)
         
         assert response.status_code == status.HTTP_200_OK
 

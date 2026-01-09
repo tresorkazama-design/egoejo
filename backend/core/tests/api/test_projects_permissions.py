@@ -26,7 +26,9 @@ User = get_user_model()
 @pytest.fixture
 def client():
     """Client API pour les tests"""
-    return APIClient()
+    c = APIClient()
+    c.defaults["wsgi.url_scheme"] = "https"
+    return c
 
 
 @pytest.fixture
@@ -78,6 +80,10 @@ def assert_permission(client, url, method, user, expected_status, data=None):
     """
     # Réinitialiser l'authentification du client
     client.force_authenticate(user=None)
+
+    # Normaliser l'URL (évite 301 APPEND_SLASH)
+    if not url.endswith("/"):
+        url = f"{url}/"
     
     if user:
         client.force_authenticate(user=user)
@@ -85,9 +91,9 @@ def assert_permission(client, url, method, user, expected_status, data=None):
     
     method_func = getattr(client, method.lower())
     if data:
-        response = method_func(url, data, format='json')
+        response = method_func(url, data, format='json', secure=True)
     else:
-        response = method_func(url)
+        response = method_func(url, secure=True)
     
     # DRF peut retourner 401 ou 403 selon le contexte
     # 401 = non authentifié, 403 = authentifié mais sans permissions
@@ -256,6 +262,12 @@ class TestProjetBoostPermissions:
         data = {'amount': 10}
         client.force_authenticate(user=admin_user)
         response = client.post(url, data, format='json')
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST], (
+            f"Expected 200, 403, or 400, got {response.status_code}. "
+            f"Response: {response.data if hasattr(response, 'data') else response.content}"
+        )
+
+
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST], (
             f"Expected 200, 403, or 400, got {response.status_code}. "
             f"Response: {response.data if hasattr(response, 'data') else response.content}"
