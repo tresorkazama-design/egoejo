@@ -164,7 +164,7 @@ class TestPaymentTestModeEnforcement:
         """Vérifie que le mode test strict refuse les clés live"""
         from django.core.exceptions import ImproperlyConfigured
         
-        # Simuler une clé live
+        # Simuler une clé live (placeholder pour test)
         with override_settings(STRIPE_SECRET_KEY='sk_live_PLACEHOLDER_KEY_FOR_TESTING_ONLY'):
             try:
                 ensure_test_mode()
