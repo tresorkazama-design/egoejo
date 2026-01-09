@@ -16,6 +16,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 import json
 import uuid
+import pytest
 
 from finance.models import WalletTransaction, UserWallet
 from core.models import Projet
@@ -23,6 +24,9 @@ from core.models import Projet
 User = get_user_model()
 
 
+@pytest.mark.payments
+@pytest.mark.critical
+@pytest.mark.django_db
 class StripeWebhookSegregationTest(APITestCase):
     """
     Tests d'intégration pour la répartition proportionnelle des frais Stripe

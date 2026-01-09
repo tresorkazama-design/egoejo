@@ -514,6 +514,34 @@ STRIPE_FEE_ESTIMATE = float(os.environ.get('STRIPE_FEE_ESTIMATE', '0.03'))  # 3%
 STRIPE_FIXED_FEE = float(os.environ.get('STRIPE_FIXED_FEE', '0.25'))  # 0.25€ fixe
 STRIPE_PERCENT_FEE = float(os.environ.get('STRIPE_PERCENT_FEE', '0.015'))  # 1.5% (0.015)
 
+# Stripe Configuration (Test Mode)
+# ======================
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+# Mode Test Strict : Refuser clés live en CI
+STRIPE_TEST_MODE_ONLY = os.environ.get('STRIPE_TEST_MODE_ONLY', 'False').lower() == 'true'
+STRIPE_LIVE_KEY_PREFIX = 'sk_live_'
+STRIPE_TEST_KEY_PREFIX = 'sk_test_'
+
+# Vérification que les clés sont en mode test si STRIPE_TEST_MODE_ONLY=True
+if STRIPE_TEST_MODE_ONLY and STRIPE_SECRET_KEY:
+    if not STRIPE_SECRET_KEY.startswith(STRIPE_TEST_KEY_PREFIX):
+        raise ImproperlyConfigured(
+            f"STRIPE_SECRET_KEY doit être en mode test (commence par '{STRIPE_TEST_KEY_PREFIX}') "
+            f"quand STRIPE_TEST_MODE_ONLY=True. Clé fournie commence par '{STRIPE_SECRET_KEY[:7]}...'"
+        )
+
+# HelloAsso Configuration (Mode Simulé)
+# ======================
+HELLOASSO_CLIENT_ID = os.environ.get('HELLOASSO_CLIENT_ID', '')
+HELLOASSO_CLIENT_SECRET = os.environ.get('HELLOASSO_CLIENT_SECRET', '')
+HELLOASSO_WEBHOOK_SECRET = os.environ.get('HELLOASSO_WEBHOOK_SECRET', '')
+
+# Mode Simulé : Par défaut activé (pas de réseau externe en CI)
+HELLOASSO_SIMULATED_MODE = os.environ.get('HELLOASSO_SIMULATED_MODE', 'True').lower() == 'true'
+
 # Sécurité Fondateur
 # CORRECTION 3 : Nom unique et explicite pour éviter magic strings
 FOUNDER_GROUP_NAME = os.environ.get('FOUNDER_GROUP_NAME', 'Founders_V1_Protection')
@@ -546,6 +574,9 @@ SAKA_COMPOST_RATE = float(os.environ.get('SAKA_COMPOST_RATE', '0.10'))  # % de b
 SAKA_COMPOST_MIN_BALANCE = int(os.environ.get('SAKA_COMPOST_MIN_BALANCE', '50'))  # Ne composter que si balance >= 50 SAKA
 SAKA_COMPOST_MIN_AMOUNT = int(os.environ.get('SAKA_COMPOST_MIN_AMOUNT', '10'))  # Composter au moins 10 SAKA quand on déclenche
 
+# Configuration Silo Commun (Phase 3) - DOIT être défini avant la validation
+SAKA_SILO_REDIS_ENABLED = os.environ.get('SAKA_SILO_REDIS_ENABLED', 'False').lower() == 'true'  # Active la redistribution automatique
+
 # PROTECTION HOSTILE : Validation des settings SAKA critiques en production
 if not DEBUG:
     # En production, le compostage DOIT être activé si SAKA est activé
@@ -574,7 +605,7 @@ SAKA_PROJECT_BOOST_COST = int(os.environ.get('SAKA_PROJECT_BOOST_COST', '10'))  
 # SAKA PROTOCOL - REDISTRIBUTION DU SILO (V1)
 # ==============================================
 # Redistribution Silo SAKA (V1)
-SAKA_SILO_REDIS_ENABLED = os.environ.get('SAKA_SILO_REDIS_ENABLED', 'False').lower() == 'true'  # Active la redistribution automatique
+# Note: SAKA_SILO_REDIS_ENABLED est défini plus haut (avant la validation)
 SAKA_SILO_REDIS_RATE = float(os.environ.get('SAKA_SILO_REDIS_RATE', '0.05'))  # 5% du Silo redistribué par cycle
 SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY = int(os.environ.get('SAKA_SILO_REDIS_MIN_WALLET_ACTIVITY', '1'))  # Min total_harvested pour être éligible
 
