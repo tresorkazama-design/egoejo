@@ -1,0 +1,205 @@
+# Registry des Tests Critiques EGOEJO
+# 
+# Ce fichier déclare quels fichiers de tests DOIVENT avoir @pytest.mark.critical
+# et quels modules "core" DOIVENT avoir des tests critiques.
+#
+# Format :
+#   - path: Chemin relatif au fichier de test (depuis backend/ ou frontend/)
+#     required: true/false (si true, le fichier DOIT avoir @pytest.mark.critical)
+#     module: Nom du module core testé (ex: "saka", "cms", "payments")
+#     description: Description du module/domaine testé
+
+# ============================================
+# BACKEND - Tests Critiques
+# ============================================
+
+# SAKA Protocol
+- path: backend/core/tests/models/test_saka_wallet_protection.py
+  required: true
+  module: saka
+  description: Protection SakaWallet (anti-contournement)
+  
+- path: backend/core/tests/models/test_saka_wallet_update_prevention.py
+  required: true
+  module: saka
+  description: Prévention update() sur SakaWallet
+  
+- path: backend/core/tests/models/test_saka_wallet_raw_sql.py
+  required: true
+  module: saka
+  description: Détection raw SQL sur SakaWallet
+  
+- path: backend/core/tests/models/test_saka_wallet_alerting.py
+  required: true
+  module: saka
+  description: Alertes sur violations SakaWallet
+  
+- path: backend/core/tests/api/test_saka_permissions.py
+  required: true
+  module: saka
+  description: Permissions API SAKA (401/403 stricts)
+  
+- path: backend/core/tests/api/test_contract_saka.py
+  required: true
+  module: saka
+  description: Tests contract SAKA (endpoints critiques)
+
+# CMS & Content
+- path: backend/core/tests/cms/test_content_permissions.py
+  required: true
+  module: cms
+  description: Permissions CMS (publie Accueil/Vision/Contenus)
+  
+- path: backend/core/tests/cms/test_content_xss.py
+  required: true
+  module: cms
+  description: Sanitization XSS contenu
+  
+- path: backend/core/tests/cms/test_xss_sanitization.py
+  required: true
+  module: cms
+  description: Tests sanitization XSS
+  
+- path: backend/core/tests/cms/test_content_crud.py
+  required: true
+  module: cms
+  description: Tests CRUD CMS (lecture publique)
+  
+- path: backend/core/tests/cms/test_content_security_external.py
+  required: true
+  module: cms
+  description: Sécurité liens externes et upload fichiers
+
+# Payments
+- path: backend/finance/tests/test_payments_saka_segregation.py
+  required: true
+  module: payments
+  description: Séparation SAKA/EUR dans paiements
+  
+- path: backend/finance/tests/test_payments_security.py
+  required: true
+  module: payments
+  description: Sécurité paiements (pas de secrets, validation)
+  
+- path: backend/finance/tests/test_contract_webhooks_stripe.py
+  required: true
+  module: payments
+  description: Webhooks Stripe (validation signature, idempotence)
+
+# Chat & WebSocket
+- path: backend/core/tests/websocket/test_chat_integration.py
+  required: true
+  module: chat
+  description: Intégration chat (API + WebSocket, persistence)
+  
+- path: backend/core/tests/websocket/test_chat_security.py
+  required: true
+  module: chat
+  description: Sécurité chat (cross-room, validation payload)
+  
+- path: backend/core/tests/websocket/test_chat_disconnection.py
+  required: true
+  module: chat
+  description: Déconnexion brutale chat
+
+# Compliance & Exports
+- path: backend/core/tests/api/test_institutional_exports.py
+  required: true
+  module: compliance
+  description: Exports institutionnels (ONU/Fondation)
+  
+- path: backend/core/api/__tests__/test_compliance_badge.py
+  required: true
+  module: compliance
+  description: Badge Constitution Verified
+  
+- path: backend/core/api/__tests__/test_compliance_views.py
+  required: true
+  module: compliance
+  description: Statut compliance (endpoint public)
+
+# Permissions API
+- path: backend/core/tests/api/test_projects_permissions.py
+  required: true
+  module: permissions
+  description: Permissions projets (401/403 stricts)
+  
+- path: backend/core/tests/api/test_polls_permissions.py
+  required: true
+  module: permissions
+  description: Permissions polls (401/403 stricts)
+
+# Alerts & Monitoring
+- path: backend/core/tests/models/test_critical_alert_event.py
+  required: true
+  module: alerts
+  description: Alertes critiques (email, Slack, dédoublonnage)
+  
+- path: backend/core/tests/utils/test_alerts.py
+  required: true
+  module: alerts
+  description: Utilitaires alertes (dédoublonnage, compteur)
+
+# ============================================
+# FRONTEND - Tests Critiques
+# ============================================
+
+# E2E Critiques
+- path: frontend/frontend/e2e/violations-saka-eur.spec.js
+  required: true
+  module: e2e
+  description: Violations SAKA/EUR (doivent échouer)
+  
+- path: frontend/frontend/e2e/flux-complet-saka-vote.spec.js
+  required: true
+  module: e2e
+  description: Parcours complet SAKA → Vote
+  
+- path: frontend/frontend/e2e/flux-complet-projet-financement.spec.js
+  required: true
+  module: e2e
+  description: Parcours complet Projet → Soutien EUR
+  
+- path: frontend/frontend/e2e/chat-websocket.spec.js
+  required: true
+  module: e2e
+  description: Chat WebSocket (2 utilisateurs, échange messages)
+
+# ============================================
+# MODULES CORE OBLIGATOIRES
+# ============================================
+# Liste des modules "core" qui DOIVENT avoir des tests critiques
+
+core_modules_required:
+  - name: saka
+    description: "Protocole SAKA (séparation EUR, anti-accumulation)"
+    test_paths:
+      - backend/core/tests/models/test_saka_wallet_protection.py
+      - backend/core/tests/api/test_saka_permissions.py
+      - backend/core/tests/api/test_contract_saka.py
+  
+  - name: cms
+    description: "CMS (publie Accueil/Vision/Contenus)"
+    test_paths:
+      - backend/core/tests/cms/test_content_permissions.py
+      - backend/core/tests/cms/test_content_xss.py
+      - backend/core/tests/cms/test_content_crud.py
+  
+  - name: payments
+    description: "Paiements (Stripe, HelloAsso, séparation SAKA/EUR)"
+    test_paths:
+      - backend/finance/tests/test_payments_saka_segregation.py
+      - backend/finance/tests/test_contract_webhooks_stripe.py
+  
+  - name: chat
+    description: "Chat WebSocket (temps réel, permissions)"
+    test_paths:
+      - backend/core/tests/websocket/test_chat_integration.py
+      - backend/core/tests/websocket/test_chat_security.py
+  
+  - name: compliance
+    description: "Compliance institutionnelle (badge, exports)"
+    test_paths:
+      - backend/core/tests/api/test_institutional_exports.py
+      - backend/core/api/__tests__/test_compliance_badge.py
+

@@ -309,21 +309,44 @@ ERROR core.utils.alerts: Échec envoi email alerte critique 'INTEGRITY BREACH DE
 
 ---
 
-## 🔔 Support Webhook (Optionnel)
+## 🔔 Canaux Multiples
 
-Le système d'alerte supporte également les webhooks (generic, Slack) en complément des emails.
+Le système EGOEJO supporte **plusieurs canaux d'alerte** pour une réactivité maximale :
 
-**Voir** : `docs/security/ALERTING_WEBHOOK.md` pour la documentation complète.
+### 1. Email (Canal Principal)
 
-**Configuration Rapide** :
+- **Canal principal** : Toujours activé si `ALERT_EMAIL_ENABLED=True`
+- **Destinataires** : Liste des administrateurs configurés dans `ADMINS`
+- **Format** : Email structuré avec payload JSON
+- **Dédoublonnage** : 5 minutes par `dedupe_key`
+
+### 2. Slack/Webhook (Canal Complémentaire)
+
+- **Canal complémentaire** : Optionnel, activé si `ALERT_WEBHOOK_ENABLED=True`
+- **Support** : Slack Incoming Webhook ou webhook générique
+- **Format** : Messages Slack formatés (blocks) ou JSON générique
+- **Non-bloquant** : Les erreurs Slack ne cassent jamais le flux email
+
+**Ordre d'exécution** :
+1. **Email** : Toujours envoyé en premier
+2. **Webhook/Slack** : Envoyé après l'email (si activé)
+
+**Important** : Les deux canaux sont **indépendants**. Si l'email échoue, le webhook est quand même envoyé. Si le webhook échoue, l'email continue de fonctionner.
+
+### Configuration Rapide Slack
+
 ```bash
 ALERT_WEBHOOK_ENABLED=True
 ALERT_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 ALERT_WEBHOOK_TYPE=slack
 ```
 
+**Documentation Complète** :
+- **Slack/Webhook** : `docs/security/ALERTING_SLACK.md` (documentation complète)
+- **Webhook Générique** : `docs/security/ALERTING_WEBHOOK.md` (si existe)
+
 ---
 
 **Statut** : ✅ **OPÉRATIONNEL**  
-**Dernière Mise à Jour** : 2025-01-03
+**Dernière Mise à Jour** : 2025-01-05
 
