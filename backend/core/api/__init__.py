@@ -9,6 +9,7 @@ avec le code existant (`from core.views import ...`).
 from .projects import ProjetListCreate  # noqa: F401
 from .fundraising import CagnotteListCreate, contribute  # noqa: F401
 from .chat import ChatThreadViewSet, ChatMessageViewSet  # noqa: F401
+from .chat_moderation import ChatMessageReportViewSet  # noqa: F401
 from .polls import PollViewSet  # noqa: F401
 from .moderation import ModerationReportViewSet  # noqa: F401
 from .audit import AuditLogViewSet  # noqa: F401

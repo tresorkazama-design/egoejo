@@ -121,18 +121,17 @@ class CanPublishContent(permissions.BasePermission):
     
     Autorisé :
     - Admin (superuser ou staff)
-    - Editor (groupe Content_Editors)
     
     Refusé :
     - Contributor
     - Utilisateur anonyme
     """
-    message = "Vous devez être admin ou editor pour publier un contenu."
+    message = "Vous devez être admin pour publier un contenu."
 
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return is_content_editor(request.user)
+        return is_content_admin(request.user)
 
     def has_object_permission(self, request, view, obj):
         """
@@ -171,18 +170,17 @@ class CanArchiveContent(permissions.BasePermission):
     
     Autorisé :
     - Admin (superuser ou staff)
-    - Editor (groupe Content_Editors)
     
     Refusé :
     - Contributor
     - Utilisateur anonyme
     """
-    message = "Vous devez être admin ou editor pour archiver un contenu."
+    message = "Vous devez être admin pour archiver un contenu."
 
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
-        return is_content_editor(request.user)
+        return is_content_admin(request.user)
 
     def has_object_permission(self, request, view, obj):
         return self.has_permission(request, view)

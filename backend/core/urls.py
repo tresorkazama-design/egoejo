@@ -12,11 +12,16 @@ from core.api.gdpr_views import DataExportView, DataDeleteView
 from core.api.monitoring_views import MetricsView, AlertsView, MetricsStatsView, AlertsListView
 from core.api.impact_views import ImpactDashboardView, GlobalAssetsView
 from core.api.chat_support import ConciergeThreadView, ConciergeEligibilityView, SupportContactView
-from finance.views import PocketTransferView, WalletPassAppleView, WalletPassGoogleView, StripeWebhookView
+from core.api.chat_moderation import ChatMessageReportViewSet
+from finance.views import (
+    PocketTransferView, WalletPassAppleView, WalletPassGoogleView,
+    StripeWebhookView, HelloAssoCheckoutView, HelloAssoWebhookView
+)
 
 from .views import (
     CagnotteListCreate,
     ChatMessageViewSet,
+    ChatMessageReportViewSet,
     ChatThreadViewSet,
     ProjetListCreate,
     rejoindre,
@@ -45,17 +50,19 @@ from core.api.saka_metrics_views import (  # Métriques SAKA pour monitoring
     SakaCycleMetricsView,
     SakaAllMetricsView,
 )
-from core.api.compliance_views import egoejo_compliance_status, egoejo_compliance_badge  # Label public EGOEJO COMPLIANT
+from core.api.compliance_views import egoejo_compliance_status, egoejo_compliance_badge, critical_alert_metrics  # Label public EGOEJO COMPLIANT
 from core.api.public_compliance import egoejo_constitution_status, egoejo_constitution_badge  # Constitution EGOEJO
 from core.api.content_compliance_views import (
     content_compliance_report,
 )  # Compliance éditoriale du contenu
+from core.api.institutional_exports import export_un_compliance, export_foundation_report, export_institutional_markdown  # Exports institutionnels ONU/Fondation
 
 router = DefaultRouter()
 
 # Chat
 router.register(r"chat/threads", ChatThreadViewSet, basename="chat-thread")
 router.register(r"chat/messages", ChatMessageViewSet, basename="chat-message")
+router.register(r"chat/reports", ChatMessageReportViewSet, basename="chat-report")
 
 # Sondages / modération / audit
 router.register(r"polls", PollViewSet, basename="poll")
@@ -107,6 +114,10 @@ urlpatterns = [
     
     # --- STRIPE WEBHOOKS ---
     path("finance/stripe/webhook/", StripeWebhookView.as_view(), name="stripe-webhook"),
+    
+    # --- HELLOASSO PAYMENTS (Mode Simulé) ---
+    path("payments/helloasso/start/", HelloAssoCheckoutView.as_view(), name="helloasso-checkout"),
+    path("payments/helloasso/webhook/", HelloAssoWebhookView.as_view(), name="helloasso-webhook"),
     
     # --- SUPPORT CONCIERGE ---
     path("support/concierge/", ConciergeThreadView.as_view(), name="concierge-thread"),
@@ -174,4 +185,13 @@ urlpatterns = [
     
     # --- COMPLIANCE ÉDITORIALE CONTENU ---
     path("public/content-compliance.json", content_compliance_report, name="content-compliance-report"),
+    
+    # --- MÉTRIQUES ALERTES CRITIQUES (Observabilité & Transparence) ---
+    path("compliance/alerts/metrics/", critical_alert_metrics, name="critical-alert-metrics"),
+    
+    # --- EXPORTS INSTITUTIONNELS (ONU / FONDATION) ---
+    path("compliance/export/un/", export_un_compliance, name="export-un-compliance"),
+    path("compliance/export/foundation/", export_foundation_report, name="export-foundation-report"),
+    path("compliance/export/un/markdown/", lambda r: export_institutional_markdown(r, "un"), name="export-un-markdown"),
+    path("compliance/export/foundation/markdown/", lambda r: export_institutional_markdown(r, "foundation"), name="export-foundation-markdown"),
 ]

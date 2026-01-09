@@ -7,6 +7,13 @@ from django.utils.html import strip_tags
 from django.core.exceptions import ValidationError
 import logging
 
+try:
+    import bleach
+    BLEACH_AVAILABLE = True
+except ImportError:
+    BLEACH_AVAILABLE = False
+    logging.warning("bleach non disponible - sanitization HTML limitée")
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +24,7 @@ def sanitize_string(value: str, max_length: int = None, allow_html: bool = False
     Args:
         value: La chaîne à nettoyer
         max_length: Longueur maximale autorisée
-        allow_html: Si True, permet le HTML (non recommandé)
+        allow_html: Si True, permet le HTML (sanitize avec bleach)
     
     Returns:
         Chaîne nettoyée
@@ -33,11 +40,70 @@ def sanitize_string(value: str, max_length: int = None, allow_html: bool = False
         value = html.escape(value)
         # Supprimer les balises HTML restantes
         value = strip_tags(value)
+    else:
+        # Si HTML autorisé, utiliser bleach pour sanitization sécurisée
+        if BLEACH_AVAILABLE:
+            # Tags HTML autorisés (liste minimale sécurisée)
+            allowed_tags = ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre']
+            allowed_attributes = {
+                'a': ['href', 'title'],
+            }
+            value = bleach.clean(
+                value,
+                tags=allowed_tags,
+                attributes=allowed_attributes,
+                strip=True
+            )
+        else:
+            # Fallback : échapper tout le HTML si bleach non disponible
+            logger.warning("bleach non disponible, HTML échappé au lieu d'être sanitizé")
+            value = html.escape(value)
+            value = strip_tags(value)
     
     # Limiter la longueur
     if max_length and len(value) > max_length:
         value = value[:max_length]
         logger.warning(f"Chaîne tronquée à {max_length} caractères")
+    
+    return value.strip()
+
+
+def sanitize_html(value: str, max_length: int = None) -> str:
+    """
+    Sanitize du HTML avec bleach (tags et attributs autorisés uniquement).
+    
+    Args:
+        value: Le HTML à sanitizer
+        max_length: Longueur maximale autorisée
+    
+    Returns:
+        HTML sanitizé
+    """
+    if not isinstance(value, str):
+        value = str(value)
+    
+    if BLEACH_AVAILABLE:
+        # Tags HTML autorisés (liste minimale sécurisée)
+        allowed_tags = ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre']
+        allowed_attributes = {
+            'a': ['href', 'title'],
+        }
+        value = bleach.clean(
+            value,
+            tags=allowed_tags,
+            attributes=allowed_attributes,
+            strip=True
+        )
+    else:
+        # Fallback : échapper tout le HTML si bleach non disponible
+        logger.warning("bleach non disponible, HTML échappé au lieu d'être sanitizé")
+        value = html.escape(value)
+        value = strip_tags(value)
+    
+    # Limiter la longueur
+    if max_length and len(value) > max_length:
+        value = value[:max_length]
+        logger.warning(f"HTML tronqué à {max_length} caractères")
     
     return value.strip()
 
