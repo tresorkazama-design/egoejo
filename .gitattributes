@@ -1,0 +1,22 @@
+# Configuration automatique des line endings
+
+# Text files - normaliser en LF
+* text=auto eol=lf
+
+# Fichiers spécifiques qui doivent être CRLF (si nécessaire)
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Fichiers binaires - ne pas modifier
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.mp4 binary
+*.mov binary
+
