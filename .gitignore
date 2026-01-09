@@ -81,3 +81,16 @@ backend/media/projets/*.mkv
 
 admin-panel-legacy-*.zip
 audit-report-*.json
+
+# Test artifacts (patterns)
+backend/junit.xml
+**/junit.xml
+**/playwright-report/
+**/playwright-results*
+**/test-results/
+**/.pytest_cache/
+**/coverage.xml
+**/.coverage
+
+# Scripts temporaires (si vraiment local)
+test_protocol.ps1
