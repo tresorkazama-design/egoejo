@@ -1,0 +1,57 @@
+name: 🔍 Verify Critical Tests Markers
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  verify-critical-markers:
+    name: 🔍 Verify Critical Tests Markers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: 📥 Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+      
+      - name: 🔍 Run verify_critical_markers script
+        id: verify-markers
+        run: |
+          python scripts/verify_critical_markers.py
+        continue-on-error: false
+      
+      - name: 📊 Summary
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "🔍 VÉRIFICATION MARQUEURS CRITIQUES"
+          echo "=========================================="
+          echo ""
+          if [ "${{ steps.verify-markers.outcome }}" == "success" ]; then
+            echo "✅ Tous les tests critiques sont présents et marqués correctement"
+          else
+            echo "❌ Au moins un test critique est manquant ou non marqué"
+            echo ""
+            echo "💡 Actions requises:"
+            echo "  1. Ajouter @pytest.mark.critical aux fichiers manquants"
+            echo "  2. Ajouter les fichiers manquants au registry CRITICAL_TESTS_REGISTRY.yml"
+            echo "  3. Vérifier que les modules core ont bien des tests critiques"
+          fi
+          echo "=========================================="
+
