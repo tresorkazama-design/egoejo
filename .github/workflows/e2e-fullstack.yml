@@ -77,10 +77,21 @@ jobs:
           E2E_TEST_MODE: '1'
           ENABLE_SAKA: '1'
         run: |
-          python manage.py runserver 0.0.0.0:8000 &
-          sleep 5
-          # Vérifier que le backend répond
-          curl -f http://localhost:8000/ || exit 1
+          python manage.py runserver 0.0.0.0:8000 > /tmp/django.log 2>&1 &
+          echo "Waiting for Django backend to start..."
+          # Healthcheck explicite avec retry
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/api/health/ > /dev/null 2>&1; then
+              echo "✅ Backend health check OK"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Backend health check failed after 30 attempts"
+              cat /tmp/django.log || true
+              exit 1
+            fi
+            sleep 2
+          done
         continue-on-error: false
       
       - name: 📦 Setup Node.js
@@ -101,10 +112,21 @@ jobs:
       - name: 🚀 Start frontend dev server
         working-directory: frontend/frontend
         run: |
-          npm run dev &
-          sleep 10
-          # Vérifier que le frontend répond
-          curl -f http://localhost:5173/ || exit 1
+          npm run dev > /tmp/vite.log 2>&1 &
+          echo "Waiting for frontend dev server to start..."
+          # Healthcheck explicite avec retry
+          for i in {1..30}; do
+            if curl -f http://localhost:5173/ > /dev/null 2>&1; then
+              echo "✅ Frontend health check OK"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Frontend health check failed after 30 attempts"
+              cat /tmp/vite.log || true
+              exit 1
+            fi
+            sleep 2
+          done
         continue-on-error: false
       
       - name: 🎭 Run E2E Full-Stack tests (SAKA Vote)
@@ -121,6 +143,16 @@ jobs:
         id: e2e-projet-financement
         working-directory: frontend/frontend
         run: npm run test:e2e -- e2e/flux-complet-projet-financement.spec.js
+        env:
+          CI: true
+          BACKEND_URL: http://localhost:8000
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+        continue-on-error: false
+      
+      - name: 🎭 Run E2E Violations SAKA/EUR (BLOQUANTS)
+        id: e2e-violations-saka-eur
+        working-directory: frontend/frontend
+        run: npm run test:e2e -- e2e/violations-saka-eur.spec.js
         env:
           CI: true
           BACKEND_URL: http://localhost:8000
@@ -149,12 +181,20 @@ jobs:
             echo "❌ E2E Projet Financement: ÉCHEC"
           fi
           
+          # E2E Violations SAKA/EUR
+          if [ "${{ steps.e2e-violations-saka-eur.outcome }}" == "success" ]; then
+            echo "✅ E2E Violations SAKA/EUR: OK"
+          else
+            echo "❌ E2E Violations SAKA/EUR: ÉCHEC"
+          fi
+          
           echo ""
           echo "=========================================="
           
           # Échouer si une étape a échoué
           if [ "${{ steps.e2e-saka-vote.outcome }}" != "success" ] || \
-             [ "${{ steps.e2e-projet-financement.outcome }}" != "success" ]; then
+             [ "${{ steps.e2e-projet-financement.outcome }}" != "success" ] || \
+             [ "${{ steps.e2e-violations-saka-eur.outcome }}" != "success" ]; then
             echo ""
             echo "❌ ÉCHEC : Au moins un test E2E a échoué."
             exit 1
