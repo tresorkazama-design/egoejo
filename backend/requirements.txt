@@ -9,6 +9,7 @@ dj-database-url>=2.1.0
 
 # Security & Authentication
 argon2-cffi>=23.1.0
+bleach>=6.0.0  # Sanitization HTML pour prévenir XSS
 
 # HTTP & API
 django-cors-headers>=4.0.0
@@ -19,6 +20,7 @@ requests>=2.31.0  # Pour webhooks (alertes critiques)
 python-dotenv>=1.0.0
 django-filter>=23.0
 tenacity>=8.2.0  # Résilience intelligente pour retries avec backoff exponentiel
+PyYAML>=6.0.0  # Pour scripts de vérification (verify_critical_markers.py)
 
 # Media handling
 Pillow>=10.0.0
