@@ -163,15 +163,20 @@ describe('Contenus', () => {
   it('devrait gérer les erreurs de chargement', async () => {
     server.resetHandlers();
     const error = new Error('Erreur réseau');
-    fetchAPI.mockImplementationOnce(() => Promise.reject(error));
+    // React Query va retry 2 fois, donc on doit mocker plusieurs rejets
+    fetchAPI.mockImplementation(() => Promise.reject(error));
 
     renderWithProviders(<Contenus />);
 
+    // Attendre que React Query termine ses retries (2 retries + délai)
     await waitFor(() => {
       expect(screen.queryByText(/chargement/i)).not.toBeInTheDocument();
-      const errorElement = screen.queryByText(/erreur/i);
+      // Chercher l'erreur dans le texte (peut être traduit)
+      const errorElement = screen.queryByText(/erreur/i) || 
+                          screen.queryByText(/Erreur réseau/i) ||
+                          screen.queryByText(/error/i);
       expect(errorElement).toBeInTheDocument();
-    }, { timeout: 5000 });
+    }, { timeout: 15000 }); // Augmenter le timeout pour les retries React Query
   });
 
   it('devrait afficher les détails de chaque contenu', async () => {
@@ -238,7 +243,19 @@ describe('Contenus', () => {
     renderWithProviders(<Contenus />);
     
     await waitFor(() => {
-      expect(fetchAPI).toHaveBeenCalledWith('/contents/?status=published');
+      // Le hook useContents ajoute automatiquement page=1&page_size=20
+      expect(fetchAPI).toHaveBeenCalledWith(
+        expect.stringContaining('/contents/?')
+      );
+      // Vérifier que l'URL contient les paramètres attendus
+      const callArgs = fetchAPI.mock.calls.find(call => 
+        call[0]?.includes('/contents/?')
+      );
+      expect(callArgs).toBeDefined();
+      const url = callArgs[0];
+      expect(url).toContain('status=published');
+      expect(url).toContain('page=1');
+      expect(url).toContain('page_size=20');
     });
   });
 });

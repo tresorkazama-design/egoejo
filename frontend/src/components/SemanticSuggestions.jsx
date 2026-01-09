@@ -48,6 +48,7 @@ export default function SemanticSuggestions({ projetId, contentId, limit = 5 }) 
       <div className="semantic-suggestions__list">
         {suggestions.map((suggestion, index) => (
           <div key={index} className="semantic-suggestions__item">
+            {/* CONVENTION NAVIGATION : Utiliser <Link> pour les routes internes */}
             <Link to={suggestion.url} className="semantic-suggestions__link">
               <span className="semantic-suggestions__type">
                 {suggestion.type === 'projet' ? '📁 Projet' : '📚 Contenu'}

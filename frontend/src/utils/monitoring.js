@@ -283,11 +283,10 @@ const sendMetric = (name, value, metadata = {}) => {
   }
 
   // Envoyer à l'API (si disponible)
-  const apiBase = import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/api` 
-    : 'http://localhost:8000/api';
-
-  // Envoyer à l'API (si disponible)
+  // const apiBase = import.meta.env.VITE_API_URL 
+  //   ? `${import.meta.env.VITE_API_URL}/api` 
+  //   : 'http://localhost:8000/api';
+  // TODO: Implémenter l'envoi à l'API si nécessaire
   try {
     if (typeof window !== 'undefined' && window.fetch) {
       const apiBase = import.meta.env.VITE_API_URL 

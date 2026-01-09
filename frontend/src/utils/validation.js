@@ -91,7 +91,7 @@ export const validatePhone = (phone) => {
     return false;
   }
   // Format basique : accepte les numéros avec +, espaces, tirets, parenthèses
-  const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+  const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
   return phoneRegex.test(phone.trim());
 };
 

@@ -22,6 +22,10 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:backend": "playwright test e2e/backend-connection.spec.js",
     "test:e2e:production": "node scripts/test-e2e-production.js",
+    "test:e2e:audit": "playwright test e2e/audit-compliance-accueil-vision.spec.js e2e/home.spec.js e2e/navigation-sections.spec.js",
+    "audit:home-vision": "node scripts/audit-home-vision.mjs",
+    "audit:home-vision:badge": "node scripts/copy-compliance-badge.js",
+    "audit:global": "node scripts/audit-global.mjs",
     "test:performance": "node scripts/test-performance.js",
     "test:security": "npm audit --audit-level=moderate",
     "test:lighthouse": "node scripts/lighthouse-ci.js",
@@ -59,6 +63,7 @@
   "dependencies": {
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
+    "@tanstack/react-query": "^5.90.15",
     "decimal.js": "^10.6.0",
     "framer-motion": "^12.23.26",
     "gsap": "^3.13.0",

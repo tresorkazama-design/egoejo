@@ -1,0 +1,60 @@
+/**
+ * Design Tokens CSS
+ * Variables de design pour l'application EGOEJO
+ * 
+ * Ce fichier est importé par global.css
+ */
+
+:root {
+  /* Couleurs principales */
+  --primary: #00f5a0;
+  --primary-soft: rgba(0, 245, 160, 0.14);
+  --secondary: #0de4ff;
+  --secondary-soft: rgba(13, 228, 255, 0.14);
+  
+  /* Z-index layers (pour référence CSS) */
+  --z-background: -1;
+  --z-content: 1;
+  --z-overlay: 100;
+  --z-modal: 200;
+  --z-tooltip: 300;
+  --z-notification: 400;
+  --z-cursor: 500;
+  
+  /* Breakpoints (pour référence CSS) */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  
+  /* Sobriety levels (pour référence CSS) */
+  --sobriety-full: 1;
+  --sobriety-simplified: 2;
+  --sobriety-minimal: 3;
+  --sobriety-ultra-minimal: 4;
+  --sobriety-text-only: 5;
+  
+  /* Espacements (spacing) */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+  --spacing-3xl: 4rem;     /* 64px */
+  
+  /* Rayons de bordure (border-radius) */
+  --radius-sm: 0.25rem;    /* 4px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 1rem;      /* 16px */
+  --radius-xl: 1.5rem;    /* 24px */
+  --radius-full: 9999px;   /* Rond complet */
+  
+  /* Ombres (shadows) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+

@@ -1,0 +1,56 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    /* Configuration stricte pour migration progressive */
+    
+    /* Type Checking - Strict */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    /* Type Checking - Additional */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false, // Désactivé pour compatibilité progressive
+    
+    /* Emit */
+    "noEmit": true, // Vite gère la compilation
+    
+    /* JavaScript Support */
+    "allowJs": true, // Permet de migrer progressivement
+    "checkJs": false, // Désactivé pour éviter les erreurs sur fichiers JS existants
+    
+    /* Interop Constraints */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    /* Skip type checking pour fichiers non migrés */
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.js", // Inclure JS pour migration progressive
+    "src/**/*.jsx" // Inclure JSX pour migration progressive
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "e2e",
+    "**/*.test.js",
+    "**/*.test.jsx",
+    "**/*.spec.js",
+    "**/*.spec.ts"
+  ]
+}
+

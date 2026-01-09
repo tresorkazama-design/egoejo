@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 test.describe('Formulaire Rejoindre', () => {
+  test.beforeEach(async ({ page }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+  });
+
   test('devrait afficher le formulaire', async ({ page }) => {
     await page.goto('/rejoindre');
     
@@ -8,9 +14,9 @@ test.describe('Formulaire Rejoindre', () => {
     await page.waitForLoadState('networkidle');
     
     // Vérifier que les champs sont présents avec un timeout plus long
-    await expect(page.getByLabel(/nom/i).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByLabel(/email/i).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByLabel(/profil/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('rejoindre-input-nom')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('rejoindre-input-email')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('rejoindre-select-profil')).toBeVisible({ timeout: 10000 });
   });
 
   test('devrait valider les champs requis', async ({ page }) => {
@@ -29,7 +35,7 @@ test.describe('Formulaire Rejoindre', () => {
     });
     
     // Essayer de soumettre sans remplir les champs
-    const submitButton = page.getByRole('button', { name: /envoyer|soumettre/i }).first();
+    const submitButton = page.getByTestId('rejoindre-submit-button');
     
     // Attendre que le bouton soit cliquable
     await submitButton.waitFor({ state: 'visible', timeout: 10000 });
@@ -67,12 +73,12 @@ test.describe('Formulaire Rejoindre', () => {
     });
     
     // Remplir le formulaire
-    await page.getByLabel(/nom/i).first().fill('Test User');
-    await page.getByLabel(/email/i).first().fill('test@example.com');
-    await page.getByLabel(/profil/i).first().selectOption('je-decouvre');
+    await page.getByTestId('rejoindre-input-nom').fill('Test User');
+    await page.getByTestId('rejoindre-input-email').fill('test@example.com');
+    await page.getByTestId('rejoindre-select-profil').selectOption('je-decouvre');
     
     // Soumettre le formulaire
-    const submitButton = page.getByRole('button', { name: /envoyer|soumettre/i }).first();
+    const submitButton = page.getByTestId('rejoindre-submit-button');
     await submitButton.waitFor({ state: 'visible', timeout: 10000 });
     await submitButton.click();
     
@@ -131,8 +137,8 @@ test.describe('Formulaire Rejoindre', () => {
     await submitButton.waitFor({ state: 'visible', timeout: 10000 });
     await submitButton.click();
     
-    // Attendre que la requête soit interceptée
-    await page.waitForTimeout(2000);
+    // Attendre que la requête API soit faite (attente active)
+    await page.waitForResponse('**/api/intents/rejoindre/', { timeout: 10000 });
     
     // Vérifier que la requête a été interceptée
     expect(requestIntercepted).toBe(true);

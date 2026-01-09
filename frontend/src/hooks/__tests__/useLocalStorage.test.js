@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 // Hook personnalisé useLocalStorage
 export const useLocalStorage = (key, initialValue) => {

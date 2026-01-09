@@ -4,6 +4,8 @@
  */
 import { formatMoney } from '../../utils/money';
 import Tooltip from '../ui/Tooltip';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { t } from '../../utils/i18n';
 
 /**
  * @param {Object} props
@@ -12,6 +14,8 @@ import Tooltip from '../ui/Tooltip';
  * @param {number|null} props.impact - Impact social/écologique (score)
  */
 export default function FourPStrip({ financial, saka, impact }) {
+  const { language } = useLanguage();
+  
   return (
     <div
       style={{
@@ -79,29 +83,58 @@ export default function FourPStrip({ financial, saka, impact }) {
         className="four-p-card saka"
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          <h3
+        <h3
+          style={{
+            margin: 0,
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            color: 'var(--muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          Capital vivant (SAKA)
+        </h3>
+          {/* Badge visuel distinctif SAKA */}
+          <span
             style={{
-              margin: 0,
-              fontSize: '0.875rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '0.125rem 0.375rem',
+              borderRadius: '0.25rem',
+              fontSize: '0.625rem',
               fontWeight: '600',
-              color: 'var(--muted)',
+              backgroundColor: '#84cc16',
+              color: '#1a1a1a',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}
+            aria-label={t('common.saka_not_convertible', language, {})}
+            title={t('common.saka_not_convertible', language, {})}
           >
-            Capital vivant (SAKA)
-          </h3>
+            {t('common.non_monetary', language, {})}
+          </span>
           <Tooltip
             content={
               <div style={{ padding: '0.25rem 0' }}>
                 <p style={{ margin: 0, marginBottom: '0.5rem', fontWeight: '600' }}>
-                  Les SAKA sont des grains d'engagement.
+                  {t('dashboard.saka_tooltip_line1', language, {})}
                 </p>
                 <p style={{ margin: 0, marginBottom: '0.5rem' }}>
-                  Gagnez-en en lisant des contenus (+10 SAKA) et en participant aux votes (+5 SAKA).
+                  {t('dashboard.saka_tooltip_line2', language, {})}
                 </p>
-                <p style={{ margin: 0 }}>
-                  Utilisez-les pour voter avec intensité et booster des projets.
+                <p style={{ margin: 0, marginBottom: '0.5rem' }}>
+                  {t('dashboard.saka_tooltip_line3', language, {})}
+                </p>
+                <p style={{ 
+                  margin: 0, 
+                  marginTop: '0.5rem', 
+                  paddingTop: '0.5rem', 
+                  borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+                  fontWeight: '600',
+                  color: '#fbbf24'
+                }}>
+                  {t('common.saka_not_convertible', language, {})}
                 </p>
               </div>
             }
@@ -131,7 +164,7 @@ export default function FourPStrip({ financial, saka, impact }) {
               onMouseLeave={(e) => {
                 e.currentTarget.style.color = 'var(--muted)';
               }}
-              aria-label="En savoir plus sur les SAKA"
+              aria-label={t('dashboard.saka_tooltip_aria_label', language, {})}
             >
               ?
             </button>
@@ -145,7 +178,7 @@ export default function FourPStrip({ financial, saka, impact }) {
             marginBottom: '0.5rem',
           }}
         >
-          {saka !== null && saka !== undefined ? `${saka.toLocaleString('fr-FR')} SAKA` : '0 SAKA'}
+          {saka !== null && saka !== undefined ? `${saka.toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')} SAKA` : '0 SAKA'}
         </div>
         <p
           style={{
@@ -155,7 +188,7 @@ export default function FourPStrip({ financial, saka, impact }) {
             marginBottom: '0.25rem',
           }}
         >
-          Grains d'engagement
+          {t('dashboard.saka_grains_engagement', language, {})}
         </p>
         <p
           style={{
@@ -165,7 +198,7 @@ export default function FourPStrip({ financial, saka, impact }) {
             fontStyle: 'italic',
           }}
         >
-          Les SAKA mesurent votre engagement non monétaire.
+          {t('dashboard.saka_non_monetary_desc', language, {})}
         </p>
       </div>
 

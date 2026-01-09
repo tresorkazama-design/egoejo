@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import React from 'react';
 import { axe } from 'jest-axe';
 import { Home } from '../app/pages/Home';
 import { renderWithProviders } from './test-utils';

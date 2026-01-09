@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSakaCycles } from "@/hooks/useSakaCycles";
 import { useSakaSilo } from "@/hooks/useSakaSilo";
-import CompostNotification from "@/components/saka/CompostNotification";
+// import CompostNotification from "@/components/saka/CompostNotification"; // TODO: Créer ce composant
 import { useEcoMode } from "@/contexts/EcoModeContext";
 import { getSobrietyFeature } from "@/design-tokens";
 
@@ -45,13 +45,12 @@ export default function SakaSeasonsPage() {
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Notification de compostage */}
       {compostNotification && (
-        <CompostNotification
-          amount={compostNotification.amount}
-          remainingBalance={compostNotification.remainingBalance}
-          siloBalance={compostNotification.siloBalance}
-          onClose={() => setCompostNotification(null)}
-          showAnimation={canAnimate}
-        />
+        <div style={{ padding: '1rem', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius)', marginBottom: '1rem' }}>
+          <p>Compostage détecté : {compostNotification.amount} SAKA</p>
+          <p>Solde restant : {compostNotification.remainingBalance} SAKA</p>
+          <p>Silo Commun : {compostNotification.siloBalance} SAKA</p>
+          <button onClick={() => setCompostNotification(null)}>Fermer</button>
+        </div>
       )}
 
       <header className="space-y-2">

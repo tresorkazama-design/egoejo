@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 test.describe('Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+  });
+
   test('devrait naviguer entre toutes les pages principales', async ({ page }) => {
     await page.goto('/');
     

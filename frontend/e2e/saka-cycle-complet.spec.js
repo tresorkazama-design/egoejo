@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 /**
  * Test E2E pour valider le cycle complet SAKA du point de vue utilisateur
@@ -35,11 +36,14 @@ test.describe('Cycle complet SAKA (Récolte → Compost → Silo → Redistribut
   const USER2_AFTER_REDISTRIBUTION = USER2_INITIAL_SAKA + REDISTRIBUTED_AMOUNT;
   const SILO_AFTER_REDISTRIBUTION = SILO_AFTER_COMPOST - REDISTRIBUTED_AMOUNT;
 
-  test.beforeEach(async ({ context, page }) => {
-    // Définir le token dans localStorage pour l'authentification
-    await context.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-token-user1');
-      window.localStorage.setItem('refresh_token', 'test-refresh-token-user1');
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier l'utilisateur via la fixture
+    await loginAsUser({
+      token: 'test-token-user1',
+      refreshToken: 'test-refresh-token-user1',
     });
 
     // Mock de la configuration des features (SAKA activé)

@@ -84,7 +84,7 @@ export const cancelIdleCallbackPolyfill = (id) => {
 export const measurePerformance = async (func, label = 'Function') => {
   if (import.meta.env.DEV && 'performance' in window) {
     const start = performance.now();
-    const result = await func();
+    await func();
     const end = performance.now();
     const duration = end - start;
     logger.debug(`${label}: ${duration.toFixed(2)}ms`);

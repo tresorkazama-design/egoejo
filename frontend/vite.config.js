@@ -63,15 +63,30 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^https?:\/\/.*\/api\/contents\//i,
+            urlPattern: /^https?:\/\/.*\/api\/contents\/\?.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'contents-cache',
+              cacheName: 'contents-list-cache',
               expiration: {
-                maxEntries: 50,
+                maxEntries: 20, // Limiter à 20 pages de contenus (sobriété)
                 maxAgeSeconds: 60 * 60 * 24, // 24 heures
               },
-              networkTimeoutSeconds: 10,
+              networkTimeoutSeconds: 3, // Timeout court pour fallback rapide offline
+            },
+          },
+          {
+            // Cache des contenus individuels visités (CacheFirst pour offline)
+            urlPattern: /^https?:\/\/.*\/api\/contents\/\d+\/?$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'contents-detail-cache',
+              expiration: {
+                maxEntries: 30, // Limiter à 30 contenus visités (sobriété)
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 jours pour les contenus visités
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
           {

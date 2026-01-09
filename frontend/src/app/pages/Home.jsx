@@ -83,9 +83,11 @@ export default function Home() {
             {t("home.subtitle", language)}
           </p>
           <div className="hero__actions" role="group" aria-label={t("home.actions", language) || t("common.actions", language)}>
+            {/* CONVENTION NAVIGATION : Utiliser <a href="#section"> pour les ancres (sections sur la même page) */}
             <a className="btn btn-primary" href="#soutenir" aria-label={`${t("home.soutenir", language)} - ${t("home.soutenir_desc", language)}`}>
               {t("home.soutenir", language)}
             </a>
+            {/* CONVENTION NAVIGATION : Utiliser <Link to="/route"> pour les routes (changement de page) */}
             <Link className="btn btn-primary" to="/rejoindre" aria-label={t("home.rejoindre", language)}>
               {t("home.rejoindre", language)}
             </Link>
@@ -109,13 +111,16 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="soutenir" className="page surface" aria-labelledby="soutenir-heading" role="region">
+      <section id="soutenir" className="page surface" aria-labelledby="soutenir-heading" role="region" data-testid="home-section-soutenir">
         <div className="container grid" style={{ gap: "32px" }}>
             <div>
               <span className="tag">{t("home.nous_soutenir", language)}</span>
               <h2 id="soutenir-heading" className="heading-l">{t("home.soutenir_title", language)}</h2>
-              <p className="muted" style={{ lineHeight: 1.6 }}>
+              <p className="muted" style={{ lineHeight: 1.6 }} data-testid="home-donation-claim">
                 {t("home.soutenir_desc", language)}
+              </p>
+              <p className="muted" style={{ lineHeight: 1.6, marginTop: "1rem" }} data-testid="home-saka-eur-note">
+                {t("home.saka_eur_note", language) || ""}
               </p>
             </div>
 

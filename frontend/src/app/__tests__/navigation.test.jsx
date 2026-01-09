@@ -54,8 +54,10 @@ describe('Navigation', () => {
     const user = userEvent.setup();
     renderRouter(['/']);
 
-    const link = screen.getByRole('link', { name: /projets/i });
-    await user.click(link);
+    // Il y a plusieurs liens "Projets" (navbar et footer), prenons celui de la navbar
+    const links = screen.getAllByRole('link', { name: /projets/i });
+    const navbarLink = links.find(link => link.closest('nav'));
+    await user.click(navbarLink || links[0]);
 
     await waitFor(() => {
       expect(screen.getByTestId('projets-page')).toBeInTheDocument();

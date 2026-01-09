@@ -52,12 +52,13 @@ test.describe('Authentification', () => {
     }
     
     // Soumettre le formulaire
-    const submitButton = page.getByRole('button', { name: /inscrire|s'inscrire|register|créer/i }).first();
+    const submitButton = page.getByRole('button', { name: /inscrire|s'inscrire|register|créer/i }).first(); // TODO: ajouter data-testid dans Register.jsx
     await submitButton.waitFor({ state: 'visible', timeout: 10000 });
     await submitButton.click();
     
-    // Attendre que la requête soit faite
-    await page.waitForTimeout(2000);
+    // Attendre que la requête soit faite (pas de waitForTimeout)
+    // On attend que le message de succès ou la redirection soit visible
+    await page.waitForLoadState('networkidle');
     
     // Vérifier que la requête API a été faite
     expect(apiRequestMade).toBe(true);
@@ -117,8 +118,9 @@ test.describe('Authentification', () => {
     await submitButton.waitFor({ state: 'visible', timeout: 10000 });
     await submitButton.click();
     
-    // Attendre que la requête soit faite
-    await page.waitForTimeout(2000);
+    // Attendre que la requête soit faite (pas de waitForTimeout)
+    // On attend que le message de succès ou la redirection soit visible
+    await page.waitForLoadState('networkidle');
     
     // Vérifier que la requête API a été faite
     expect(apiRequestMade).toBe(true);
@@ -166,10 +168,8 @@ test.describe('Authentification', () => {
     await submitButton.waitFor({ state: 'visible', timeout: 10000 });
     await submitButton.click();
     
-    // Attendre que l'erreur s'affiche
-    await page.waitForTimeout(2000);
-    
-    // Vérifier qu'un message d'erreur est affiché
+    // Attendre que l'erreur s'affiche (pas de waitForTimeout)
+    // On attend que le message d'erreur soit visible
     await expect(
       page.getByText(/erreur|incorrect|échec|invalid/i).first()
     ).toBeVisible({ timeout: 10000 });

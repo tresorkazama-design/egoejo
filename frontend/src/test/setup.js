@@ -71,6 +71,70 @@ mockGetContext.mockReturnValue({
   getParameter: vi.fn(),
 });
 
+// Mock Three.js pour éviter les problèmes dans les tests
+vi.mock('three', () => {
+  const mockThree = {
+    WebGLRenderer: vi.fn().mockImplementation(() => ({
+      setSize: vi.fn(),
+      render: vi.fn(),
+      dispose: vi.fn(),
+      domElement: document.createElement('canvas'),
+    })),
+    Scene: vi.fn().mockImplementation(() => ({
+      add: vi.fn(),
+      remove: vi.fn(),
+    })),
+    PerspectiveCamera: vi.fn().mockImplementation(() => ({
+      aspect: 1,
+      updateProjectionMatrix: vi.fn(),
+    })),
+    BufferGeometry: vi.fn().mockImplementation(() => ({
+      setAttribute: vi.fn(),
+      getAttribute: vi.fn(() => ({
+        array: new Float32Array(0),
+      })),
+    })),
+    BufferAttribute: vi.fn().mockImplementation(() => ({})),
+    PointsMaterial: vi.fn().mockImplementation(() => ({})),
+    Points: vi.fn().mockImplementation(() => ({
+      geometry: {},
+      material: {},
+    })),
+    CanvasTexture: vi.fn().mockImplementation(() => ({
+      needsUpdate: false,
+      flipY: false,
+    })),
+    Color: vi.fn().mockImplementation(() => ({})),
+    AdditiveBlending: 'AdditiveBlending',
+    NormalBlending: 'NormalBlending',
+  };
+  return mockThree;
+});
+
+// Mock GSAP pour éviter les problèmes dans les tests
+vi.mock('gsap', () => {
+  const mockGSAP = {
+    fromTo: vi.fn(),
+    to: vi.fn(),
+    from: vi.fn(),
+    set: vi.fn(),
+    getTweensOf: vi.fn(() => []),
+    killTweensOf: vi.fn(),
+    registerPlugin: vi.fn(),
+    utils: {
+      toArray: vi.fn(() => []),
+    },
+  };
+  return { default: mockGSAP, gsap: mockGSAP };
+});
+
+// Mock GSAP ScrollTrigger
+vi.mock('gsap/ScrollTrigger', () => ({
+  ScrollTrigger: {
+    getAll: vi.fn(() => []),
+  },
+}));
+
 // Mock de fetch global (sera remplacé dans chaque test)
 global.fetch = vi.fn();
 

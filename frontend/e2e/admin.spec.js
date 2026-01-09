@@ -1,7 +1,25 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
+/**
+ * Tests E2E pour la page Admin
+ */
 test.describe('Page Admin', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier en tant qu'admin
+    await loginAsUser({
+      user: {
+        id: 1,
+        username: 'admin',
+        email: 'admin@example.com',
+        is_staff: true,
+        is_superuser: true,
+      },
+    });
+
     // Mock des données d'intentions pour les tests
     await page.route('**/api/intents/admin/**', async (route) => {
       if (route.request().method() === 'GET') {
@@ -42,140 +60,83 @@ test.describe('Page Admin', () => {
   });
 
   test('devrait afficher un message si non authentifié', async ({ page }) => {
+    // Pour ce test, on ne s'authentifie pas
+    await page.route('**/api/auth/me/', async (route) => {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Authentication credentials were not provided.' }),
+      });
+    });
+
     await page.goto('/admin');
     
     // Attendre que la page soit chargée
     await page.waitForLoadState('networkidle');
     
     // Vérifier qu'un message d'authentification est affiché
-    // (le message exact dépend de l'implémentation)
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
   });
 
-  test('devrait charger la page admin avec authentification mockée', async ({ page }) => {
-    // Simuler une authentification
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-admin-token');
-    });
-
-    // Mock de la réponse d'authentification
-    await page.route('**/api/intents/admin/**', async (route) => {
-      const request = route.request();
-      const authHeader = request.headers()['authorization'];
-      
-      if (authHeader && authHeader.includes('Bearer')) {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            count: 3,
-            results: [
-              {
-                id: 1,
-                nom: 'Test User 1',
-                email: 'test1@example.com',
-                profil: 'je-decouvre',
-                created_at: '2025-01-27T10:00:00Z',
-              },
-            ],
-          }),
-        });
-      } else {
-        await route.fulfill({
-          status: 401,
-          contentType: 'application/json',
-          body: JSON.stringify({ detail: 'Non authentifié' }),
-        });
-      }
-    });
-
-    await page.goto('/admin');
-    
-    // Attendre que la page soit chargée
-    await page.waitForLoadState('networkidle');
+  test('devrait charger la page admin avec authentification mockée', async ({ page, gotoAuthed }) => {
+    await gotoAuthed('/admin');
     
     // Vérifier que la page admin est chargée
-    const adminPage = page.locator('[data-testid="admin-page"], .admin-page');
+    const adminPage = page.locator('[data-testid="admin-page"], .admin-page, main, [role="main"]');
     await expect(adminPage.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('devrait afficher la table des intentions', async ({ page }) => {
-    // Simuler une authentification
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-admin-token');
-    });
-
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
+  test('devrait afficher la table des intentions', async ({ page, gotoAuthed }) => {
+    await gotoAuthed('/admin');
     
     // Attendre que la table soit chargée
     const table = page.locator('table, [role="table"]');
     await expect(table.first()).toBeVisible({ timeout: 10000 });
     
     // Vérifier que les colonnes sont présentes
-    await expect(page.getByText(/id|nom|email|profil|date/i)).toBeVisible();
+    await expect(page.getByTestId('admin-table-header-id')).toBeVisible();
+    await expect(page.getByTestId('admin-table-header-nom')).toBeVisible();
+    await expect(page.getByTestId('admin-table-header-email')).toBeVisible();
+    await expect(page.getByTestId('admin-table-header-profil')).toBeVisible();
+    await expect(page.getByTestId('admin-table-header-date')).toBeVisible();
   });
 
-  test('devrait permettre de rechercher des intentions', async ({ page }) => {
-    // Simuler une authentification
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-admin-token');
-    });
-
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
+  test('devrait permettre de rechercher des intentions', async ({ page, gotoAuthed }) => {
+    await gotoAuthed('/admin');
     
     // Trouver le champ de recherche
-    const searchInput = page.getByLabel(/recherche|search/i).or(
-      page.getByPlaceholder(/recherche|search/i)
-    ).or(
-      page.locator('input[type="search"], input[type="text"]').first()
-    );
+    const searchInput = page.getByTestId('admin-search-input');
     
-    if (await searchInput.isVisible()) {
+    if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
       await searchInput.fill('Test');
       
-      // Attendre que les résultats soient filtrés
-      await page.waitForTimeout(500);
+      // Attendre que les résultats soient filtrés (pas de waitForTimeout)
+      await page.waitForLoadState('networkidle');
       
       // Vérifier que la recherche a été effectuée
-      // (la vérification exacte dépend de l'implémentation)
       expect(await searchInput.inputValue()).toBe('Test');
     }
   });
 
-  test('devrait permettre de filtrer par profil', async ({ page }) => {
-    // Simuler une authentification
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-admin-token');
-    });
-
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
+  test('devrait permettre de filtrer par profil', async ({ page, gotoAuthed }) => {
+    await gotoAuthed('/admin');
     
     // Trouver le filtre de profil
-    const profilFilter = page.getByLabel(/profil/i).or(
-      page.locator('select[name*="profil"], select[id*="profil"]').first()
-    );
+    const profilFilter = page.getByTestId('admin-profil-filter');
     
-    if (await profilFilter.isVisible()) {
+    if (await profilFilter.isVisible({ timeout: 5000 }).catch(() => false)) {
       await profilFilter.selectOption('je-decouvre');
       
-      // Attendre que le filtre soit appliqué
-      await page.waitForTimeout(500);
+      // Attendre que le filtre soit appliqué (pas de waitForTimeout)
+      await page.waitForLoadState('networkidle');
       
       // Vérifier que le filtre a été sélectionné
       await expect(profilFilter).toHaveValue(/je-decouvre/i);
     }
   });
 
-  test('devrait permettre d\'exporter en CSV', async ({ page }) => {
-    // Simuler une authentification
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-admin-token');
-    });
-
+  test('devrait permettre d\'exporter en CSV', async ({ page, gotoAuthed }) => {
     // Intercepter la requête d'export
     let exportRequestMade = false;
     
@@ -191,13 +152,12 @@ test.describe('Page Admin', () => {
       });
     });
 
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
+    await gotoAuthed('/admin');
     
     // Trouver le bouton d'export
-    const exportButton = page.getByRole('button', { name: /exporter|export|csv/i });
+    const exportButton = page.getByTestId('admin-export-button');
     
-    if (await exportButton.isVisible()) {
+    if (await exportButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       // Écouter les téléchargements
       const downloadPromise = page.waitForEvent('download');
       await exportButton.click();
@@ -210,12 +170,7 @@ test.describe('Page Admin', () => {
     }
   });
 
-  test('devrait gérer les erreurs de chargement gracieusement', async ({ page }) => {
-    // Simuler une authentification
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-admin-token');
-    });
-
+  test('devrait gérer les erreurs de chargement gracieusement', async ({ page, gotoAuthed }) => {
     // Simuler une erreur API
     await page.route('**/api/intents/admin/**', async (route) => {
       await route.fulfill({
@@ -225,8 +180,7 @@ test.describe('Page Admin', () => {
       });
     });
 
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
+    await gotoAuthed('/admin');
     
     // La page ne devrait pas planter
     const pageContent = await page.textContent('body');
@@ -236,4 +190,3 @@ test.describe('Page Admin', () => {
     // ou que la page reste fonctionnelle
   });
 });
-

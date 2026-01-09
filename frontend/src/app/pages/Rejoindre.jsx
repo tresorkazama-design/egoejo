@@ -126,6 +126,7 @@ export const Rejoindre = () => {
           error={errors.nom}
           required
           aria-describedby={errors.nom ? "rejoindre-nom-error" : undefined}
+          data-testid="rejoindre-input-nom"
         />
 
         <Input
@@ -138,6 +139,7 @@ export const Rejoindre = () => {
           error={errors.email}
           required
           aria-describedby={errors.email ? "rejoindre-email-error" : undefined}
+          data-testid="rejoindre-input-email"
         />
 
         <div className="mb-4">
@@ -155,6 +157,7 @@ export const Rejoindre = () => {
             required
             aria-invalid={errors.profil ? 'true' : 'false'}
             aria-describedby={errors.profil ? 'profil-select-error' : undefined}
+            data-testid="rejoindre-select-profil"
           >
             <option value="">{t("rejoindre.profil_select", language)}</option>
             <option value="je-decouvre">{t("rejoindre.profil_decouvre", language)}</option>
@@ -199,7 +202,7 @@ export const Rejoindre = () => {
           </div>
         )}
 
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} data-testid="rejoindre-submit-button">
           {loading ? t("rejoindre.envoi", language) : t("rejoindre.envoyer", language)}
         </Button>
       </form>

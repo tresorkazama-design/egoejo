@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 /**
  * Tests E2E pour le boost SAKA d'un projet
@@ -13,12 +14,12 @@ test.describe('Boost SAKA d\'un projet', () => {
   const INITIAL_SAKA_SCORE = 50;
   const EXPECTED_NEW_SAKA_SCORE = INITIAL_SAKA_SCORE + SAKA_BOOST_COST;
 
-  test.beforeEach(async ({ page }) => {
-    // Mock de l'authentification (token dans localStorage)
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'mock-access-token');
-      window.localStorage.setItem('refreshToken', 'mock-refresh-token');
-    });
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier l'utilisateur via la fixture
+    await loginAsUser();
 
     // Mock de la configuration des features (SAKA boost activé)
     await page.route('**/api/config/features/', async (route) => {
@@ -195,8 +196,8 @@ test.describe('Boost SAKA d\'un projet', () => {
     await expect(boostButton).toBeVisible({ timeout: 5000 });
     await boostButton.click();
 
-    // Attendre que la requête API soit faite
-    await page.waitForTimeout(2000);
+    // Attendre que la requête API soit faite (attente active)
+    await page.waitForResponse('**/api/projets/**/boost/', { timeout: 10000 });
 
     // Vérifier que la requête API a été faite avec les bons paramètres
     expect(boostRequestMade).toBe(true);
@@ -340,10 +341,8 @@ test.describe('Boost SAKA d\'un projet', () => {
     await expect(boostButton).toBeVisible({ timeout: 5000 });
     await boostButton.click();
 
-    // Attendre que l'erreur soit affichée
-    await page.waitForTimeout(2000);
-
-    // Vérifier qu'un message d'erreur est affiché
+    // Attendre que l'erreur soit affichée (attente active)
+    await expect(page.getByText(/solde.*insuffisant|erreur.*boost|insufficient|error/i)).toBeVisible({ timeout: 5000 });
     const errorMessage = page.getByText(/solde.*insuffisant|erreur.*boost/i);
     await expect(errorMessage).toBeVisible({ timeout: 5000 });
 

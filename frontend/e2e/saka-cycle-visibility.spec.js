@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 /**
  * Tests E2E pour la visibilité des cycles SAKA et du Silo commun
@@ -31,12 +32,15 @@ test.describe('Visibilité des cycles SAKA et du Silo commun', () => {
   // Définir le token dans localStorage AVANT le chargement de chaque page
   // Le AuthContext vérifie localStorage.getItem('token') au chargement initial
   // Sans token, il ne fait pas d'appel API et user reste null
-  // Utiliser context.addInitScript() pour que le token soit disponible dès le chargement
-  test.beforeEach(async ({ context, page }) => {
-    // Définir le token dans localStorage via context (avant le chargement de la page)
-    await context.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-token-123');
-      window.localStorage.setItem('refresh_token', 'test-refresh-token-123');
+  // Utiliser la fixture loginAsUser pour authentifier l'utilisateur
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier l'utilisateur via la fixture
+    await loginAsUser({
+      token: 'test-token-123',
+      refreshToken: 'test-refresh-token-123',
     });
 
     // Mock de la configuration des features (SAKA activé)

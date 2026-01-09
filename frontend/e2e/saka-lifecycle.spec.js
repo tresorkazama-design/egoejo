@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 /**
  * Test E2E : Cycle du Vivant SAKA
@@ -46,11 +47,14 @@ test.describe('Cycle du Vivant SAKA - Promesse Utilisateur', () => {
   const USER_ACTIF_AFTER_REDISTRIBUTION = USER_ACTIF_INITIAL_SAKA + REDISTRIBUTED_PER_WALLET; // 103 SAKA
   const SILO_AFTER_REDISTRIBUTION = SILO_AFTER_COMPOST - REDISTRIBUTED_PER_WALLET; // 32 SAKA
 
-  test.beforeEach(async ({ context, page }) => {
-    // Authentification utilisateur inactif
-    await context.addInitScript(() => {
-      window.localStorage.setItem('token', 'test-token-inactive-user');
-      window.localStorage.setItem('refresh_token', 'test-refresh-token-inactive-user');
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier l'utilisateur via la fixture
+    await loginAsUser({
+      token: 'test-token-inactive-user',
+      refreshToken: 'test-refresh-token-inactive-user',
     });
 
     // Mock configuration SAKA activé

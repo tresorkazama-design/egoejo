@@ -483,6 +483,8 @@ export default function MyceliumVisualization() {
           <div className="mycelium-tooltip">
             <h3>{hoveredNode.titre || hoveredNode.title}</h3>
             <p>{hoveredNode.description}</p>
+            {/* CONVENTION NAVIGATION : Si node.url est toujours une route interne, utiliser <Link to={node.url}>
+                Pour l'instant, on garde <a> car les URLs peuvent être dynamiques (routes internes ou externes) */}
             <a href={hoveredNode.url} className="btn btn-primary">
               Voir
             </a>
@@ -535,6 +537,8 @@ export default function MyceliumVisualization() {
         <div className="mycelium-detail">
           <h2>{selectedNode.titre || selectedNode.title}</h2>
           <p>{selectedNode.description}</p>
+          {/* CONVENTION NAVIGATION : Si node.url est toujours une route interne, utiliser <Link to={node.url}>
+              Pour l'instant, on garde <a> car les URLs peuvent être dynamiques (routes internes ou externes) */}
           <a href={selectedNode.url} className="btn btn-primary">
             Voir le détail
           </a>

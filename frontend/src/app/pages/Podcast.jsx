@@ -3,9 +3,11 @@
  * Permet d'écouter les contenus éducatifs en mode audio
  */
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchAPI } from '../../utils/api';
 import AudioPlayer from '../../components/AudioPlayer';
 import { useSEO } from '../../hooks/useSEO';
+import { sanitizeContent } from '../../utils/content';
 
 export default function Podcast() {
   useSEO({
@@ -58,19 +60,20 @@ export default function Podcast() {
           contenus.map((contenu) => (
             <div key={contenu.id} className="podcast-item">
               <div className="podcast-item__header">
-                <h3>{contenu.title}</h3>
-                <span className="podcast-item__type">{contenu.type}</span>
+                <h3>{sanitizeContent(contenu.title)}</h3>
+                <span className="podcast-item__type">{sanitizeContent(contenu.type)}</span>
               </div>
               {contenu.description && (
-                <p className="podcast-item__description">{contenu.description}</p>
+                <p className="podcast-item__description">{sanitizeContent(contenu.description)}</p>
               )}
               <AudioPlayer
                 contentId={contenu.id}
                 autoPlay={selectedContent === contenu.id}
               />
-              <a href={`/contenus/${contenu.slug}`} className="btn btn-ghost">
+              {/* CONVENTION NAVIGATION : Utiliser <Link> pour les routes internes */}
+              <Link to={`/contenus/${contenu.slug}`} className="btn btn-ghost">
                 Voir le contenu complet
-              </a>
+              </Link>
             </div>
           ))
         )}

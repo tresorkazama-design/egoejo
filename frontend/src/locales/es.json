@@ -28,6 +28,9 @@
     "error": "Error",
     "actions": "Acciones"
   },
+  "accessibility": {
+    "skip_to_main": "Saltar al contenido principal"
+  },
   "home": {
     "tag": "Colectivo por lo vivo",
     "title": "Habitar la Tierra de otra manera,\njuntos.",
@@ -44,7 +47,8 @@
     "transmettre": "Transmitir",
     "transmettre_desc": "Acompañar a los actores del cambio con formatos inmersivos, sensibles y arraigados en la realidad.",
     "soutenir_title": "Conviértete en aliado·a de lo vivo",
-    "soutenir_desc": "Cada contribución alimenta acciones concretas: refugios, jardines alimentarios, talleres de transmisión, residencias de investigación, acompañamiento de comunidades locales. El 100% de las donaciones se utilizan para financiar estos proyectos.",
+    "soutenir_desc": "Cada contribución alimenta acciones concretas: refugios, jardines alimentarios, talleres de transmisión, residencias de investigación, acompañamiento de comunidades locales. El 100% de las donaciones netas (después de las tarifas de la plataforma) se utilizan para financiar estos proyectos.",
+    "saka_eur_note": "Nota importante: EGOEJO opera según una doble estructura claramente separada. La estructura relacional (SAKA, unidad de compromiso interna) es distinta de la estructura instrumental (EUR, moneda real). SAKA no puede ser intercambiado por EUR y no tiene precio. Esta separación está codificada en el código, se prueba automáticamente y no es negociable.",
     "contribuer": "Contribuir",
     "donation_options": "Opciones de donación",
     "nous_soutenir": "Apóyanos",
@@ -83,7 +87,10 @@
   "vision": {
     "badge": "Nuestra visión",
     "title": "Visión",
-    "subtitle": "Nuestra visión es crear un ecosistema sostenible e inclusivo donde la tecnología y la naturaleza coexistan en armonía. Creemos en un futuro donde cada acción cuenta para cuidar el mundo.",
+    "subtitle": "EGOEJO es una organización con misión que conecta a ciudadanos con proyectos sociales de alto impacto ecológico y social. Desarrollamos un ecosistema tecnológico al servicio de la regeneración de lo vivo, respetando los principios de gobernanza de los comunes y la transparencia institucional.",
+    "principles_title": "Principios fundamentales",
+    "glossary_title": "Glosario",
+    "citations_disclaimer": "Las citas en esta página provienen de diversas fuentes (colectivo EGOEJO, comunidades indígenas, pensadores de lo vivo). Se utilizan con autorización explícita y en respeto de las culturas y tradiciones originales. EGOEJO reconoce la diversidad del conocimiento y se compromete a respetar los derechos culturales e intelectuales de las comunidades fuente. Cualquier uso de citas se rastrea y documenta.",
     "highlight_text": "Habitar la Tierra de otra manera, juntos. Esta es nuestra visión: un mundo donde lo vivo está en el corazón de nuestras decisiones, donde cada acción cuenta.",
     "highlight_author": "Colectivo EGOEJO",
     "stats_piliers": "3 pilares",

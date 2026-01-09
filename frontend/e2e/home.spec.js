@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 test.describe('Page d\'accueil', () => {
+  test.beforeEach(async ({ page }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+  });
+
   test('devrait charger la page d\'accueil', async ({ page }) => {
     await page.goto('/');
     

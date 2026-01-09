@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="28" viewBox="0 0 200 28">
+  <linearGradient id="compliantGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" style="stop-color:#00ffa3;stop-opacity:1" />
+    <stop offset="100%" style="stop-color:#00cc82;stop-opacity:1" />
+  </linearGradient>
+  <rect width="200" height="28" rx="4" fill="url(#compliantGradient)"/>
+  <text x="10" y="19" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#000000">EGOEJO Compliant</text>
+  <circle cx="180" cy="14" r="6" fill="#000000"/>
+  <text x="180" y="17" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#00ffa3" text-anchor="middle">✓</text>
+</svg>
+

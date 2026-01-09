@@ -67,6 +67,12 @@ function SorghoWebGL() {
   // useMemo garantit que la texture n'est créée qu'une seule fois
   const texture = useMemo(() => makeSorghumTexture(), []);
   
+  // Si 3D désactivé (sobriété >= 3) ou mode E2E, ne pas initialiser Three.js
+  const isE2E = typeof window !== 'undefined' && (window.VITE_E2E || window.localStorage?.getItem('VITE_E2E') === '1');
+  if (isE2E) {
+    return null; // Ne pas rendre l'animation en mode E2E
+  }
+  
   // Si 3D désactivé (sobriété >= 3), ne pas initialiser Three.js
   if (!canRender3D) {
     return null;

@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 /**
  * Tests E2E pour le vote quadratique avec SAKA
@@ -23,18 +24,18 @@ test.describe('Vote Quadratique - Flux Complet', () => {
   const EXPECTED_SAKA_COST = INTENSITY * SAKA_COST_PER_INTENSITY; // 15 SAKA
   const EXPECTED_FINAL_BALANCE = INITIAL_SAKA_BALANCE - EXPECTED_SAKA_COST; // 85 SAKA
 
-  test.beforeEach(async ({ page }) => {
-    // Mock de l'authentification (token dans localStorage)
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'mock-access-token');
-      window.localStorage.setItem('refreshToken', 'mock-refresh-token');
-      // Simuler un utilisateur connecté
-      window.localStorage.setItem('user', JSON.stringify({
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier l'utilisateur via la fixture
+    await loginAsUser({
+      user: {
         id: 1,
         username: 'testuser',
         email: 'test@example.com',
         is_staff: false,
-      }));
+      },
     });
 
     // Mock de la configuration des features (SAKA vote activé)
@@ -421,11 +422,10 @@ test.describe('Vote Quadratique - Flux Complet', () => {
 
     // Changer l'intensité à 3
     await intensitySlider.fill(String(INTENSITY));
-    await page.waitForTimeout(300); // Attendre la mise à jour
-
-    // Vérifier que le coût SAKA est mis à jour (3 * 5 = 15)
-    await expect(page.getByTestId('intensity-value')).toHaveText(String(INTENSITY));
-    await expect(page.getByTestId('saka-cost')).toHaveText(String(EXPECTED_SAKA_COST));
+    
+    // Attendre que le coût SAKA soit mis à jour (attente active, pas waitForTimeout)
+    await expect(page.getByTestId('intensity-value')).toHaveText(String(INTENSITY), { timeout: 5000 });
+    await expect(page.getByTestId('saka-cost')).toHaveText(String(EXPECTED_SAKA_COST), { timeout: 5000 });
 
     // ÉTAPE 4 : Activation du boost SAKA (vérification visuelle)
     // Le boost SAKA est activé automatiquement si saka_vote_enabled est true
@@ -440,11 +440,10 @@ test.describe('Vote Quadratique - Flux Complet', () => {
     // Allouer 50 points au Projet A
     const option1Input = page.getByTestId('option-1-input');
     await option1Input.fill('50');
-    await page.waitForTimeout(300);
-
-    // Vérifier que les points sont mis à jour
-    await expect(page.locator('#total-points')).toHaveText('50');
-    await expect(page.locator('#remaining-points')).toHaveText('50');
+    
+    // Attendre que les points soient mis à jour (attente active, pas waitForTimeout)
+    await expect(page.locator('#total-points')).toHaveText('50', { timeout: 5000 });
+    await expect(page.locator('#remaining-points')).toHaveText('50', { timeout: 5000 });
 
     // Vérifier que le bouton de soumission est activé
     const submitButton = page.getByTestId('submit-vote-button');
@@ -454,8 +453,8 @@ test.describe('Vote Quadratique - Flux Complet', () => {
     // Soumettre le vote
     await submitButton.click();
 
-    // Attendre que la requête API soit faite
-    await page.waitForTimeout(2000);
+    // Attendre que la requête API soit faite (attente active, pas waitForTimeout)
+    await page.waitForResponse('**/api/polls/**/vote/', { timeout: 10000 });
 
     // ÉTAPE 6 : Vérification du Toast de succès et mise à jour du solde SAKA
     // Vérifier que la requête API a été faite
@@ -512,16 +511,17 @@ test.describe('Vote Quadratique - Flux Complet', () => {
 
     const intensitySlider = page.getByTestId('intensity-slider');
     await intensitySlider.fill(String(INTENSITY));
-    await page.waitForTimeout(300);
-
-    // Vérifier que le solde insuffisant est affiché
-    await expect(page.getByTestId('saka-balance')).toHaveText(String(INSUFFICIENT_BALANCE));
-    await expect(page.getByTestId('saka-cost')).toHaveText(String(REQUIRED_COST));
+    
+    // Attendre que le solde insuffisant soit affiché (attente active, pas waitForTimeout)
+    await expect(page.getByTestId('saka-balance')).toHaveText(String(INSUFFICIENT_BALANCE), { timeout: 5000 });
+    await expect(page.getByTestId('saka-cost')).toHaveText(String(REQUIRED_COST), { timeout: 5000 });
 
     // Allouer des points
     const option1Input = page.getByTestId('option-1-input');
     await option1Input.fill('50');
-    await page.waitForTimeout(300);
+    
+    // Attendre que les points soient mis à jour (attente active, pas waitForTimeout)
+    await expect(page.locator('#total-points')).toHaveText('50', { timeout: 5000 });
 
     // Le bouton devrait être désactivé ou afficher un avertissement
     // (selon l'implémentation du composant)

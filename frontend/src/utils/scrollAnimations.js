@@ -4,7 +4,9 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 export function initScrollAnimations() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;    
+  // Désactiver les animations en mode E2E ou si prefers-reduced-motion
+  const isE2E = window.VITE_E2E || window.localStorage.getItem('VITE_E2E') === '1';
+  if (isE2E || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;    
 
   // Animations de texte adoucies
   gsap.utils.toArray(".heading-xl, .heading-l").forEach((heading) => {
@@ -29,7 +31,7 @@ export function initScrollAnimations() {
   });
 
   // Sections reveal avec parallaxe douce
-  gsap.utils.toArray(".section[data-animate], .citation-group, .glass").forEach((section, index) => {
+  gsap.utils.toArray(".section[data-animate], .citation-group, .glass").forEach((section) => {
     gsap.fromTo(
       section,
       { 

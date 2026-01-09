@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 /**
  * Tests E2E pour le vote quadratique avec SAKA
@@ -10,12 +11,12 @@ test.describe('Vote quadratique', () => {
   const TEST_POLL_ID = 1;
   const SAKA_COST_PER_INTENSITY = 5; // Aligné avec QuadraticVote.jsx ligne 23
 
-  test.beforeEach(async ({ page }) => {
-    // Mock de l'authentification (token dans localStorage)
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'mock-access-token');
-      window.localStorage.setItem('refreshToken', 'mock-refresh-token');
-    });
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier l'utilisateur via la fixture
+    await loginAsUser();
 
     // Mock de la configuration des features (SAKA vote activé)
     await page.route('**/api/config/features/', async (route) => {
@@ -444,27 +445,29 @@ test.describe('Vote quadratique', () => {
     // Choisir une intensité (3)
     await intensitySlider.fill(String(INTENSITY));
     
-    // Attendre que l'interface se mette à jour
-    await page.waitForTimeout(500);
-    
-    // Vérifier que le coût SAKA est mis à jour (3 * 5 = 15)
+    // Attendre que l'interface se mette à jour (attente active)
     const sakaCostDisplay = page.getByTestId('saka-cost');
-    await expect(sakaCostDisplay).toHaveText(String(EXPECTED_SAKA_COST), { timeout: 5000 });
+    await expect.poll(async () => {
+      const text = await sakaCostDisplay.textContent();
+      return text === String(EXPECTED_SAKA_COST);
+    }, { timeout: 5000 }).toBeTruthy();
 
     // Allouer des points à une option (par exemple 50 points à l'option 1)
     const option1Input = page.getByTestId('option-1-input');
     await option1Input.fill('50');
-    await page.waitForTimeout(300);
 
-    // Vérifier que le bouton de soumission affiche le bon coût
+    // Vérifier que le bouton de soumission affiche le bon coût (attente active)
     const submitButton = page.getByTestId('submit-vote-button');
-    await expect(submitButton).toContainText(String(EXPECTED_SAKA_COST), { timeout: 5000 });
+    await expect.poll(async () => {
+      const text = await submitButton.textContent();
+      return text.includes(String(EXPECTED_SAKA_COST));
+    }, { timeout: 5000 }).toBeTruthy();
 
     // Soumettre le vote
     await submitButton.click();
 
-    // Attendre que la requête API soit faite
-    await page.waitForTimeout(2000);
+    // Attendre que la requête API soit faite (attente active)
+    await page.waitForResponse('**/api/polls/**/vote/', { timeout: 10000 });
 
     // Vérifier que la requête API de vote a été faite
     expect(voteRequestMade).toBe(true);
@@ -573,9 +576,8 @@ test.describe('Vote quadratique', () => {
     // Choisir une intensité qui dépasse le solde
     const intensitySlider = page.getByTestId('intensity-slider');
     await intensitySlider.fill(String(INTENSITY));
-    await page.waitForTimeout(500);
 
-    // Vérifier que le message d'avertissement s'affiche
+    // Attendre que le message d'avertissement s'affiche (attente active)
     await expect(page.getByTestId('insufficient-warning')).toBeVisible({ timeout: 5000 });
     await expect(page.getByTestId('insufficient-warning')).toContainText(/insuffisant/i, { timeout: 5000 });
 

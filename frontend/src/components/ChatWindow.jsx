@@ -105,7 +105,7 @@ export default function ChatWindow({ thread }) {
     });
     return unregister;
   }, [disconnectWS, onLogout]);
-
+  
   const loadMessages = async () => {
     if (!thread) return;
     try {

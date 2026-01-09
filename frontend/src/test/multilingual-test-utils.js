@@ -48,6 +48,9 @@ export const findElementMultilingual = (screen, options = {}) => {
   return null;
 };
 
+/* eslint-env jest */
+import { expect } from '@jest/globals';
+
 /**
  * Vérifie qu'un élément existe (fonctionne avec toutes les langues)
  */

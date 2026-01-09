@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { initScrollAnimations, cleanupScrollAnimations } from "../utils/scrollAnimations.js";
 import Logo3D from "./Logo3D.jsx";
@@ -41,6 +41,7 @@ export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const location = useLocation();
   const { user, logout } = useAuth();
   const { language } = useLanguage();
   const { notifications, removeNotification } = useNotificationContext();
@@ -52,6 +53,61 @@ export default function Layout() {
     initScrollAnimations();
     return () => cleanupScrollAnimations();
   }, []);
+
+  // Gestion globale du scroll vers les ancres (#hash) compatible React Router
+  // Accessibilité WCAG : Transfère le focus sur l'élément cible après le scroll
+  useEffect(() => {
+    // Vérifier si un hash est présent dans l'URL
+    if (location.hash) {
+      // Extraire l'id sans le #
+      const id = location.hash.substring(1);
+      
+      // Attendre le rendu complet avant de scroller
+      // Utiliser requestAnimationFrame pour s'assurer que le DOM est prêt
+      requestAnimationFrame(() => {
+        // Double vérification avec setTimeout pour garantir que le contenu est rendu
+        setTimeout(() => {
+          try {
+            const element = document.getElementById(id);
+            if (element) {
+              // Scroller vers l'élément avec comportement smooth
+              element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+              
+              // ACCESSIBILITÉ WCAG : Transférer le focus sur l'élément cible après le scroll
+              // Pour les skip-links et la navigation clavier, le focus doit arriver sur l'élément cible
+              // Attendre la fin de l'animation de scroll avant de transférer le focus
+              const scrollDuration = 500; // Durée approximative du scroll smooth (ms)
+              setTimeout(() => {
+                // S'assurer que l'élément peut recevoir le focus
+                // Si c'est un élément non-focusable (comme <main>), ajouter tabIndex temporairement
+                if (!element.hasAttribute('tabindex')) {
+                  element.setAttribute('tabindex', '-1');
+                }
+                
+                // Transférer le focus
+                element.focus();
+                
+                // Pour les éléments comme <main>, retirer le tabindex après le focus
+                // pour éviter qu'ils apparaissent dans l'ordre de tabulation normal
+                if (element.tagName === 'MAIN' || element.tagName === 'SECTION') {
+                  setTimeout(() => {
+                    element.removeAttribute('tabindex');
+                  }, 100);
+                }
+              }, scrollDuration);
+            }
+            // Si l'élément n'existe pas, fail silencieux (pas d'erreur)
+          } catch (error) {
+            // Fail silencieux en cas d'erreur
+            // (par exemple si l'élément n'existe pas ou si scrollIntoView n'est pas supporté)
+          }
+        }, 0);
+      });
+    }
+  }, [location.hash, location.pathname]); // Déclencher aussi lors du changement de page
 
   // Fermer le menu déroulant si on clique en dehors
   useEffect(() => {
@@ -75,26 +131,37 @@ export default function Layout() {
 
   return (
     <div className="layout">
-      {/* Skip link pour l'accessibilité */}
-      <a href="#main-content" className="skip-link" style={{
-        position: 'absolute',
-        left: '-9999px',
-        zIndex: 'var(--z-cursor)', // Utiliser z-index centralisé
-        padding: '1em',
-        backgroundColor: 'var(--accent)',
-        color: 'var(--bg)',
-        textDecoration: 'none',
-        fontWeight: 'bold',
-      }}
-      onFocus={(e) => {
-        e.target.style.left = '0';
-        e.target.style.top = '0';
-      }}
-      onBlur={(e) => {
-        e.target.style.left = '-9999px';
-      }}
+      {/* CONVENTION NAVIGATION : Utiliser <a href="#section"> pour les ancres (skip link, sections) */}
+      {/* Skip link pour l'accessibilité WCAG 2.1 - Permet de sauter la navigation */}
+      <a 
+        href="#main-content" 
+        className="skip-link" 
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: '0',
+          zIndex: 'var(--z-cursor)', // Utiliser z-index centralisé
+          padding: '1em',
+          backgroundColor: 'var(--accent)',
+          color: 'var(--bg)',
+          textDecoration: 'none',
+          fontWeight: 'bold',
+          borderRadius: '0 0 4px 0',
+          // ACCESSIBILITÉ : Le skip-link doit être visible au focus (WCAG 2.4.1)
+          // Ne pas masquer via CSS quand il est focus
+        }}
+        onFocus={(e) => {
+          // ACCESSIBILITÉ WCAG : Rendre le skip-link visible au focus clavier
+          e.target.style.left = '0';
+          e.target.style.top = '0';
+        }}
+        onBlur={(e) => {
+          // Masquer le skip-link quand il perd le focus
+          e.target.style.left = '-9999px';
+        }}
+        aria-label={`${t("accessibility.skip_to_main", language)} (skip navigation)`}
       >
-        Aller au contenu principal
+        {t("accessibility.skip_to_main", language)}
       </a>
       <NotificationContainer
         notifications={notifications}
@@ -149,6 +216,7 @@ export default function Layout() {
           </button>
 
           <nav className={`layout-nav ${isMenuOpen ? "is-open" : ""}`} id="main-navigation" data-testid="main-navigation" aria-label={t("nav.menu", language)} role="navigation">
+            {/* CONVENTION NAVIGATION : Utiliser <NavLink to="/route"> pour les routes (navigation principale) */}
             {/* Menu déroulant pour les liens principaux */}
             <div className="layout-nav__dropdown" ref={dropdownRef}>
               <button
@@ -216,7 +284,9 @@ export default function Layout() {
         </div>
       </header>
 
-      <main id="main-content" className="layout-content" role="main" aria-label="Contenu principal">
+      {/* ACCESSIBILITÉ WCAG : <main> peut recevoir le focus programmatiquement via skip-link
+          Le tabIndex sera ajouté temporairement par le handler hash scroll si nécessaire */}
+      <main id="main-content" className="layout-content" role="main" aria-label={t("accessibility.skip_to_main", language)} data-testid="main-content">
         <PageTransition>
           <Outlet />
         </PageTransition>

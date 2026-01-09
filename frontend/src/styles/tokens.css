@@ -1,0 +1,31 @@
+/**
+ * Design Tokens CSS
+ * Variables de design pour l'application EGOEJO
+ */
+
+:root {
+  /* Couleurs principales */
+  --primary: #00f5a0;
+  --primary-soft: rgba(0, 245, 160, 0.14);
+  --secondary: #0de4ff;
+  
+  /* Z-index layers */
+  --z-background: -1;
+  --z-content: 1;
+  --z-overlay: 100;
+  --z-modal: 200;
+  --z-tooltip: 300;
+  
+  /* Breakpoints (pour référence JS) */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  
+  /* Sobriety levels */
+  --sobriety-minimal: 0;
+  --sobriety-reduced: 1;
+  --sobriety-normal: 2;
+}
+

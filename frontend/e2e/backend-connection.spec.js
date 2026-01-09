@@ -113,23 +113,28 @@ test.describe('Connexion Backend-Frontend', () => {
     });
 
     await page.goto('/rejoindre');
-    
-    // Attendre que le formulaire soit chargé
-    await page.waitForSelector('form', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
     
-    // Remplir le formulaire
-    await page.getByLabel(/nom/i).first().fill('Test User');
-    await page.getByLabel(/email/i).first().fill('test@example.com');
-    await page.getByLabel(/profil/i).first().selectOption('je-decouvre');
+    // Attendre que le formulaire soit chargé avec data-testid
+    await expect(page.getByTestId('rejoindre-form')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('rejoindre-page')).toBeVisible({ timeout: 10000 });
+    
+    // Remplir le formulaire avec data-testid
+    await page.getByTestId('rejoindre-input-nom').fill('Test User');
+    await page.getByTestId('rejoindre-input-email').fill('test@example.com');
+    await page.getByTestId('rejoindre-select-profil').selectOption('je-decouvre');
 
-    // Soumettre le formulaire
-    const submitButton = page.getByRole('button', { name: /envoyer|soumettre/i }).first();
-    await submitButton.waitFor({ state: 'visible', timeout: 10000 });
+    // Soumettre le formulaire avec data-testid
+    const submitButton = page.getByTestId('rejoindre-submit-button');
+    await expect(submitButton).toBeVisible({ timeout: 10000 });
+    await expect(submitButton).toBeEnabled({ timeout: 10000 });
+    
+    // Attendre la réponse avant de cliquer
+    const responsePromise = page.waitForResponse('**/api/intents/rejoindre/', { timeout: 15000 });
     await submitButton.click();
-
-    // Attendre que la requête soit faite
-    await page.waitForTimeout(2000);
+    
+    // Attendre que la requête API soit faite
+    await responsePromise;
 
     // Vérifier que la requête API a été faite
     expect(apiRequestMade).toBe(true);
@@ -163,7 +168,8 @@ test.describe('Connexion Backend-Frontend', () => {
       errors.push(error);
     });
     
-    await page.waitForTimeout(2000);
+    // Attendre que la page soit stable (attente active)
+    await page.waitForLoadState('networkidle', { timeout: 5000 });
     
     // Il ne devrait pas y avoir d'erreurs JavaScript fatales
     // (les erreurs réseau sont gérées par le code)
@@ -259,10 +265,10 @@ test.describe('Connexion Backend-Frontend', () => {
     await expect(page.getByTestId('rejoindre-page')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('rejoindre-form')).toBeVisible({ timeout: 10000 });
 
-    // Étape 3 : Remplir le formulaire
-    await page.getByLabel(/nom/i).first().fill('Jean Dupont');
-    await page.getByLabel(/email/i).first().fill('jean.dupont@example.com');
-    await page.getByLabel(/profil/i).first().selectOption('je-decouvre');
+    // Étape 3 : Remplir le formulaire avec data-testid
+    await page.getByTestId('rejoindre-input-nom').fill('Jean Dupont');
+    await page.getByTestId('rejoindre-input-email').fill('jean.dupont@example.com');
+    await page.getByTestId('rejoindre-select-profil').selectOption('je-decouvre');
     
     // Optionnel : remplir le message
     const messageField = page.locator('textarea[name="message"], input[name="message"]').first();
@@ -270,13 +276,17 @@ test.describe('Connexion Backend-Frontend', () => {
       await messageField.fill('Je souhaite découvrir EGOEJO et contribuer à la transition écologique.');
     }
 
-    // Étape 4 : Soumettre le formulaire
-    const submitButton = page.getByRole('button', { name: /envoyer|soumettre/i }).first();
-    await submitButton.waitFor({ state: 'visible', timeout: 10000 });
+    // Étape 4 : Soumettre le formulaire avec data-testid
+    const submitButton = page.getByTestId('rejoindre-submit-button');
+    await expect(submitButton).toBeVisible({ timeout: 10000 });
+    await expect(submitButton).toBeEnabled({ timeout: 10000 });
+    
+    // Attendre la réponse avant de cliquer
+    const responsePromise = page.waitForResponse('**/api/intents/rejoindre/', { timeout: 15000 });
     await submitButton.click();
 
     // Attendre que la requête API soit faite
-    await page.waitForTimeout(2000);
+    await responsePromise;
 
     // Vérifier que la requête API a été faite
     expect(apiRequestMade).toBe(true);

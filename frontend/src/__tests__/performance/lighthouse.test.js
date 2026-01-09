@@ -123,10 +123,10 @@ describe('Tests de Performance Lighthouse', () => {
         images.forEach(img => {
           // Vérifier que les images ont des attributs d'optimisation
           const loading = img.getAttribute('loading');
-          const srcset = img.getAttribute('srcset');
+          const _srcset = img.getAttribute('srcset');
           
           // Les images devraient utiliser lazy loading ou srcset
-          if (loading) {
+          if (loading || _srcset) {
             expect(['lazy', 'eager']).toContain(loading);
           }
         });

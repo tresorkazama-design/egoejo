@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { appRouter } from './app/router';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -11,6 +12,20 @@ import { logger } from './utils/logger';
 import { initPerformanceTracking } from './utils/performance-metrics';
 import './styles/global.css';
 import './styles/eco-mode.css';
+
+// Configuration React Query avec stale-while-revalidate
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - données considérées fraîches (stale-while-revalidate)
+      gcTime: 10 * 60 * 1000, // 10 minutes - données gardées en cache (anciennement cacheTime)
+      refetchOnWindowFocus: false, // Ne pas refetch au focus de la fenêtre
+      refetchOnReconnect: true, // Refetch si reconnexion réseau
+      retry: 2, // Retry 2 fois en cas d'erreur
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Backoff exponentiel
+    },
+  },
+});
 
 // Composant wrapper pour l'easter egg
 const AppWrapper = ({ children }) => {
@@ -49,19 +64,32 @@ if (!rootElement) {
 }
 
 // Créer la racine React et rendre l'application
-ReactDOM.createRoot(rootElement).render(
+const root = ReactDOM.createRoot(rootElement);
+
+root.render(
   <React.StrictMode>
-    <AppWrapper>
-      <EcoModeProvider>
-        <NotificationProvider>
-          <AuthProvider>
-            <LanguageProvider>
-              <RouterProvider router={appRouter} />
-            </LanguageProvider>
-          </AuthProvider>
-        </NotificationProvider>
-      </EcoModeProvider>
-    </AppWrapper>
+    <QueryClientProvider client={queryClient}>
+      <AppWrapper>
+        <EcoModeProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <LanguageProvider>
+                <RouterProvider router={appRouter} />
+              </LanguageProvider>
+            </AuthProvider>
+          </NotificationProvider>
+        </EcoModeProvider>
+      </AppWrapper>
+    </QueryClientProvider>
   </React.StrictMode>
 );
+
+// Marquer l'app comme prête pour les tests E2E
+// Utiliser requestAnimationFrame pour s'assurer que le DOM est rendu
+requestAnimationFrame(() => {
+  const appReadyElement = document.createElement('div');
+  appReadyElement.setAttribute('data-testid', 'app-ready');
+  appReadyElement.style.display = 'none';
+  document.body.appendChild(appReadyElement);
+});
 

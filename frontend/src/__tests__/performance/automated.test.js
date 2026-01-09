@@ -128,7 +128,16 @@ describe('Tests de Performance Automatisés', () => {
     });
 
     it('devrait vérifier que les chunks sont séparés', () => {
-      expect(import).toBeDefined();
+      // Vérifier que le système de modules est disponible
+      // Note: import est un mot-clé réservé, on vérifie import.meta indirectement
+      try {
+        // eslint-disable-next-line no-undef
+        const hasImportMeta = typeof import.meta !== 'undefined';
+        expect(hasImportMeta).toBe(true);
+      } catch {
+        // Si import.meta n'existe pas, le test échoue
+        expect(false).toBe(true);
+      }
     });
   });
 

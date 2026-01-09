@@ -25,11 +25,11 @@ export default function SwipeButton({
   const [isKeyboardMode, setIsKeyboardMode] = useState(false);
   const containerRef = useRef(null);
   const sliderRef = useRef(null);
-  const { showSuccess } = useNotificationContext();
+  const { showSuccess: showNotificationSuccess } = useNotificationContext();
 
   // Motion values pour le drag
   const x = useMotionValue(0);
-  const width = useTransform(x, (latest) => Math.max(0, Math.min(latest, 0)));
+  const width = useTransform(x, (latest) => Math.max(0, latest));
   const opacity = useTransform(x, (latest) => {
     const progress = Math.abs(latest) / (containerRef.current?.offsetWidth || 300);
     return Math.min(1, progress * 1.5);
@@ -83,7 +83,7 @@ export default function SwipeButton({
         await onSuccess();
         setShowSuccess(true);
         // Animation de confettis (simple notification)
-        showSuccess('✅ Action confirmée !');
+        showNotificationSuccess('✅ Action confirmée !');
         
         // Verrouiller le slider (impossible de re-glisser)
         x.set(maxDrag);
@@ -108,7 +108,7 @@ export default function SwipeButton({
       try {
         await onSuccess();
         setShowSuccess(true);
-        showSuccess('✅ Action confirmée !');
+        showNotificationSuccess('✅ Action confirmée !');
       } catch (err) {
         setError(err.message || 'Une erreur est survenue');
         setIsSubmitting(false);
@@ -126,7 +126,7 @@ export default function SwipeButton({
           try {
             await onSuccess();
             setShowSuccess(true);
-            showSuccess('✅ Action confirmée !');
+            showNotificationSuccess('✅ Action confirmée !');
           } catch (err) {
             setError(err.message || 'Une erreur est survenue');
             setIsSubmitting(false);

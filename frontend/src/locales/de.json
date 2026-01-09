@@ -20,6 +20,9 @@
     "footer_navigation": "Fußzeile Navigation",
     "user_menu": "Benutzermenü"
   },
+  "accessibility": {
+    "skip_to_main": "Zum Hauptinhalt springen"
+  },
   "home": {
     "tag": "KOLLEKTIV FÜR DAS LEBENDIGE",
     "title": "Die Erde anders bewohnen,\ngemeinsam.",
@@ -33,7 +36,8 @@
     "transmettre": "Übertragen",
     "transmettre_desc": "Akteure des Wandels mit immersiven, sensiblen und in der Realität verwurzelten Formaten begleiten.",
     "soutenir_title": "Werden Sie Verbündeter·in des Lebendigen",
-    "soutenir_desc": "Jeder Beitrag speist konkrete Aktionen: Zufluchtsorte, Nahrungsgärten, Übertragungsworkshops, Forschungsresidenzen, Begleitung lokaler Gemeinschaften. 100% der Spenden werden zur Finanzierung dieser Projekte verwendet.",
+    "soutenir_desc": "Jeder Beitrag speist konkrete Aktionen: Zufluchtsorte, Nahrungsgärten, Übertragungsworkshops, Forschungsresidenzen, Begleitung lokaler Gemeinschaften. 100% der Netto-Spenden (nach Plattformgebühren) werden zur Finanzierung dieser Projekte verwendet.",
+    "saka_eur_note": "Wichtiger Hinweis: EGOEJO arbeitet nach einer klar getrennten Doppelstruktur. Die relationale Struktur (SAKA, interne Engagement-Einheit) ist von der instrumentellen Struktur (EUR, echte Währung) getrennt. SAKA kann nicht gegen EUR eingetauscht werden und hat keinen Preis. Diese Trennung ist im Code kodiert, wird automatisch getestet und ist nicht verhandelbar.",
     "contribuer": "Beitragen",
     "nous_soutenir": "Unterstützen Sie uns",
     "membership_helloasso": "Mitgliedschaft • HelloAsso",
@@ -75,7 +79,10 @@
   "vision": {
     "badge": "Unsere Vision",
     "title": "Vision",
-    "subtitle": "Unsere Vision ist es, ein nachhaltiges und inklusives Ökosystem zu schaffen, in dem Technologie und Natur harmonisch koexistieren. Wir glauben an eine Zukunft, in der jede Handlung zählt, um sich um die Welt zu kümmern.",
+    "subtitle": "EGOEJO ist eine mission-driven Organisation, die Bürger mit sozialen Projekten mit hoher ökologischer und sozialer Wirkung verbindet. Wir entwickeln ein technologisches Ökosystem im Dienste der Regeneration des Lebendigen, im Einklang mit den Prinzipien der Commons-Governance und institutioneller Transparenz.",
+    "principles_title": "Grundprinzipien",
+    "glossary_title": "Glossar",
+    "citations_disclaimer": "Die Zitate auf dieser Seite stammen aus verschiedenen Quellen (EGOEJO-Kollektiv, indigene Gemeinschaften, Denker des Lebendigen). Sie werden mit ausdrücklicher Genehmigung und im Respekt vor den ursprünglichen Kulturen und Traditionen verwendet. EGOEJO erkennt die Vielfalt des Wissens an und verpflichtet sich, die kulturellen und geistigen Rechte der Quellgemeinschaften zu respektieren. Jede Verwendung von Zitaten wird nachverfolgt und dokumentiert.",
     "highlight_text": "Die Erde anders bewohnen, gemeinsam. Das ist unsere Vision: eine Welt, in der das Lebendige im Herzen unserer Entscheidungen steht, in der jede Handlung zählt.",
     "highlight_author": "EGOEJO Kollektiv",
     "stats_piliers": "3 Pfeiler",

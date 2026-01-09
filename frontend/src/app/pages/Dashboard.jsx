@@ -324,6 +324,7 @@ export default function Dashboard() {
                   )}
                 </div>
               )}
+              </div>
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
                 <Link
                   to="/saka/history"
@@ -342,24 +343,24 @@ export default function Dashboard() {
                 >
                   Historique SAKA 📜
                 </Link>
-                <Link
-                  to="/saka/saisons"
-                  style={{
-                    display: 'inline-block',
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: 'transparent',
-                    color: 'var(--accent)',
-                    border: '1px solid var(--accent)',
-                    borderRadius: 'var(--radius)',
-                    textDecoration: 'none',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Saisons SAKA 🌾
-                </Link>
-              </div>
+              <Link
+                to="/saka/saisons"
+                style={{
+                  display: 'inline-block',
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: 'transparent',
+                  color: 'var(--accent)',
+                  border: '1px solid var(--accent)',
+                  borderRadius: 'var(--radius)',
+                  textDecoration: 'none',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                }}
+              >
+                Saisons SAKA 🌾
+              </Link>
+            </div>
           </section>
         )}
 

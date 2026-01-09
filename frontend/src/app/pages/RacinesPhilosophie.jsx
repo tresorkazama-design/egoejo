@@ -8,6 +8,7 @@ import { fetchAPI } from '../../utils/api';
 import { t } from '../../utils/i18n';
 import SEO from '../../components/SEO';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import { sanitizeContent } from '../../utils/content';
 
 export default function RacinesPhilosophie() {
   const { language } = useLanguage();
@@ -87,11 +88,11 @@ export default function RacinesPhilosophie() {
                 }}
               >
                 <h3 style={{ marginBottom: '0.5rem', color: 'var(--accent)' }}>
-                  {content.title}
+                  {sanitizeContent(content.title)}
                 </h3>
                 {content.description && (
                   <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>
-                    {content.description}
+                    {sanitizeContent(content.description)}
                   </p>
                 )}
                 {content.tags && content.tags.length > 0 && (
@@ -106,7 +107,7 @@ export default function RacinesPhilosophie() {
                           fontSize: '0.85rem',
                         }}
                       >
-                        {tag}
+                        {sanitizeContent(tag)}
                       </span>
                     ))}
                   </div>

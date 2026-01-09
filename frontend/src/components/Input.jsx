@@ -40,6 +40,7 @@ export const Input = ({
         className={`w-full px-3 py-2 border rounded-md ${
           error ? 'border-red-500' : 'border-gray-300'
         } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+        data-testid={props['data-testid']}
         {...props}
       />
       {error && <p className="text-red-500 text-sm mt-1" role="alert" id={errorId} aria-live="polite">{error}</p>}

@@ -28,6 +28,9 @@
     "error": "Hitilafu",
     "actions": "Vitendo"
   },
+  "accessibility": {
+    "skip_to_main": "Ruka kwa maudhui kuu"
+  },
   "home": {
     "tag": "Jumuiya ya viumbe hai",
     "title": "Kukaa Duniani kwa njia tofauti,\npamoja.",
@@ -44,7 +47,8 @@
     "transmettre": "Wasilisha",
     "transmettre_desc": "Saidia watendaji wa mabadiliko kwa njia za kujifungua, nyeti na zenye mizizi katika ukweli.",
     "soutenir_title": "Kuwa mshirika wa viumbe hai",
-    "soutenir_desc": "Kila mchango huchochea vitendo halisi: makimbilio, bustani za chakula, warsha za uwasilishaji, makao ya utafiti, usaidizi wa jamii za ndani. Asilimia 100 ya michango inatumika kufadhili miradi hii.",
+    "soutenir_desc": "Kila mchango huchochea vitendo halisi: makimbilio, bustani za chakula, warsha za uwasilishaji, makao ya utafiti, usaidizi wa jamii za ndani. Asilimia 100 ya michango halisi (baada ya ada za jukwaa) inatumika kufadhili miradi hii.",
+    "saka_eur_note": "Kidokezo muhimu: EGOEJO inafanya kazi kulingana na muundo wa mara mbili uliotenganishwa wazi. Muundo wa uhusiano (SAKA, kitengo cha kujitolea cha ndani) ni tofauti na muundo wa zana (EUR, sarafu halisi). SAKA haiwezi kubadilishwa na EUR na haina bei. Utofauti huu umeandikwa katika kanuni, hujaribiwa kiotomatiki, na hauwezi kujadiliwa.",
     "contribuer": "Changia",
     "donation_options": "Chaguzi za mchango",
     "nous_soutenir": "Tusaidie",
@@ -83,7 +87,10 @@
   "vision": {
     "badge": "Dira yetu",
     "title": "Dira",
-    "subtitle": "Dira yetu ni kuunda mfumo wa ikolojia endelevu na wa kujumuisha ambapo teknolojia na asili zinaishi pamoja kwa amani. Tunaamini katika siku zijazo ambapo kila hatua ni muhimu kuchunga ulimwengu.",
+    "subtitle": "EGOEJO ni shirika lenye lengo linalounganisha raia na miradi ya kijamii yenye athari kubwa ya ikolojia na kijamii. Tunatengeneza mfumo wa teknolojia unaohudumia ukuaji wa viumbe hai, kwa kuzingatia kanuni za uongozi wa mali ya pamoja na uwazi wa kitaasisi.",
+    "principles_title": "Kanuni za msingi",
+    "glossary_title": "Kamusi",
+    "citations_disclaimer": "Nukuu kwenye ukurasa huu zinatoka kwenye vyanzo mbalimbali (jumuiya ya EGOEJO, jamii za asili, wanaofikiri kuhusu viumbe hai). Zinatumika kwa idhini ya wazi na kwa heshima ya tamaduni na mila za asili. EGOEJO inatambua anuwai ya maarifa na inajitolea kuzingatia haki za kitamaduni na za kiakili za jamii za asili. Matumizi yoyote ya nukuu yanafuatiliwa na kuandikwa.",
     "highlight_text": "Kukaa Duniani kwa njia tofauti, pamoja. Hii ndiyo dira yetu: ulimwengu ambapo viumbe hai viko katikati ya maamuzi yetu, ambapo kila hatua ni muhimu.",
     "highlight_author": "Jumuiya ya EGOEJO",
     "stats_piliers": "Nguzo 3",

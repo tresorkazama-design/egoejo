@@ -1,17 +1,17 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 /**
  * Tests E2E pour les parcours SAKA (gain et dépense)
- * Ces tests nécessitent que le backend soit démarré sur http://127.0.0.1:8000
- * ou que les routes API soient mockées
+ * Ces tests mockent les APIs nécessaires pour simuler un flux complet
  */
 test.describe('Parcours SAKA', () => {
-  test.beforeEach(async ({ page }) => {
-    // Mock de l'authentification (token dans localStorage)
-    await page.addInitScript(() => {
-      window.localStorage.setItem('token', 'mock-access-token');
-      window.localStorage.setItem('refreshToken', 'mock-refresh-token');
-    });
+  test.beforeEach(async ({ page, loginAsUser }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+    
+    // Authentifier l'utilisateur via la fixture
+    await loginAsUser();
   });
 
   test('devrait afficher le solde SAKA sur le Dashboard', async ({ page }) => {
@@ -241,8 +241,8 @@ test.describe('Parcours SAKA', () => {
     if (await boostButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await boostButton.click();
       
-      // Attendre que la requête soit faite
-      await page.waitForTimeout(2000);
+      // Attendre que la requête API de boost soit faite (attente active)
+      await page.waitForResponse('**/api/projets/**/boost/', { timeout: 10000 });
       
       // Vérifier que la requête API de boost a été faite
       expect(boostRequestMade).toBe(true);

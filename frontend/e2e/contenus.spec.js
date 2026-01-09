@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { setupMockOnlyTest } from './utils/test-helpers';
 
 test.describe('Page Contenus', () => {
+  test.beforeEach(async ({ page }) => {
+    // Setup mock-only : langue FR + mocks API par défaut
+    await setupMockOnlyTest(page, { language: 'fr' });
+  });
+
   test('devrait charger la page contenus', async ({ page }) => {
     await page.goto('/contenus');
     await expect(page).toHaveTitle(/EGOEJO/i);
@@ -15,7 +21,7 @@ test.describe('Page Contenus', () => {
 
   test('devrait afficher le badge "Ressources éducatives"', async ({ page }) => {
     await page.goto('/contenus');
-    await expect(page.getByText('Ressources éducatives')).toBeVisible();
+    await expect(page.getByTestId('contenus-badge')).toBeVisible();
   });
 
   test('devrait afficher le blockquote highlight', async ({ page }) => {
@@ -27,9 +33,9 @@ test.describe('Page Contenus', () => {
 
   test('devrait afficher les stats', async ({ page }) => {
     await page.goto('/contenus');
-    await expect(page.getByText(/contenu/i)).toBeVisible();
-    await expect(page.getByText(/format/i)).toBeVisible();
-    await expect(page.getByText(/bibliothèque/i)).toBeVisible();
+    await expect(page.getByTestId('contenus-stats-count')).toBeVisible();
+    await expect(page.getByTestId('contenus-stats-formats')).toBeVisible();
+    await expect(page.getByTestId('contenus-stats-library')).toBeVisible();
   });
 
   test('devrait afficher la section CTA "Partagez vos contenus"', async ({ page }) => {
@@ -39,8 +45,8 @@ test.describe('Page Contenus', () => {
 
   test('devrait afficher les liens de navigation dans le CTA', async ({ page }) => {
     await page.goto('/contenus');
-    const linkRejoindre = page.getByRole('link', { name: /Rejoindre l'Alliance/i });
-    const linkProposer = page.getByRole('link', { name: /Proposer un contenu/i });
+    const linkRejoindre = page.getByTestId('contenus-link-rejoindre');
+    const linkProposer = page.getByTestId('contenus-link-propose');
     await expect(linkRejoindre).toBeVisible();
     await expect(linkProposer).toBeVisible();
   });
@@ -49,8 +55,8 @@ test.describe('Page Contenus', () => {
     await page.goto('/contenus');
     // Attendre que la page soit complètement chargée
     await page.waitForLoadState('networkidle');
-    // Vérifier avec un timeout plus long et first() pour éviter l'ambiguïté
-    await expect(page.getByRole('heading', { name: /Types de contenus/i }).first()).toBeVisible({ timeout: 10000 });
+    // Vérifier avec un timeout plus long
+    await expect(page.getByTestId('contenus-types-section')).toBeVisible({ timeout: 10000 });
   });
 });
 

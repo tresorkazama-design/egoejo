@@ -232,6 +232,7 @@ export const Admin = () => {
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             placeholder={t("admin.search_placeholder", language)}
             aria-describedby="admin-search-desc"
+            data-testid="admin-search-input"
           />
           <div className="mb-4">
             <label htmlFor="admin-profil" className="block text-sm font-medium mb-1">{t("admin.profil", language)}</label>
@@ -241,6 +242,7 @@ export const Admin = () => {
               onChange={(e) => setFilters({ ...filters, profil: e.target.value })}
               className="w-full px-3 py-2 border rounded-md"
               aria-label={t("admin.profil", language)}
+              data-testid="admin-profil-filter"
             >
             <option value="">{t("admin.profil_all", language)}</option>
             <option value="je-decouvre">{t("admin.profil_decouvre", language)}</option>
@@ -248,7 +250,7 @@ export const Admin = () => {
             <option value="je-contribue">{t("admin.profil_contribue", language)}</option>
           </select>
         </div>
-          <Button onClick={handleExport} aria-label={t("admin.export_csv", language)}>{t("admin.export_csv", language)}</Button>
+          <Button onClick={handleExport} aria-label={t("admin.export_csv", language)} data-testid="admin-export-button">{t("admin.export_csv", language)}</Button>
         </div>
       </section>
 
@@ -260,15 +262,15 @@ export const Admin = () => {
 
       <section aria-label={t("admin.table_title", language) || t("admin.title", language)}>
         <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse border border-gray-300" role="table" aria-label={t("admin.table_title", language) || t("admin.intents_list", language)}>
+          <table className="min-w-full border-collapse border border-gray-300" role="table" aria-label={t("admin.table_title", language) || t("admin.intents_list", language)} data-testid="admin-table">
             <thead>
-              <tr className="bg-gray-100" role="row">
-                  <th className="border border-gray-300 px-4 py-2" scope="col">{t("admin.table_id", language)}</th>
-                <th className="border border-gray-300 px-4 py-2" scope="col">{t("admin.table_nom", language)}</th>
-                <th className="border border-gray-300 px-4 py-2" scope="col">{t("admin.table_email", language)}</th>
-                <th className="border border-gray-300 px-4 py-2" scope="col">{t("admin.table_profil", language)}</th>
-                <th className="border border-gray-300 px-4 py-2" scope="col">{t("admin.table_date", language)}</th>
-                <th className="border border-gray-300 px-4 py-2" scope="col">{t("admin.table_actions", language)}</th>
+              <tr className="bg-gray-100" role="row" data-testid="admin-table-header">
+                  <th className="border border-gray-300 px-4 py-2" scope="col" data-testid="admin-table-header-id">{t("admin.table_id", language)}</th>
+                <th className="border border-gray-300 px-4 py-2" scope="col" data-testid="admin-table-header-nom">{t("admin.table_nom", language)}</th>
+                <th className="border border-gray-300 px-4 py-2" scope="col" data-testid="admin-table-header-email">{t("admin.table_email", language)}</th>
+                <th className="border border-gray-300 px-4 py-2" scope="col" data-testid="admin-table-header-profil">{t("admin.table_profil", language)}</th>
+                <th className="border border-gray-300 px-4 py-2" scope="col" data-testid="admin-table-header-date">{t("admin.table_date", language)}</th>
+                <th className="border border-gray-300 px-4 py-2" scope="col" data-testid="admin-table-header-actions">{t("admin.table_actions", language)}</th>
             </tr>
           </thead>
             <tbody>

@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader } from '../../components/Loader';
 import CardTilt from '../../components/CardTilt';
-import { fetchAPI, handleAPIError } from '../../utils/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../utils/i18n';
 import SEO from '../../components/SEO';
 import { useSEO } from '../../hooks/useSEO';
 import { Skeleton, SkeletonCard } from '../../components/ui/Skeleton';
 import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import { sanitizeContent } from '../../utils/content';
+import { useContents } from '../../hooks/useContents';
 
 const getTypeLabels = (lang) => ({
   podcast: t("contenus.type_podcast", lang),
@@ -22,9 +23,8 @@ const getTypeLabels = (lang) => ({
 
 export const Contenus = () => {
   const { language } = useLanguage();
-  const [contenus, setContenus] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20); // Taille de page fixe
   const TYPE_LABELS = getTypeLabels(language);
 
   const seoProps = useSEO({
@@ -33,22 +33,27 @@ export const Contenus = () => {
     keywords: t("seo.contenus_keywords", language),
   });
 
-  useEffect(() => {
-    const loadContenus = async () => {
-      try {
-        setLoading(true);
-        // Récupérer uniquement les contenus publiés
-        const data = await fetchAPI('/contents/?status=published');
-        setContenus(data.results || data || []);
-      } catch (err) {
-        setError(handleAPIError(err));
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Utiliser React Query pour récupérer les contenus avec pagination et cache
+  const {
+    data: contentsData,
+    isLoading: loading,
+    isError,
+    error: queryError,
+    isFetching, // Indique si une requête est en cours (y compris revalidation)
+    isPaused, // Indique si la requête est en pause (ex: offline)
+  } = useContents({
+    page: currentPage,
+    pageSize: pageSize,
+    status: 'published',
+  });
 
-    loadContenus();
-  }, []);
+  const contenus = contentsData?.contents || [];
+  const error = isError ? (queryError?.message || t("common.error", language)) : '';
+  const totalCount = contentsData?.count || 0;
+  const totalPages = contentsData?.totalPages || 1;
+  const hasNextPage = contentsData?.next !== null;
+  const hasPreviousPage = contentsData?.previous !== null;
+  const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
 
   if (loading) {
     return (
@@ -85,7 +90,7 @@ export const Contenus = () => {
       </div>
 
       <section className="citations-hero" aria-labelledby="contenus-title" role="region" aria-label={t("contenus.title", language)}>
-        <div className="citations-hero__badge" role="text" aria-label={t("contenus.badge", language)}>{t("contenus.badge", language)}</div>
+        <div className="citations-hero__badge" role="text" aria-label={t("contenus.badge", language)} data-testid="contenus-badge">{t("contenus.badge", language)}</div>
         <h1 id="contenus-title" className="citations-hero__title">{t("contenus.title", language)}</h1>
         <p className="citations-hero__subtitle">
           {t("contenus.subtitle", language)}
@@ -96,16 +101,16 @@ export const Contenus = () => {
           <cite id="contenus-cite">{t("contenus.highlight_author", language)}</cite>
         </blockquote>
 
-        <dl className="citations-hero__stats" aria-label={t("contenus.stats", language) || "Statistiques"}>
-          <div>
-            <dt>{contenus.length} {contenus.length > 1 ? t("contenus.stats_count_plural", language) : t("contenus.stats_count", language)}</dt>
-            <dd>{contenus.length > 1 ? t("contenus.stats_available_plural", language) : t("contenus.stats_available", language)}</dd>
+        <dl className="citations-hero__stats" aria-label={t("contenus.stats", language) || "Statistiques"} data-testid="contenus-stats">
+          <div data-testid="contenus-stats-count">
+            <dt>{totalCount} {totalCount > 1 ? t("contenus.stats_count_plural", language) : t("contenus.stats_count", language)}</dt>
+            <dd>{totalCount > 1 ? t("contenus.stats_available_plural", language) : t("contenus.stats_available", language)}</dd>
           </div>
-          <div>
+          <div data-testid="contenus-stats-formats">
             <dt>{t("contenus.stats_formats_title", language)}</dt>
             <dd>{t("contenus.stats_formats_desc", language)}</dd>
           </div>
-          <div>
+          <div data-testid="contenus-stats-library">
             <dt>{t("contenus.stats_library_title", language)}</dt>
             <dd>{t("contenus.stats_library_desc", language)}</dd>
           </div>
@@ -115,16 +120,47 @@ export const Contenus = () => {
       {error ? (
         <section className="citation-group" role="alert" aria-live="polite">
           <div style={{ padding: "24px", color: "var(--muted)" }}>
-            <p>{t("common.error", language)} : {error}</p>
+            {isOffline ? (
+              <>
+                <p style={{ marginBottom: '1rem', fontWeight: '500' }}>
+                  📡 {t("contenus.offline_title", language) || "Mode hors-ligne"}
+                </p>
+                <p style={{ marginBottom: '1rem' }}>
+                  {t("contenus.offline_message", language) || "Vous êtes hors-ligne. Les contenus que vous avez déjà visités sont disponibles depuis le cache."}
+                </p>
+                <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+                  {t("contenus.offline_hint", language) || "Reconnectez-vous pour voir les nouveaux contenus."}
+                </p>
+              </>
+            ) : (
+              <>
+                <p>{t("common.error", language)} : {error}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="btn btn-ghost"
+                  style={{ marginTop: '1rem' }}
+                >
+                  {t("common.retry", language) || "Réessayer"}
+                </button>
+              </>
+            )}
           </div>
         </section>
-      ) : contenus.length === 0 ? (
+      ) : !loading && contenus.length === 0 ? (
         <section className="citation-group" aria-labelledby="no-contenus-title">
           <header className="citation-group__header">
             <span className="citation-group__tag">{t("contenus.info_tag", language)}</span>
-            <h2 id="no-contenus-title" className="citation-group__title">{t("contenus.no_content_title", language)}</h2>
+            <h2 id="no-contenus-title" className="citation-group__title">
+              {isOffline 
+                ? (t("contenus.offline_no_cache_title", language) || "Aucun contenu en cache")
+                : (t("contenus.no_content_title", language) || "Aucun contenu disponible")
+              }
+            </h2>
             <p className="citation-group__description" aria-labelledby="no-contenus-title">
-              {t("contenus.no_content_desc", language)}
+              {isOffline 
+                ? (t("contenus.offline_no_cache_desc", language) || "Vous êtes hors-ligne et aucun contenu n'est disponible en cache. Reconnectez-vous pour accéder aux contenus.")
+                : (t("contenus.no_content_desc", language) || "Aucun contenu n'est disponible pour le moment.")
+              }
             </p>
           </header>
         </section>
@@ -134,10 +170,10 @@ export const Contenus = () => {
             <CardTilt key={contenu.id || contenu.slug} role="listitem">
               <section className="citation-group" aria-labelledby={`contenu-${contenu.id || contenu.slug}`}>
               <header className="citation-group__header">
-                <span className="citation-group__tag">{TYPE_LABELS[contenu.type] || t("contenus.type_autre", language)}</span>
-                <h2 id={`contenu-${contenu.id || contenu.slug}`} className="citation-group__title">{contenu.title || t("contenus.no_content_title", language)}</h2>
+                <span className="citation-group__tag">{TYPE_LABELS[sanitizeContent(contenu.type)] || t("contenus.type_autre", language)}</span>
+                <h2 id={`contenu-${contenu.id || contenu.slug}`} className="citation-group__title">{sanitizeContent(contenu.title) || t("contenus.no_content_title", language)}</h2>
                 {contenu.description && (
-                  <p className="citation-group__description" aria-labelledby={`contenu-${contenu.id || contenu.slug}`}>{contenu.description}</p>
+                  <p className="citation-group__description" aria-labelledby={`contenu-${contenu.id || contenu.slug}`}>{sanitizeContent(contenu.description)}</p>
                 )}
               </header>
               {(contenu.external_url || contenu.file) && (
@@ -150,7 +186,7 @@ export const Contenus = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ color: 'var(--accent)', textDecoration: 'underline' }}
-                          aria-label={`${t("contenus.access_content", language)} - ${contenu.title || t("contenus.no_content_title", language)}`}
+                          aria-label={`${t("contenus.access_content", language)} - ${sanitizeContent(contenu.title) || t("contenus.no_content_title", language)}`}
                         >
                           {t("contenus.access_content", language)} →
                         </a>
@@ -162,7 +198,7 @@ export const Contenus = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ color: 'var(--accent)', textDecoration: 'underline' }}
-                          aria-label={`${t("contenus.download_file", language)} - ${contenu.title || t("contenus.no_content_title", language)}`}
+                          aria-label={`${t("contenus.download_file", language)} - ${sanitizeContent(contenu.title) || t("contenus.no_content_title", language)}`}
                         >
                           {t("contenus.download_file", language)} →
                         </a>
@@ -170,7 +206,7 @@ export const Contenus = () => {
                     ) : null}
                     {contenu.anonymous_display_name && (
                       <cite className="citation-card__author">
-                        {t("contenus.by_author", language, { author: contenu.anonymous_display_name })}
+                        {t("contenus.by_author", language, { author: sanitizeContent(contenu.anonymous_display_name) })}
                       </cite>
                     )}
                   </div>
@@ -180,6 +216,61 @@ export const Contenus = () => {
             </CardTilt>
           ))}
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && contenus.length > 0 && totalPages > 1 && (
+        <section className="citations-pagination" aria-label={t("contenus.pagination", language) || "Pagination"}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            gap: '1rem',
+            padding: '2rem',
+            flexWrap: 'wrap'
+          }}>
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={!hasPreviousPage || isFetching}
+              className="btn btn-ghost"
+              aria-label={t("contenus.pagination_previous", language) || "Page précédente"}
+              data-testid="pagination-prev"
+            >
+              ← {t("contenus.pagination_previous", language) || "Précédent"}
+            </button>
+            
+            <span style={{ 
+              color: 'var(--muted)',
+              fontSize: '0.9rem'
+            }} data-testid="pagination-info">
+              {t("contenus.pagination_page", language, { 
+                current: currentPage, 
+                total: totalPages 
+              }) || `Page ${currentPage} sur ${totalPages}`}
+            </span>
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={!hasNextPage || isFetching}
+              className="btn btn-ghost"
+              aria-label={t("contenus.pagination_next", language) || "Page suivante"}
+              data-testid="pagination-next"
+            >
+              {t("contenus.pagination_next", language) || "Suivant"} →
+            </button>
+          </div>
+          
+          {isFetching && (
+            <div style={{ 
+              textAlign: 'center', 
+              color: 'var(--muted)',
+              fontSize: '0.85rem',
+              padding: '0.5rem'
+            }} data-testid="pagination-loading">
+              {t("common.loading", language) || "Chargement..."}
+            </div>
+          )}
+        </section>
       )}
 
       <section className="citations-cta" aria-labelledby="contenus-cta-title">
@@ -192,16 +283,17 @@ export const Contenus = () => {
             href="mailto:contact@egoejo.org?subject=Proposition%20de%20contenu"
             className="btn btn-primary"
             aria-label={t("contenus.propose_content", language)}
+            data-testid="contenus-link-propose"
           >
             {t("contenus.propose_content", language)}
           </a>
-          <Link to="/rejoindre" className="btn btn-ghost" aria-label={t("nav.rejoindre", language)}>
+          <Link to="/rejoindre" className="btn btn-ghost" aria-label={t("nav.rejoindre", language)} data-testid="contenus-link-rejoindre">
             {t("nav.rejoindre", language)}
           </Link>
         </div>
       </section>
 
-      <section className="citations-references" aria-labelledby="contenus-types-title">
+      <section className="citations-references" aria-labelledby="contenus-types-title" data-testid="contenus-types-section">
         <h3 id="contenus-types-title" className="heading-m">{t("contenus.types_title", language)}</h3>
         <p className="muted" style={{ margin: 0, lineHeight: 1.6 }}>
           {t("contenus.types_desc", language)}

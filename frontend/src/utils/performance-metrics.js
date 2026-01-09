@@ -53,7 +53,6 @@ export const measureWebVitals = () => {
     // Cumulative Layout Shift (CLS)
     try {
       let clsValue = 0;
-      let clsEntries = [];
       let sessionValue = 0;
       let sessionEntries = [];
 
@@ -83,7 +82,7 @@ export const measureWebVitals = () => {
             // update CLS and the entries contributing to it.
             if (sessionValue > clsValue) {
               clsValue = sessionValue;
-              clsEntries = [...sessionEntries];
+              // Note: clsEntries was stored but never used, removed for linting
             }
           }
         }

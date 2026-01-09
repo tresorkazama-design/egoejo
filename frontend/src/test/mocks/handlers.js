@@ -82,9 +82,7 @@ export const handlers = [
   }),
 
   // Chat
-  http.get(`${API_BASE}/chat/messages/`, ({ request }) => {
-    const url = new URL(request.url);
-    const thread = url.searchParams.get('thread');
+  http.get(`${API_BASE}/chat/messages/`, () => {
     return HttpResponse.json([]);
   }),
 

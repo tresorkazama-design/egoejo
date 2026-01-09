@@ -82,6 +82,9 @@ class ErrorBoundary extends React.Component {
             >
               Rafraîchir la page
             </button>
+            {/* CONVENTION NAVIGATION : Exception - Utiliser <a href="/"> ici car ErrorBoundary est une classe
+                et ne peut pas utiliser les hooks React Router. En cas d'erreur critique, un rechargement complet
+                de la page est préférable pour réinitialiser l'état de l'application. */}
             <a
               href="/"
               style={{
