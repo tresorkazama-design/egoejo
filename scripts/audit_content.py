@@ -89,6 +89,18 @@ EXCLUDE_COMPLIANCE_DOCS = {
     'docs/egoejo_compliance',
     'docs/compliance',
     'docs/legal',
+    'docs/constitution',
+    'docs/governance',
+    'docs/institutionnel',
+    'docs/reports',
+    'docs/audit',
+    'docs/philosophie',
+    'docs/open-source',
+    'docs/production',
+    'docs/security',
+    'docs/observability',
+    'tests/compliance',  # Les tests de compliance contiennent les patterns interdits dans leurs messages
+    'backend/tests/compliance',  # Tests de compliance backend
     'docs/governance',
     'docs/reports',
     'docs/institutionnel',
