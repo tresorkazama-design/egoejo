@@ -8,7 +8,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import cache_page
 from django.conf import settings
-from datetime import datetime
+from datetime import datetime, timedelta
+from django.utils import timezone
 import subprocess  # nosec B404 - Nécessaire pour exécuter pytest, commande contrôlée
 import json
 import os
@@ -492,4 +493,92 @@ def _generate_badge_svg(compliance_status):
 </svg>'''
     
     return svg
+
+
+@require_http_methods(["GET"])
+def critical_alert_metrics(request):
+    """
+    Endpoint public pour exposer les métriques d'alertes critiques EGOEJO.
+    
+    GET /api/compliance/alerts/metrics/
+    
+    Spécifications :
+    {
+      "total_alerts": int,
+      "alerts_by_month": [
+        {"month": "YYYY-MM", "count": int},
+        ...
+      ],
+      "last_alert_at": "ISO-8601" | null
+    }
+    
+    Contraintes :
+    - Lecture seule (GET uniquement)
+    - Accessible sans authentification (public)
+    - Aucune donnée personnelle exposée
+    - Cache contrôlé (5 minutes)
+    
+    Returns:
+        JsonResponse: Métriques d'alertes critiques au format JSON
+    """
+    from django.core.cache import cache
+    from core.models.alerts import CriticalAlertEvent
+    
+    # Clé de cache pour cet endpoint
+    cache_key = "critical_alert_metrics_json"
+    cache_ttl = 300  # 5 minutes
+    
+    # Vérifier le cache
+    cached_response = cache.get(cache_key)
+    if cached_response is not None:
+        response = JsonResponse(cached_response, json_dumps_params={"indent": 2, "ensure_ascii": False})
+        response['Cache-Control'] = 'public, max-age=300'  # 5 minutes
+        return response
+    
+    # Calculer les métriques
+    total_alerts = CriticalAlertEvent.objects.count()
+    
+    # Calculer les alertes par mois (12 derniers mois)
+    alerts_by_month = []
+    now = timezone.now()
+    
+    for i in range(12):
+        # Calculer le mois (i mois en arrière)
+        target_date = now - timedelta(days=30 * i)
+        year = target_date.year
+        month = target_date.month
+        
+        # Compter les alertes pour ce mois
+        count = CriticalAlertEvent.count_for_month(year, month)
+        
+        # Format YYYY-MM
+        month_str = f"{year}-{month:02d}"
+        
+        alerts_by_month.append({
+            "month": month_str,
+            "count": count
+        })
+    
+    # Trier par mois (plus récent en premier)
+    alerts_by_month.sort(key=lambda x: x["month"], reverse=True)
+    
+    # Récupérer la date de la dernière alerte
+    last_alert = CriticalAlertEvent.objects.order_by('-created_at').first()
+    last_alert_at = last_alert.created_at.isoformat() if last_alert else None
+    
+    # Construire la réponse JSON
+    response_data = {
+        "total_alerts": total_alerts,
+        "alerts_by_month": alerts_by_month,
+        "last_alert_at": last_alert_at
+    }
+    
+    # Mettre en cache
+    cache.set(cache_key, response_data, cache_ttl)
+    
+    # Créer la réponse JSON
+    response = JsonResponse(response_data, json_dumps_params={"indent": 2, "ensure_ascii": False})
+    response['Cache-Control'] = 'public, max-age=300'  # 5 minutes
+    
+    return response
 

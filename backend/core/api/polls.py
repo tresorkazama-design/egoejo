@@ -46,6 +46,21 @@ class PollViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(project_id=project_param)
         return queryset
 
+    def update(self, request, *args, **kwargs):
+        """
+        Applique le contrôle owner/admin AVANT la validation serializer.
+        Sinon, un non-owner peut obtenir un 400 (validation) au lieu d'un 403 (permission),
+        ce qui fausse les tests de permissions et l'intention de sécurité.
+        """
+        partial = kwargs.pop("partial", False)
+        poll = self.get_object()
+        _ensure_owner(request, poll)
+
+        serializer = self.get_serializer(poll, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        updated_poll = self.perform_update(serializer)
+        return Response(self.get_serializer(updated_poll).data)
+
     def _sync_options(self, poll: Poll, options_data):
         """
         Synchronise les options d'un poll avec les données fournies.
@@ -363,6 +378,21 @@ class PollViewSet(viewsets.ModelViewSet):
                 metadata={'poll_id': poll.id, 'voting_method': poll.voting_method}
             )
         
+        # Préparer la réponse avec les informations SAKA (Phase 2)
+        response_data = self.get_serializer(poll).data
+        
+        if poll.voting_method == 'quadratic':
+            # Ajouter les informations SAKA dans la réponse
+            response_data['saka_info'] = {
+                'saka_spent': saka_spent,
+                'saka_cost': saka_cost,
+                'intensity': intensity,
+                'weight': weight,
+            }
+        
+        return Response(response_data)
+
+
         # Préparer la réponse avec les informations SAKA (Phase 2)
         response_data = self.get_serializer(poll).data
         

@@ -3,6 +3,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
+from django.utils import timezone
+import json
+import csv
+import io
 
 from core.models import EducationalContent
 from core.serializers import EducationalContentSerializer
@@ -13,6 +18,7 @@ from core.permissions import (
     CanArchiveContent,
     CanUnpublishContent,
     CanCreateContent,
+    CONTENT_EDITOR_GROUP_NAME,
 )
 
 
@@ -618,6 +624,107 @@ class EducationalContentViewSet(
         
         serializer = self.get_serializer(content)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=["get"], url_path="export/json")
+    def export_json(self, request):
+        """
+        Exporte les contenus en JSON.
+        
+        Méthode : GET
+        URL : /api/contents/export/json/
+        Permissions : IsAuthenticated (admin/editor uniquement)
+        
+        Query params :
+          - status (str, optionnel) : Filtre par statut (défaut: published)
+          - limit (int, optionnel) : Limite le nombre de résultats (défaut: 1000, max: 10000)
+        
+        Réponse :
+          - 200 OK : JSON array des contenus
+          - 403 Forbidden : Si l'utilisateur n'a pas la permission
+        """
+        if not request.user.is_authenticated or (not request.user.is_staff and not request.user.groups.filter(name=CONTENT_EDITOR_GROUP_NAME).exists()):
+            return Response(
+                {'error': 'Permission refusée. Admin ou Editor requis.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        status_param = request.query_params.get('status', 'published')
+        limit = min(int(request.query_params.get('limit', 1000)), 10000)
+        
+        queryset = EducationalContent.objects.filter(status=status_param).order_by('-created_at')[:limit]
+        serializer = self.get_serializer(queryset, many=True)
+        
+        response = HttpResponse(
+            json.dumps(serializer.data, indent=2, ensure_ascii=False),
+            content_type='application/json; charset=utf-8'
+        )
+        response['Content-Disposition'] = f'attachment; filename="contents_{status_param}_{timezone.now().strftime("%Y%m%d")}.json"'
+        return response
+    
+    @action(detail=False, methods=["get"], url_path="export/csv")
+    def export_csv(self, request):
+        """
+        Exporte les contenus en CSV.
+        
+        Méthode : GET
+        URL : /api/contents/export/csv/
+        Permissions : IsAuthenticated (admin/editor uniquement)
+        
+        Query params :
+          - status (str, optionnel) : Filtre par statut (défaut: published)
+          - limit (int, optionnel) : Limite le nombre de résultats (défaut: 1000, max: 10000)
+        
+        Réponse :
+          - 200 OK : CSV des contenus
+          - 403 Forbidden : Si l'utilisateur n'a pas la permission
+        """
+        if not request.user.is_authenticated or (not request.user.is_staff and not request.user.groups.filter(name=CONTENT_EDITOR_GROUP_NAME).exists()):
+            return Response(
+                {'error': 'Permission refusée. Admin ou Editor requis.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        status_param = request.query_params.get('status', 'published')
+        limit = min(int(request.query_params.get('limit', 1000)), 10000)
+        
+        queryset = EducationalContent.objects.filter(status=status_param).order_by('-created_at')[:limit]
+        
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        
+        # En-têtes
+        writer.writerow([
+            'id', 'title', 'slug', 'type', 'status', 'category', 'description',
+            'author_id', 'author_username', 'anonymous_display_name',
+            'external_url', 'created_at', 'updated_at', 'published_at', 'published_by_id',
+            'tags', 'project_id'
+        ])
+        
+        # Données
+        for content in queryset:
+            writer.writerow([
+                content.id,
+                content.title,
+                content.slug,
+                content.type,
+                content.status,
+                content.category,
+                content.description,
+                content.author.id if content.author else '',
+                content.author.username if content.author else '',
+                content.anonymous_display_name,
+                content.external_url,
+                content.created_at.isoformat() if content.created_at else '',
+                content.updated_at.isoformat() if content.updated_at else '',
+                content.published_at.isoformat() if content.published_at else '',
+                content.published_by.id if content.published_by else '',
+                ','.join(content.tags) if content.tags else '',
+                content.project.id if content.project else '',
+            ])
+        
+        response = HttpResponse(buffer.getvalue(), content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="contents_{status_param}_{timezone.now().strftime("%Y%m%d")}.csv"'
+        return response
 
 
 
