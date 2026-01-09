@@ -29,7 +29,10 @@ User = get_user_model()
 @pytest.fixture
 def client():
     """Client API pour les tests"""
-    return APIClient()
+    c = APIClient()
+    # Évite les 301 (HTTP->HTTPS) si SECURE_SSL_REDIRECT est activé dans l'environnement de test.
+    c.defaults["wsgi.url_scheme"] = "https"
+    return c
 
 
 @pytest.fixture
@@ -95,6 +98,10 @@ def assert_permission(client, url, method, user, expected_status, data=None):
     """
     # Réinitialiser l'authentification du client
     client.force_authenticate(user=None)
+
+    # Éviter les 301 (APPEND_SLASH) : on normalise toujours l'URL avec un slash final.
+    if not url.endswith("/"):
+        url = f"{url}/"
     
     if user:
         client.force_authenticate(user=user)
@@ -102,9 +109,9 @@ def assert_permission(client, url, method, user, expected_status, data=None):
     
     method_func = getattr(client, method.lower())
     if data:
-        response = method_func(url, data, format='json')
+        response = method_func(url, data, format='json', secure=True)
     else:
-        response = method_func(url)
+        response = method_func(url, secure=True)
     
     # DRF peut retourner 401 ou 403 selon le contexte
     # 401 = non authentifié, 403 = authentifié mais sans permissions
@@ -333,6 +340,13 @@ class TestPollVotePermissions:
         test_poll.status = Poll.STATUS_OPEN
         test_poll.opens_at = timezone.now()
         test_poll.save()
+        
+        url = reverse('poll-vote', kwargs={'pk': test_poll.id})
+        data = {'options': [test_poll.options.first().id]}
+        # Peut retourner 200 (succès) ou 400 (poll fermé/invalide)
+        assert_permission(client, url, 'post', admin_user, [status.HTTP_200_OK, status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST], data=data)
+
+
         
         url = reverse('poll-vote', kwargs={'pk': test_poll.id})
         data = {'options': [test_poll.options.first().id]}
