@@ -102,6 +102,15 @@ jobs:
           DEBUG: '1'
           DISABLE_THROTTLE_FOR_TESTS: '1'
           REDIS_URL: redis://localhost:6379/0
+      
+      - name: 📤 Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-junit-report
+          path: backend/junit.xml
+          retention-days: 7
+          if-no-files-found: ignore
 
   build:
     needs: [frontend-test, backend-test]
