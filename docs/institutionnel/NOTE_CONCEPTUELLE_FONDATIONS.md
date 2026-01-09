@@ -231,6 +231,7 @@ Le SAKA est **incessible entre tiers hors des mécanismes protocolaires** (don, 
 - **Séparation SAKA/EUR** : Aucune conversion possible, tests automatiques bloquants, vérifiable par des audits externes
 - **Transparence financière** : 100% des dons nets (après frais de plateforme) alloués aux projets, frais transparents et explicitement mentionnés
 - **Conformité réglementaire** : Conformité PCI-DSS (Stripe), conformité aux réglementations financières applicables
+- **Support multi-providers** : EGOEJO supporte plusieurs providers de paiement (Stripe, HelloAsso) avec tests contractuels, traçabilité totale, et garantie de non-convertibilité SAKA/EUR. Chaque provider est testé, auditable, et respecte la séparation stricte SAKA/EUR.
 
 ### Conformité Données (RGPD)
 
@@ -341,6 +342,45 @@ Le SAKA est **incessible entre tiers hors des mécanismes protocolaires** (don, 
 - **Traçabilité totale** : Toutes les actions critiques (récolte SAKA, compostage, redistribution, transactions EUR) sont tracées, horodatées, et auditées
 - **Conservation** : Logs conservés pour des audits externes
 - **Accessibilité** : Logs accessibles pour des audits réguliers
+
+### Toujours sous surveillance : mécanismes anti-dérive
+
+EGOEJO intègre des mécanismes automatisés de surveillance continue pour garantir que les principes fondamentaux (séparation SAKA/EUR, anti-accumulation, non-conversion) sont respectés en permanence. Ces mécanismes sont **opposables institutionnellement** et **auditables par des tiers**.
+
+#### Alertes critiques automatisées
+
+Le système détecte automatiquement et alerte en temps réel sur toute violation potentielle des principes fondamentaux :
+
+- **Détection de contournements techniques** : Surveillance des tentatives de modification directe des données sans passer par les mécanismes protocolaires
+- **Détection d'anomalies massives** : Alerte en cas de modification suspecte des soldes ou des transactions
+- **Vérification de l'intégrité** : Contrôle continu de la cohérence entre les transactions enregistrées et les soldes
+
+Les alertes sont envoyées automatiquement par email et webhook (Slack) aux administrateurs, garantissant une réactivité immédiate en cas d'anomalie détectée.
+
+#### Comptage mensuel et transparence
+
+Les métriques d'alertes critiques sont **publiques** et **auditables** via un endpoint dédié (`/api/compliance/alerts/metrics/`) :
+
+- **Total cumulé** : Nombre total d'alertes critiques depuis le début
+- **Historique mensuel** : Comptage des alertes par mois (12 derniers mois)
+- **Dernière alerte** : Date de la dernière alerte détectée
+
+Ces métriques permettent aux auditeurs externes et aux fondations de vérifier que :
+1. Les mécanismes de surveillance sont actifs et fonctionnels
+2. Les alertes sont détectées et enregistrées de manière transparente
+3. Le système fonctionne de manière opposable et vérifiable
+
+**Important** : Ces métriques ne sont pas un indicateur d'échec, mais au contraire une preuve de **vigilance active** et de **transparence institutionnelle**. Un nombre élevé d'alertes indique que le système de surveillance fonctionne correctement et détecte proactivement les anomalies.
+
+#### Auditabilité externe
+
+Les métriques d'alertes critiques sont :
+- **Publiques** : Accessibles sans authentification pour garantir la transparence
+- **Auditables** : Format JSON structuré, exportable, vérifiable par des tiers
+- **Traçables** : Chaque alerte est enregistrée avec un horodatage et un identifiant unique
+- **Non-personnelles** : Aucune donnée personnelle n'est exposée, uniquement des métriques agrégées
+
+Les auditeurs externes peuvent ainsi vérifier indépendamment que les mécanismes anti-dérive sont actifs et fonctionnels, renforçant la confiance institutionnelle et la crédibilité du modèle de gouvernance.
 
 ---
 

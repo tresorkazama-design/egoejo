@@ -95,9 +95,18 @@ Pour rendre le check `audit-home-vision` **requis** et bloquer les merges en cas
    - Cliquer sur "Add rule" ou modifier la règle existante pour `main`
    - Activer "Require status checks to pass before merging"
 
-3. **Sélectionner le check requis** :
-   - Cocher la case **`audit-home-vision`** dans la liste des checks disponibles
-   - ⚠️ **Important** : Le check doit apparaître dans la liste après au moins une exécution réussie
+3. **Sélectionner les checks requis** :
+   - Cocher les cases suivantes dans la liste des checks disponibles :
+     - ✅ **`audit-home-vision`** (audit Home/Vision)
+     - ✅ **`audit-static`** (audit statique)
+     - ✅ **`backend-compliance`** (tests compliance backend)
+     - ✅ **`backend-permissions`** (tests permissions backend)
+     - ✅ **`frontend-unit`** (tests unitaires frontend)
+     - ✅ **`frontend-e2e-critical`** (tests E2E critiques, sharded 1/2 + 2/2)
+     - ✅ **`critical-compliance`** (job final compliance)
+     - ✅ **`egoejo-compliance`** (tests compliance philosophique)
+     - ✅ **`verify-critical-markers`** (vérification marqueurs @pytest.mark.critical)
+   - ⚠️ **Important** : Les checks doivent apparaître dans la liste après au moins une exécution réussie
 
 4. **Options supplémentaires recommandées** :
    - ✅ "Require branches to be up to date before merging"
@@ -113,12 +122,171 @@ Après configuration, toute tentative de merge d'une PR où le check `audit-home
 
 ---
 
+### 3. Audit Global EGOEJO (`audit-global`)
+
+**Workflow** : `.github/workflows/audit-global.yml`  
+**Jobs** : `audit-static`, `backend-compliance`, `backend-permissions`, `frontend-unit`, `frontend-e2e-critical-shard-1`, `frontend-e2e-critical-shard-2`, `critical-compliance`  
+**Statut** : **REQUIS** (merge bloqué si échec)
+
+#### Description
+
+Workflow complet de validation EGOEJO incluant :
+- ✅ Audit statique (mots interdits)
+- ✅ Tests compliance backend (philosophique SAKA/EUR)
+- ✅ Tests permissions backend (endpoints critiques)
+- ✅ Tests unitaires frontend
+- ✅ Tests E2E critiques (sharding 1/2 + 2/2)
+- ✅ Rapport compliance final
+
+#### Jobs Critiques
+
+1. **`audit-static`** : Audit statique (mots interdits, symboles monétaires)
+2. **`backend-compliance`** : Tests compliance philosophique (`@egoejo_compliance`)
+3. **`backend-permissions`** : Tests permissions endpoints (`@critical`)
+4. **`frontend-unit`** : Tests unitaires frontend
+5. **`frontend-e2e-critical`** : Tests E2E critiques (sharded 1/2 + 2/2)
+7. **`critical-compliance`** : Job final (résumé + rapport compliance)
+
+#### Artefacts Générés
+
+- `backend/junit.xml` : Rapport JUnit backend
+- `backend/junit-compliance.xml` : Rapport JUnit compliance
+- `backend/junit-permissions.xml` : Rapport JUnit permissions
+- `frontend/frontend/playwright-report/` : Rapport Playwright HTML
+- `compliance_report.json` : Rapport compliance JSON
+- `backend/compliance-report.json` : Rapport compliance backend
+
+#### Critères de Succès
+
+- ✅ Tous les jobs passent
+- ✅ Aucune violation compliance détectée
+- ✅ Tous les tests E2E critiques passent (shards 1/2 et 2/2)
+- ✅ Exit code : `0`
+
+#### Critères d'Échec (Merge Bloqué)
+
+- ❌ Au moins un job échoue
+- ❌ Violation compliance détectée
+- ❌ Au moins un test E2E critique échoue
+- ❌ Exit code : `1`
+
+#### Impact
+
+**Si un job critique échoue, le merge est bloqué automatiquement par GitHub Branch Protection Rules.**
+
+---
+
+### 4. EGOEJO Compliance Philosophique (`egoejo-compliance`)
+
+**Workflow** : `.github/workflows/egoejo-compliance.yml`  
+**Job** : `egoejo-compliance`  
+**Statut** : **REQUIS** (merge bloqué si échec)
+
+#### Description
+
+Tests de compliance philosophique SAKA/EUR :
+- ✅ Tests marqués `@egoejo_compliance`
+- ✅ Scan automatique code Python (conversion SAKA↔EUR interdite)
+- ✅ Scan endpoints API (conformité constitution)
+- ✅ Vérification ESLint SAKA (no-monetary-symbols)
+
+#### Critères de Succès
+
+- ✅ Tous les tests compliance passent
+- ✅ Aucune violation détectée dans le code Python
+- ✅ Aucune violation détectée dans les endpoints API
+- ✅ Aucune violation ESLint SAKA
+
+#### Critères d'Échec (Merge Bloqué)
+
+- ❌ Au moins un test compliance échoue
+- ❌ Violation détectée (conversion SAKA↔EUR, symboles monétaires)
+- ❌ Exit code : `1`
+
+---
+
+### 5. Verify Critical Tests Markers (`verify-critical-markers`)
+
+**Workflow** : `.github/workflows/verify-critical-tests.yml`  
+**Job** : `verify-critical-markers`  
+**Statut** : **REQUIS** (merge bloqué si échec)
+
+#### Description
+
+Vérifie que :
+- ✅ Les fichiers déclarés dans `CRITICAL_TESTS_REGISTRY.yml` ont bien `@pytest.mark.critical`
+- ✅ Les modules "core" obligatoires ont bien des tests critiques
+- ✅ Aucun test critique n'est manquant pour un module "core"
+
+#### Script de Vérification
+
+**Script** : `scripts/verify_critical_markers.py`
+
+**Registry** : `docs/testing/CRITICAL_TESTS_REGISTRY.yml`
+
+#### Critères de Succès
+
+- ✅ Tous les fichiers déclarés dans le registry ont `@pytest.mark.critical`
+- ✅ Tous les modules core obligatoires ont des tests critiques
+- ✅ Aucun test critique manquant détecté
+- ✅ Exit code : `0`
+
+#### Critères d'Échec (Merge Bloqué)
+
+- ❌ Au moins un fichier déclaré n'a pas `@pytest.mark.critical`
+- ❌ Au moins un module core obligatoire n'a pas de tests critiques
+- ❌ Au moins un test critique manquant détecté
+- ❌ Exit code : `1`
+
+#### Impact
+
+**Si le check échoue, le merge est bloqué automatiquement par GitHub Branch Protection Rules.**
+
+---
+
+### 4. EGOEJO Compliance Philosophique (`egoejo-compliance`)
+
+**Workflow** : `.github/workflows/egoejo-compliance.yml`  
+**Job** : `egoejo-compliance`  
+**Statut** : **REQUIS** (merge bloqué si échec)
+
+#### Description
+
+Tests de compliance philosophique SAKA/EUR :
+- ✅ Tests marqués `@egoejo_compliance`
+- ✅ Scan automatique code Python (conversion SAKA↔EUR interdite)
+- ✅ Scan endpoints API (conformité constitution)
+- ✅ Vérification ESLint SAKA (no-monetary-symbols)
+
+#### Critères de Succès
+
+- ✅ Tous les tests compliance passent
+- ✅ Aucune violation détectée dans le code Python
+- ✅ Aucune violation détectée dans les endpoints API
+- ✅ Aucune violation ESLint SAKA
+
+#### Critères d'Échec (Merge Bloqué)
+
+- ❌ Au moins un test compliance échoue
+- ❌ Violation détectée (conversion SAKA↔EUR, symboles monétaires)
+- ❌ Exit code : `1`
+
+---
+
 ## 📊 Tableau Récapitulatif
 
 | Check | Workflow | Bloque le Merge | Description |
 |-------|----------|-----------------|-------------|
 | `audit-home-vision` | `.github/workflows/audit-home-vision.yml` | ✅ **OUI** | Audit complet (lint, tests, E2E, audit statique) |
 | `pr-bot-home-vision` | `.github/workflows/pr-bot-home-vision.yml` | ❌ Non | Bot informatif (commentaire + label) |
+| `audit-static` | `.github/workflows/audit-global.yml` | ✅ **OUI** | Audit statique (mots interdits) |
+| `backend-compliance` | `.github/workflows/audit-global.yml` | ✅ **OUI** | Tests compliance backend |
+| `backend-permissions` | `.github/workflows/audit-global.yml` | ✅ **OUI** | Tests permissions backend |
+| `frontend-unit` | `.github/workflows/audit-global.yml` | ✅ **OUI** | Tests unitaires frontend |
+| `frontend-e2e-critical` | `.github/workflows/audit-global.yml` | ✅ **OUI** | Tests E2E critiques (sharded 1/2 + 2/2) |
+| `critical-compliance` | `.github/workflows/audit-global.yml` | ✅ **OUI** | Job final (résumé + rapport) |
+| `egoejo-compliance` | `.github/workflows/egoejo-compliance.yml` | ✅ **OUI** | Tests compliance philosophique |
+| `verify-critical-markers` | `.github/workflows/verify-critical-tests.yml` | ✅ **OUI** | Vérification marqueurs @pytest.mark.critical |
 
 ---
 
