@@ -20,7 +20,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from core.models.saka import SakaWallet, SakaSilo, SakaCompostLog
-from core.services.saka import run_saka_compost_cycle
+from core.services.saka import run_saka_compost_cycle, harvest_saka, SakaReason
 
 User = get_user_model()
 
@@ -61,16 +61,12 @@ class TestSakaCompostDepreciationEffective(TestCase):
             password='testpass123'
         )
         
-        wallet, _ = SakaWallet.objects.get_or_create(
-            user=user,
-            defaults={
-                'balance': 200,
-                'total_harvested': 200,
-                'last_activity_date': timezone.now() - timedelta(days=120),  # Inactif depuis 120 jours
-            }
-        )
-        wallet.balance = 200
-        wallet.last_activity_date = timezone.now() - timedelta(days=120)
+        # CORRECTION COMPLIANCE : Utiliser harvest_saka() pour créer le solde initial
+        # (modification directe de balance est interdite par le modèle)
+        harvest_saka(user, SakaReason.MANUAL_ADJUST, amount=200)
+        wallet = user.saka_wallet
+        # Modifier last_activity_date directement (ce champ n'est pas protégé)
+        wallet.last_activity_date = timezone.now() - timedelta(days=120)  # Inactif depuis 120 jours
         wallet.save()
         
         initial_balance = wallet.balance
@@ -119,15 +115,10 @@ class TestSakaCompostDepreciationEffective(TestCase):
             password='testpass123'
         )
         
-        wallet, _ = SakaWallet.objects.get_or_create(
-            user=user,
-            defaults={
-                'balance': 300,
-                'total_harvested': 300,
-                'last_activity_date': timezone.now() - timedelta(days=120),
-            }
-        )
-        wallet.balance = 300
+        # CORRECTION COMPLIANCE : Utiliser harvest_saka() pour créer le solde initial
+        harvest_saka(user, SakaReason.MANUAL_ADJUST, amount=300)
+        wallet = user.saka_wallet
+        # Modifier last_activity_date directement (ce champ n'est pas protégé)
         wallet.last_activity_date = timezone.now() - timedelta(days=120)
         wallet.save()
         
@@ -182,15 +173,10 @@ class TestSakaCompostDepreciationEffective(TestCase):
             password='testpass123'
         )
         
-        wallet, _ = SakaWallet.objects.get_or_create(
-            user=user,
-            defaults={
-                'balance': 10000,  # Très gros solde
-                'total_harvested': 10000,
-                'last_activity_date': timezone.now() - timedelta(days=120),
-            }
-        )
-        wallet.balance = 10000
+        # CORRECTION COMPLIANCE : Utiliser harvest_saka() pour créer le solde initial
+        harvest_saka(user, SakaReason.MANUAL_ADJUST, amount=10000)  # Très gros solde
+        wallet = user.saka_wallet
+        # Modifier last_activity_date directement (ce champ n'est pas protégé)
         wallet.last_activity_date = timezone.now() - timedelta(days=120)
         wallet.save()
         
@@ -245,23 +231,17 @@ class TestSakaCompostDepreciationEffective(TestCase):
             password='testpass123'
         )
         
-        wallet, _ = SakaWallet.objects.get_or_create(
-            user=user,
-            defaults={
-                'balance': 500,
-                'total_harvested': 500,
-                'last_activity_date': timezone.now() - timedelta(days=120),  # Inactif depuis 120 jours
-            }
-        )
-        wallet.balance = 500
-        wallet.last_activity_date = timezone.now() - timedelta(days=120)
+        # CORRECTION COMPLIANCE : Utiliser harvest_saka() pour créer le solde initial
+        harvest_saka(user, SakaReason.MANUAL_ADJUST, amount=500)
+        wallet = user.saka_wallet
+        # Modifier last_activity_date directement (ce champ n'est pas protégé)
+        wallet.last_activity_date = timezone.now() - timedelta(days=120)  # Inactif depuis 120 jours
         wallet.save()
         
         initial_balance = wallet.balance
         
         # Tentative de contournement : activité minimale juste avant compostage
         # (simuler une récolte de 1 SAKA pour "réinitialiser" last_activity_date)
-        from core.services.saka import harvest_saka, SakaReason
         harvest_saka(user, SakaReason.CONTENT_READ, amount=1)
         wallet.refresh_from_db()
         
