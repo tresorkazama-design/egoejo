@@ -531,8 +531,9 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
             if not chunk:
                 break
             
-            # Préparer les mises à jour et transactions en batch
-            wallets_to_update = []
+            # CORRECTION COMPLIANCE : Préparer les données pour mise à jour atomique avec F() expressions
+            # Utiliser une approche qui garantit la persistance des changements
+            wallet_updates = []
             transactions_to_create = []
             chunk_composted = 0
             chunk_affected = 0
@@ -550,11 +551,12 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
                     chunk_affected += 1
                     continue
                 
-                # OPTIMISATION : Préparer la mise à jour en batch
-                wallet.balance -= amount
-                wallet.total_composted += amount
-                wallet.last_activity_date = timezone.now()
-                wallets_to_update.append(wallet)
+                # CORRECTION COMPLIANCE : Stocker les IDs et montants pour mise à jour atomique
+                wallet_updates.append({
+                    'id': wallet.id,
+                    'amount': amount,
+                    'user_id': wallet.user_id,
+                })
                 
                 # OPTIMISATION : Préparer la transaction en batch
                 transactions_to_create.append(
@@ -575,15 +577,18 @@ def run_saka_compost_cycle(dry_run: bool = False, source: str = "celery") -> Dic
                 chunk_composted += amount
                 chunk_affected += 1
             
-            # OPTIMISATION : Bulk update des wallets (1 requête au lieu de N)
-            # (avec autorisation via contexte)
-            if wallets_to_update:
+            # CORRECTION COMPLIANCE : Mise à jour atomique avec F() expressions pour garantir la persistance
+            # Utiliser update() avec F() au lieu de bulk_update() pour éviter les problèmes de synchronisation
+            if wallet_updates:
                 with AllowSakaMutation():
-                    SakaWallet.objects.bulk_update(
-                        wallets_to_update,
-                        ['balance', 'total_composted', 'last_activity_date'],
-                        batch_size=BATCH_SIZE
-                    )
+                    for wallet_update in wallet_updates:
+                        # CORRECTION : Mise à jour atomique avec F() expressions pour chaque wallet
+                        # Cela garantit que les changements sont persistés même avec des race conditions
+                        SakaWallet.objects.filter(id=wallet_update['id']).update(
+                            balance=F('balance') - wallet_update['amount'],
+                            total_composted=F('total_composted') + wallet_update['amount'],
+                            last_activity_date=timezone.now()
+                        )
             
             # OPTIMISATION : Bulk create des transactions (1 requête au lieu de N)
             if transactions_to_create:
@@ -829,15 +834,27 @@ def redistribute_saka_silo(rate: float | None = None) -> Dict:
                 chunks_processed += 1
                 offset += BATCH_SIZE
             
-            # Utiliser le montant réel redistribué calculé pendant le chunking
+            # CORRECTION COMPLIANCE : Utiliser le montant réel redistribué calculé pendant le chunking
             actual_redistributed = total_redistributed
             
-            # OPTIMISATION : Mise à jour du Silo avec F() expressions (atomique via update())
-            # Utiliser total_redistributed calculé pendant le chunking (plus précis)
-            SakaSilo.objects.filter(id=silo.id).update(
-                total_balance=F('total_balance') - total_redistributed
-            )
-            actual_redistributed = total_redistributed
+            # CORRECTION COMPLIANCE : S'assurer que total_redistributed > 0 avant de débité le Silo
+            if actual_redistributed <= 0:
+                logger.warning(
+                    f"Redistribution SAKA Silo : total_redistributed est {actual_redistributed}, "
+                    f"aucun débit du Silo effectué"
+                )
+                return {
+                    "ok": False,
+                    "reason": "no_redistribution_done",
+                    "total_before": total_before,
+                    "redistributed": 0,
+                }
+            
+            # CORRECTION COMPLIANCE : Mise à jour explicite du Silo avec l'objet verrouillé
+            # L'objet silo est déjà verrouillé avec select_for_update(), utiliser directement
+            silo_balance_before_debit = silo.total_balance or 0
+            silo.total_balance = max(0, silo_balance_before_debit - actual_redistributed)
+            silo.save(update_fields=['total_balance'])
             
             logger.info(
                 f"Redistribution SAKA Silo : {actual_redistributed} grains "

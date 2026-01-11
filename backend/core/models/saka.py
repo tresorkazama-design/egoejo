@@ -61,26 +61,34 @@ class SakaWalletQuerySet(models.QuerySet):
     """
     def update(self, **kwargs):
         """
-        Bloque TOUTE tentative de mise à jour de masse via update().
+        Bloque les tentatives de mise à jour de masse via update() SAUF si autorisées via AllowSakaMutation().
         
         Constitution EGOEJO: no direct SAKA mutation.
         La méthode update() est strictement interdite sur SakaWallet pour garantir
         la traçabilité et l'anti-accumulation. Toute modification doit passer par
         les services SAKA (harvest_saka, spend_saka, compost, redistribute).
         
+        CORRECTION COMPLIANCE : Autoriser update() si on est dans le contexte AllowSakaMutation()
+        (nécessaire pour redistribution et compostage en batch).
+        
         Raises:
-            ValidationError: Toujours levée (update() est interdit)
+            ValidationError: Si update() est appelé sans AllowSakaMutation()
         """
-        # BLOQUER TOUTE tentative de update(), même si aucun champ protégé n'est modifié
-        # Constitution EGOEJO: Fermer la "porte dérobée" des mises à jour SQL directes
-        error_msg = (
-            "VIOLATION CONSTITUTION EGOEJO : Direct update() is forbidden on SakaWallet. "
-            "Use SakaTransaction service (harvest_saka, spend_saka, compost, redistribute). "
-            "Toute modification de SakaWallet doit passer par les services SAKA pour garantir "
-            "la traçabilité et l'anti-accumulation."
-        )
-        logger.critical(error_msg)
-        raise ValidationError(error_msg)
+        # CORRECTION COMPLIANCE : Vérifier si la mutation est autorisée (via service SAKA)
+        if not is_saka_mutation_allowed():
+            # BLOQUER la tentative de update() si non autorisée
+            # Constitution EGOEJO: Fermer la "porte dérobée" des mises à jour SQL directes
+            error_msg = (
+                "VIOLATION CONSTITUTION EGOEJO : Direct update() is forbidden on SakaWallet. "
+                "Use SakaTransaction service (harvest_saka, spend_saka, compost, redistribute). "
+                "Toute modification de SakaWallet doit passer par les services SAKA pour garantir "
+                "la traçabilité et l'anti-accumulation."
+            )
+            logger.critical(error_msg)
+            raise ValidationError(error_msg)
+        
+        # CORRECTION COMPLIANCE : Si autorisé (via AllowSakaMutation()), procéder à l'update()
+        return super().update(**kwargs)
     
     def bulk_update(self, objs, fields, batch_size=None):
         """

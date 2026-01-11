@@ -1,6 +1,6 @@
 """
 Modèles pour l'investissement (V2.0 dormant).
-Ce tableau ne se remplira que quand ENABLE_INVESTMENT_FEATURES = True
+Ce tableau ne se remplira que quand le feature flag ENABLE_INVESTMENT_FEATURES est activé.
 """
 from django.db import models
 from django.conf import settings
@@ -10,7 +10,7 @@ from core.models import Projet
 class ShareholderRegister(models.Model):
     """
     Registre des actionnaires (V2.0 dormant).
-    Ce tableau ne se remplira que quand ENABLE_INVESTMENT_FEATURES = True
+    Ce tableau ne se remplira que quand le feature flag ENABLE_INVESTMENT_FEATURES est activé.
     """
     project = models.ForeignKey(
         Projet,

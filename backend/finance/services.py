@@ -538,7 +538,18 @@ def pledge_funds(user, project, amount, pledge_type='DONATION', idempotency_key=
     Wrapper avec gestion deadlock pour pledge_funds.
     
     OPTIMISATION RÉSILIENCE : Utilisation de tenacity pour retries intelligents sans bloquer le thread.
+    
+    CORRECTION COMPLIANCE : Vérification explicite du feature flag ENABLE_INVESTMENT_FEATURES pour EQUITY.
     """
+    # CORRECTION COMPLIANCE : Vérification explicite du feature flag pour EQUITY AVANT toute autre opération
+    # RÈGLE ABSOLUE : V2.0 (Investment) DOIT être strictement contrôlé par ENABLE_INVESTMENT_FEATURES
+    if pledge_type == 'EQUITY':
+        if not getattr(settings, 'ENABLE_INVESTMENT_FEATURES', False):
+            logger.warning(
+                f"Tentative d'investissement EQUITY avec feature désactivée - User: {user.id}, Project: {project.id}"
+            )
+            raise ValidationError("L'investissement n'est pas encore ouvert sur la plateforme.")
+    
     return _pledge_funds_with_retry(user, project, amount, pledge_type, idempotency_key)
 
 
