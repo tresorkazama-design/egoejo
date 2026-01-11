@@ -16,8 +16,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend/frontend/package-lock.json
+          # Cache retiré temporairement car le chemin peut ne pas être résolu lors du setup
+          # Le cache npm n'est pas critique pour le workflow
       
       - name: Install dependencies
         run: |
